@@ -4,7 +4,7 @@
 convert_one() {
   local flac="$1"
   local mp3="${flac%.*}.mp3"
-  local dest_dir tmpdir out md5 sha notes="" d1 d2
+  local dest_dir tmpdir out prep md5 sha notes="" d1 d2
   local force_reconvert=0
   local quality="${MP3_QUALITY_NAME:-v0}"
 
@@ -40,21 +40,6 @@ convert_one() {
     return 1
   fi
 
-  local ch rate
-  ch=$(audio_channels "$flac" || true)
-  rate=$(audio_sample_rate "$flac" || true)
-  if [[ -z "$ch" ]] || ((ch > 2)); then
-    log_fail "$flac" "unsupported channel count for MP3" "channels=${ch:-unknown} (max 2)"
-    return 1
-  fi
-  case "$rate" in
-    8000|11025|12000|16000|22050|24000|32000|44100|48000) ;;
-    *)
-      log_fail "$flac" "unsupported sample rate for MP3" "rate=${rate:-unknown} (no silent resample)"
-      return 1
-      ;;
-  esac
-
   dest_dir=$(dirname -- "$mp3")
   tmpdir=$(make_workdir "$dest_dir")
   out="${tmpdir}/out.mp3"
@@ -67,7 +52,19 @@ convert_one() {
 
   log_progress "convert: $flac (quality=$quality)"
 
-  if ! encode_mp3 "$flac" "$out"; then
+  if ! lossy_prepare_source "$flac" "$tmpdir" mp3 >"${tmpdir}/prep.path"; then
+    log_fail "$flac" "lossy prepare failed" "family=mp3"
+    cleanup
+    return 1
+  fi
+  prep=$(tail -n1 "${tmpdir}/prep.path")
+  if [[ ! -f "$prep" ]]; then
+    log_fail "$flac" "lossy prepare failed (missing prep)"
+    cleanup
+    return 1
+  fi
+
+  if ! encode_mp3 "$prep" "$out"; then
     log_fail "$flac" "encode mp3 failed" "quality=$quality tmpdir=$tmpdir"
     cleanup
     return 1
@@ -79,10 +76,10 @@ convert_one() {
     return 1
   fi
 
-  if ! durations_match "$flac" "$out" 0.05; then
-    d1=$(audio_duration_sec "$flac" || echo "?")
+  if ! durations_match "$prep" "$out" 0.05; then
+    d1=$(audio_duration_sec "$prep" || echo "?")
     d2=$(audio_duration_sec "$out" || echo "?")
-    log_fail "$flac" "duration mismatch (>50ms)" "flac=${d1}s mp3=${d2}s"
+    log_fail "$flac" "duration mismatch (>50ms)" "src=${d1}s mp3=${d2}s"
     cleanup
     return 1
   fi

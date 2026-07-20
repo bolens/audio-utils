@@ -7,20 +7,8 @@ mp3_ok() {
   [[ -n "$(audio_codec "$mp3")" ]]
 }
 
-# Duration within tol_sec (default 0.05). Args: src dest [tol]
-durations_match() {
-  local src="$1" dest="$2" tol="${3:-0.05}"
-  local d1 d2
-  d1=$(audio_duration_sec "$src") || return 1
-  d2=$(audio_duration_sec "$dest") || return 1
-  awk -v a="$d1" -v b="$d2" -v t="$tol" 'BEGIN {
-    if (a == "" || b == "") exit 1
-    diff = a - b; if (diff < 0) diff = -diff
-    exit !(diff <= t)
-  }'
-}
-
 # Encode with current MP3_FF_ARGS; map metadata/cover from FLAC.
+# Duration check: use durations_match from lib/lossy.sh.
 encode_mp3() {
   local flac="$1" dest="$2"
   local err

@@ -35,6 +35,7 @@ Priority: `-Q` / `--quality` → `FLAC2MP3_QUALITY` → `AUDIO_UTILS_MP3_QUALITY
 |------|-------------|
 | `-n` `-q` `-v` `-j N` `-y` `-f FILE` | Shared |
 | `-Q PROFILE` / `--quality` | MP3 quality profile |
+| `-N` / `--no-resample` | Fail instead of resampling/downmixing |
 | `-d` / `-D` | Delete FLAC after success / cleanup-only |
 | `-L` / `-S` | Logs (XDG state defaults) |
 | `--version` | Version |

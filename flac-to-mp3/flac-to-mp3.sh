@@ -18,6 +18,7 @@
 #   -d          Delete FLAC after successful conversion
 #   -D          Cleanup only: delete FLACs that already have a valid sibling MP3
 #   -Q PROFILE  MP3 quality: v0 (default), v2, 320, 192
+#   -N          No resample/downmix (fail on unsupported rate/channels)
 #   -L FILE     Failure log (default: $XDG_STATE_HOME/audio-utils/flac-to-mp3/failures.log)
 #   -S FILE     Success log CSV or .jsonl
 #   -n          Dry run
@@ -28,6 +29,7 @@
 #   -h          Help
 #   --version   Print version
 #   --quality P Same as -Q
+#   --no-resample  Same as -N
 #
 # Quality also via FLAC2MP3_QUALITY or AUDIO_UTILS_MP3_QUALITY (default: v0).
 #
@@ -38,7 +40,7 @@ set -euo pipefail
 SCRIPT_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
 AU_USAGE_FILE="$0"
 AU_USAGE_START=2
-AU_USAGE_END=34
+AU_USAGE_END=37
 export AU_USAGE_FILE AU_USAGE_START AU_USAGE_END
 
 # shellcheck source=lib/plugin.sh
