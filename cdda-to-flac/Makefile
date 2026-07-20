@@ -1,4 +1,4 @@
-SHELLCHECK = shellcheck -x -a
+SHELLCHECK = shellcheck -x
 SCRIPTS = cdda-to-flac.sh lib/*.sh
 .PHONY: help check
 help:

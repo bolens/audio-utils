@@ -12,7 +12,9 @@
 #   HAS_CONVERT_VERBOSE / HAS_CONVERT_CLEAN / HAS_RETAG — set to 1 to enable
 #   DELETE_TARGET   — make target name for -D (default delete-sources)
 
-SHELLCHECK ?= shellcheck -x -a
+# -x follows sources for symbol resolution; omit -a so each tool does not
+# re-lint the entire shared lib/ tree (checked once from the root Makefile).
+SHELLCHECK ?= shellcheck -x
 CONVERT ?= ./convert-all.sh
 ARGS ?=
 ROOTS ?= $(AUDIO_UTILS_ROOTS)

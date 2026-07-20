@@ -4,3 +4,4 @@ source-path=lib
 source-path=../lib
 external-sources=true
 shell=bash
+disable=SC1093

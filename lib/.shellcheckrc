@@ -2,3 +2,4 @@
 source-path=SCRIPTDIR
 external-sources=true
 shell=bash
+disable=SC1093

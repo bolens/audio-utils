@@ -378,7 +378,9 @@ lossy_convert_one() {
   md5=$(audio_md5 "$flac")
   sha=$(file_sha256 "$out")
   notes="converted"
-  ((force_reconvert)) && notes="reconverted"
+  if ((force_reconvert)); then
+    notes="reconverted"
+  fi
   if [[ "${DELETE_SOURCE:-${DELETE_FLAC:-0}}" -eq 1 ]]; then
     rm -f -- "$flac"
     notes="${notes};deleted-flac"

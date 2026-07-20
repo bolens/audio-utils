@@ -91,3 +91,23 @@ takc_decode() {
     return 1
   fi
 }
+
+# Decode TAK → WAV: prefer ffmpeg, fall back to Takc.
+# Args: SRC TMPDIR DEST_WAV
+tak_decode_to_wav() {
+  local src="$1" tmpdir="$2" wav="$3"
+  local err
+  err="${tmpdir}/tak-decode.err"
+  if ffmpeg -v error -y -i "$src" -map 0:a:0 -c:a pcm_s24le "$wav" 2>"$err"; then
+    return 0
+  fi
+  if takc_resolve 2>/dev/null; then
+    if takc_decode "$src" "$wav"; then
+      return 0
+    fi
+  fi
+  set_last_err_file "$err"
+  log_err "FAILED TAK decode (ffmpeg + takc): $src"
+  [[ -s "$err" ]] && { log_err "  stderr:"; sed 's/^/  | /' "$err" >&2; }
+  return 1
+}

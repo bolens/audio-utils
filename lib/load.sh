@@ -33,6 +33,8 @@ source "${_AUDIO_UTILS_LIB_DIR}/convert_all.sh"
 source "${_AUDIO_UTILS_LIB_DIR}/pcm_flac.sh"
 # shellcheck source=pcm_remux.sh
 source "${_AUDIO_UTILS_LIB_DIR}/pcm_remux.sh"
+# shellcheck source=lossless.sh
+source "${_AUDIO_UTILS_LIB_DIR}/lossless.sh"
 # shellcheck source=cue.sh
 source "${_AUDIO_UTILS_LIB_DIR}/cue.sh"
 # shellcheck source=lossy.sh

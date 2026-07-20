@@ -39,7 +39,7 @@ make -C flac-to-mp3 convert-quiet
 ```
 audio-utils/
   docs/           # requirements, formats, discs, streaming, tak, lossy, …
-  lib/            # driver, worker, success_log, delete, lossy, pcm_*, cue, discs, tool.mk
+  lib/            # plugin_init, driver, lossless, lossy, pcm_*, success_log, delete, tool.mk
   <tool>/         # thin CLI + lib/plugin.sh (+ convert when not using a shared pipeline)
 ```
 

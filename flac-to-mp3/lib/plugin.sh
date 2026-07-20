@@ -17,18 +17,8 @@ LOSSY_QUALITY_ENV_ALT=FLAC2MP3_QUALITY
 QUALITY_CLI="${QUALITY_CLI:-}"
 LOSSY_NO_RESAMPLE="${LOSSY_NO_RESAMPLE:-0}"
 
-_LIB=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
-AU_TOOL_DIR=$(cd "${_LIB}/.." && pwd)
-_ROOT=$(cd "${AU_TOOL_DIR}/.." && pwd)
-
-export AU_TOOL_NAME AU_SOURCE_EXT AU_DEST_EXT AU_DISK_FACTOR AU_WORKDIR_PREFIX \
-  AU_SUCCESS_COLUMNS AU_GETOPT_EXTRA AU_TOOL_DIR \
-  LOSSY_FAMILY LOSSY_FFMPEG_ENCODER LOSSY_DEFAULT_QUALITY \
-  LOSSY_QUALITY_ENV LOSSY_QUALITY_ENV_ALT
-export AUDIO_UTILS_WORKDIR_PREFIX="${AUDIO_UTILS_WORKDIR_PREFIX:-$AU_WORKDIR_PREFIX}"
-
-# shellcheck source=../../lib/load.sh
-source "${_ROOT}/lib/load.sh"
+# shellcheck source=../../lib/plugin_init.sh
+source "$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)/lib/plugin_init.sh"
 
 lossy_restore_ff_args
 

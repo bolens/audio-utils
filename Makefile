@@ -36,6 +36,7 @@ check:
 	$(SHELLCHECK) lib/load.sh lib/log.sh lib/xdg.sh lib/config.sh lib/version.sh \
 		lib/progress.sh lib/tmpdir.sh lib/probe.sh lib/disk.sh lib/util.sh \
 		lib/success_log.sh lib/delete.sh lib/convert_all.sh lib/pcm_remux.sh \
+		lib/lossless.sh lib/plugin_init.sh \
 		lib/find-audio-dirs.sh lib/driver.sh lib/worker.sh lib/pcm_flac.sh \
 		lib/cue.sh lib/lossy.sh lib/tak.sh lib/dvd.sh lib/cdda.sh lib/bluray.sh
 	@for t in $(TOOLS); do $(MAKE) -C $$t check || exit 1; done

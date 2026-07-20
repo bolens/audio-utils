@@ -73,7 +73,9 @@ pcm_remux_convert_one() {
   md5=$(audio_md5 "$dest")
   sha=$(file_sha256 "$dest")
   notes="converted"
-  ((force_reconvert)) && notes="reconverted"
+  if ((force_reconvert)); then
+    notes="reconverted"
+  fi
   if [[ "${DELETE_SOURCE:-0}" -eq 1 ]]; then
     rm -f -- "$src"
     notes="${notes};deleted-${src_label}"

@@ -9,29 +9,13 @@ AU_WORKDIR_PREFIX=wav2flac
 AU_SUCCESS_COLUMNS='timestamp,wav,flac,audio_md5,flac_sha256,codec,bytes,samples,notes'
 AU_GETOPT_EXTRA="cR"
 
-# Preserve values exported by the driver into parallel workers
 CLEAN_WAV="${CLEAN_WAV:-0}"
 RETAG_ONLY="${RETAG_ONLY:-0}"
 
-_WAV2FLAC_LIB_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
-AU_TOOL_DIR=$(cd "${_WAV2FLAC_LIB_DIR}/.." && pwd)
-_AUDIO_UTILS_ROOT=$(cd "${AU_TOOL_DIR}/.." && pwd)
-
-export AU_TOOL_NAME AU_SOURCE_EXT AU_DEST_EXT AU_DISK_FACTOR AU_WORKDIR_PREFIX \
-  AU_SUCCESS_COLUMNS AU_GETOPT_EXTRA AU_TOOL_DIR
-export AUDIO_UTILS_WORKDIR_PREFIX="${AUDIO_UTILS_WORKDIR_PREFIX:-$AU_WORKDIR_PREFIX}"
-
-# shellcheck source=../../lib/load.sh
-source "${_AUDIO_UTILS_ROOT}/lib/load.sh"
+# shellcheck source=../../lib/plugin_init.sh
+source "$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)/lib/plugin_init.sh"
 
 plugin_sibling_ok() { flac_ok "$2"; }
-
-# shellcheck source=prepare.sh
-source "${_WAV2FLAC_LIB_DIR}/prepare.sh"
-# shellcheck source=encode.sh
-source "${_WAV2FLAC_LIB_DIR}/encode.sh"
-# shellcheck source=convert.sh
-source "${_WAV2FLAC_LIB_DIR}/convert.sh"
 
 plugin_parse_opt() {
   local opt=$1
