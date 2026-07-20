@@ -4,7 +4,7 @@
 
 Verified **audio conversion utilities** for Linux libraries. **FLAC** is the archive hub.
 
-Docs: **[docs/](docs/)** — [requirements](docs/requirements.md) · [formats](docs/formats.md) · [cue](docs/cue.md) · [discs](docs/discs.md) · [streaming](docs/streaming.md) · [tak](docs/tak.md) · [lossy](docs/lossy.md) · [adding a util](docs/adding-a-util.md)
+Docs: **[docs/](docs/)** — [requirements](docs/requirements.md) · [formats](docs/formats.md) · [cue](docs/cue.md) · [discs](docs/discs.md) · [streaming](docs/streaming.md) · [tak](docs/tak.md) · [dsd](docs/dsd.md) · [lossy](docs/lossy.md) · [adding a util](docs/adding-a-util.md)
 
 ### Conversion
 
@@ -13,16 +13,22 @@ Docs: **[docs/](docs/)** — [requirements](docs/requirements.md) · [formats](d
 | [`conversion/wav-to-flac/`](conversion/wav-to-flac/) / [`flac-to-wav/`](conversion/flac-to-wav/) | WAV ↔ FLAC |
 | [`conversion/aiff-to-flac/`](conversion/aiff-to-flac/) / [`flac-to-aiff/`](conversion/flac-to-aiff/) | AIFF ↔ FLAC |
 | [`conversion/wav-to-aiff/`](conversion/wav-to-aiff/) / [`aiff-to-wav/`](conversion/aiff-to-wav/) | WAV ↔ AIFF remux |
+| [`conversion/caf-to-flac/`](conversion/caf-to-flac/) / [`flac-to-caf/`](conversion/flac-to-caf/) | CAF ↔ FLAC (PCM) |
 | [`conversion/flac-to-alac/`](conversion/flac-to-alac/) / [`alac-to-flac/`](conversion/alac-to-flac/) | FLAC ↔ ALAC (`.m4a`) |
 | [`conversion/flac-to-wv/`](conversion/flac-to-wv/) / [`wv-to-flac/`](conversion/wv-to-flac/) | FLAC ↔ WavPack |
 | [`conversion/flac-to-ape/`](conversion/flac-to-ape/) / [`ape-to-flac/`](conversion/ape-to-flac/) | FLAC ↔ APE |
 | [`conversion/flac-to-tak/`](conversion/flac-to-tak/) / [`tak-to-flac/`](conversion/tak-to-flac/) | FLAC ↔ TAK ([Takc](docs/tak.md)) |
+| [`conversion/flac-to-tta/`](conversion/flac-to-tta/) / [`tta-to-flac/`](conversion/tta-to-flac/) | FLAC ↔ TTA |
+| [`conversion/shn-to-flac/`](conversion/shn-to-flac/) | Shorten → FLAC (decode-only) |
+| [`conversion/dsf-to-flac/`](conversion/dsf-to-flac/) | DSD (DSF/DFF) → FLAC ([dsd](docs/dsd.md)) |
 | [`conversion/cue-to-flac/`](conversion/cue-to-flac/) | CUE + image → tracks |
 | [`conversion/streams-to-flac/`](conversion/streams-to-flac/) | Multi-stream → `.aN.flac` |
 | [`conversion/dvd-to-flac/`](conversion/dvd-to-flac/) / [`cdda-to-flac/`](conversion/cdda-to-flac/) | DVD VIDEO_TS / CDDA → FLAC |
 | [`conversion/bluray-to-flac/`](conversion/bluray-to-flac/) | Blu-ray BDMV / decrypted M2TS\|MKV → FLAC ([discs](docs/discs.md)) |
 | [`conversion/flac-to-mp3/`](conversion/flac-to-mp3/) | FLAC → MP3 (default **v0**) |
 | [`conversion/flac-to-opus/`](conversion/flac-to-opus/) / [`flac-to-aac/`](conversion/flac-to-aac/) / [`flac-to-vorbis/`](conversion/flac-to-vorbis/) | FLAC → Opus / AAC / Vorbis |
+| [`conversion/flac-to-wma/`](conversion/flac-to-wma/) / [`flac-to-speex/`](conversion/flac-to-speex/) / [`flac-to-mpc/`](conversion/flac-to-mpc/) | FLAC → WMA / Speex / Musepack |
+| [`conversion/lossy-to-flac/`](conversion/lossy-to-flac/) | Lossy → FLAC (normalize; does not restore quality) |
 
 ### Util
 

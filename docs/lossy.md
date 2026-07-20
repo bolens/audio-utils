@@ -22,6 +22,36 @@ Profiles live in shared `lib/lossy.sh` (`lossy_resolve_quality`).
 Env: `AUDIO_UTILS_OPUS_QUALITY`, `AUDIO_UTILS_AAC_QUALITY`, `AUDIO_UTILS_VORBIS_QUALITY`
 (and tool-specific `FLAC2*_QUALITY` overrides).
 
+## WMA / Speex
+
+| Tool | Default `-Q` | Profiles |
+|------|----------------|----------|
+| flac-to-wma | `192` | `128` `160` `192` `256` (CBR kbps, wmav2) |
+| flac-to-speex | `q6` | `q4`…`q8` (libspeex `-q:a`) |
+
+Speex is speech-oriented; prefer Opus/MP3 for music.
+
+Env: `AUDIO_UTILS_WMA_QUALITY`, `AUDIO_UTILS_SPEEX_QUALITY`.
+
+## Musepack (`flac-to-mpc`)
+
+Uses external **mpcenc** (`musepack-tools`), not an ffmpeg encoder.
+
+| Profile | `--quality` | Approx |
+|---------|-------------|--------|
+| `telephone` | 2 | ~60 kbps |
+| `radio` | 4 | ~130 kbps |
+| `standard` (default) | 5 | ~180 kbps |
+| `extreme` | 6 | ~210 kbps |
+| `insane` | 7 | ~240 kbps |
+
+Or numeric `0`–`10` (e.g. `5.5`). Env: `AUDIO_UTILS_MPC_QUALITY` / `FLAC2MPC_QUALITY`.
+
+## Lossy → FLAC (`lossy-to-flac`)
+
+Decodes MP3 / AAC / Opus / Vorbis / WMA / MPC into FLAC for library normalization.
+**Does not restore quality.** Skips ALAC-in-`.m4a` (use `alac-to-flac`).
+
 ## Resample / downmix
 
 By default, if channels &gt; 2 or the sample rate is outside the codec allowlist, tools **resample and/or downmix** and log a note (`lossy_prepare_source`).

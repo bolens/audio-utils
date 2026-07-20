@@ -8,7 +8,8 @@
 | [discs.md](discs.md) | DVD CSS / Blu-ray hybrid / CDDA |
 | [streaming.md](streaming.md) | DRM-free local files; Widevine forever OOS |
 | [tak.md](tak.md) | Takc / Wine setup |
-| [lossy.md](lossy.md) | MP3 / Opus / AAC / Vorbis + resample |
+| [dsd.md](dsd.md) | DSF/DFF → FLAC rates and sox fallback |
+| [lossy.md](lossy.md) | MP3 / Opus / AAC / Vorbis / WMA / Speex / MPC + resample |
 | [adding-a-converter.md](adding-a-converter.md) | Converter plugin contract |
 | [adding-a-util.md](adding-a-util.md) | Non-conversion util contract (verify, RG, art, audit, tags, …) |
 

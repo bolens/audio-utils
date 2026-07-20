@@ -12,8 +12,12 @@ CONVERSION = \
 	conversion/cue-to-flac \
 	conversion/ape-to-flac conversion/flac-to-ape \
 	conversion/tak-to-flac conversion/flac-to-tak \
+	conversion/tta-to-flac conversion/flac-to-tta conversion/shn-to-flac \
 	conversion/wav-to-aiff conversion/aiff-to-wav \
+	conversion/caf-to-flac conversion/flac-to-caf \
 	conversion/flac-to-opus conversion/flac-to-aac conversion/flac-to-vorbis \
+	conversion/flac-to-wma conversion/flac-to-speex conversion/flac-to-mpc \
+	conversion/lossy-to-flac conversion/dsf-to-flac \
 	conversion/streams-to-flac conversion/dvd-to-flac conversion/cdda-to-flac \
 	conversion/bluray-to-flac
 

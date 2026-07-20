@@ -3,8 +3,8 @@
 FLAC is the archive hub. Lossless tools verify with **PCM audio MD5** (and `flac -t` when writing FLAC). Lossy tools verify **duration ±50ms** and a successful stream probe.
 
 ```
-WAV / AIFF / ALAC / WV / APE / TAK  ↔  FLAC  →  MP3 / Opus / AAC / Vorbis
-CUE+image / streams / DVD / CDDA   →  FLAC
+WAV / AIFF / CAF / ALAC / WV / APE / TAK / TTA  ↔  FLAC  →  MP3 / Opus / AAC / Vorbis / WMA / Speex / MPC
+SHN / DSD / lossy (normalize) / CUE+image / streams / DVD / CDDA   →  FLAC
 ```
 
 ## Skip and `-D` cleanup
