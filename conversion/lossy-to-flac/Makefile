@@ -1,0 +1,7 @@
+# lossy-to-flac
+TOOL = lossy-to-flac
+SCRIPTS = lossy-to-flac.sh find-lossy-dirs.sh convert-all.sh lib/*.sh
+FIND_SCRIPT = find-lossy-dirs.sh
+WORKDIR_GLOB = .lossy2flac.*
+DELETE_TARGET = delete-sources
+include ../../lib/tool.mk
