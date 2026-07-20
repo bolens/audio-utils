@@ -2,20 +2,22 @@
 # Lossy-encode helpers: rate/channel allowlists, prepare, quality, encode, convert.
 #
 # Lossy tools set before convert:
-#   LOSSY_FAMILY          mp3|aac|opus|vorbis
-#   LOSSY_FFMPEG_ENCODER  libmp3lame|aac|libopus|libvorbis
+#   LOSSY_FAMILY          mp3|aac|opus|vorbis|wma|speex
+#   LOSSY_FFMPEG_ENCODER  libmp3lame|aac|libopus|libvorbis|wmav2|libspeex
 #   LOSSY_DEFAULT_QUALITY (e.g. v0, 192, 128, q6)
 #   LOSSY_QUALITY_ENV     primary env override (AUDIO_UTILS_MP3_QUALITY)
 #   LOSSY_QUALITY_ENV_ALT tool-specific (FLAC2MP3_QUALITY)
-#   AU_DEST_EXT           mp3|m4a|opus|ogg
+#   AU_DEST_EXT           mp3|m4a|opus|ogg|wma|spx
 
 # Space-separated Hz allowlists per family.
 MP3_RATES="8000 11025 12000 16000 22050 24000 32000 44100 48000"
 AAC_RATES="8000 11025 12000 16000 22050 24000 32000 44100 48000 64000 88200 96000"
 OPUS_RATES="8000 12000 16000 24000 48000"
 VORBIS_RATES="8000 11025 12000 16000 22050 24000 32000 44100 48000 88200 96000"
+WMA_RATES="8000 11025 12000 16000 22050 24000 32000 44100 48000"
+SPEEX_RATES="8000 16000 32000"
 
-# True if RATE is in FAMILY allowlist (mp3|aac|opus|vorbis).
+# True if RATE is in FAMILY allowlist (mp3|aac|opus|vorbis|wma|speex).
 lossy_rate_ok() {
   local family="${1,,}" rate="$2" list
   case "$family" in
@@ -23,6 +25,8 @@ lossy_rate_ok() {
     aac) list=$AAC_RATES ;;
     opus) list=$OPUS_RATES ;;
     vorbis) list=$VORBIS_RATES ;;
+    wma) list=$WMA_RATES ;;
+    speex) list=$SPEEX_RATES ;;
     *)
       log_err "Error: unknown lossy family '$family'"
       return 1
@@ -42,12 +46,15 @@ lossy_channels_ok() {
   ((ch == 1 || ch == 2))
 }
 
-# Prefer 48000 for Opus; otherwise nearer of 44100/48000 to SRC rate.
+# Prefer 48000 for Opus; 16000 for Speex; otherwise nearer of 44100/48000 to SRC rate.
 lossy_target_rate() {
   local family="${1,,}" rate="${2:-0}"
   case "$family" in
     opus)
       printf '%s\n' 48000
+      ;;
+    speex)
+      printf '%s\n' 16000
       ;;
     *)
       if awk -v r="$rate" 'BEGIN { exit !(r != "" && (r - 44100) * (r - 44100) <= (r - 48000) * (r - 48000)) }'; then
@@ -237,6 +244,47 @@ Profiles (default: q6):
 
 Set via: -Q PROFILE, --quality PROFILE,
          FLAC2VORBIS_QUALITY, or AUDIO_UTILS_VORBIS_QUALITY
+EOF
+          return 1
+          ;;
+      esac
+      ;;
+    wma)
+      case "$profile" in
+        128|cbr128) LOSSY_QUALITY_NAME=128; LOSSY_FF_ARGS=(-codec:a wmav2 -b:a 128k) ;;
+        160|cbr160) LOSSY_QUALITY_NAME=160; LOSSY_FF_ARGS=(-codec:a wmav2 -b:a 160k) ;;
+        192|cbr192) LOSSY_QUALITY_NAME=192; LOSSY_FF_ARGS=(-codec:a wmav2 -b:a 192k) ;;
+        256|cbr256) LOSSY_QUALITY_NAME=256; LOSSY_FF_ARGS=(-codec:a wmav2 -b:a 256k) ;;
+        *)
+          cat >&2 <<'EOF'
+Error: unknown wma quality profile.
+
+Profiles (default: 192):
+  128 160 192 256  — CBR kbps via wmav2
+
+Set via: -Q PROFILE, --quality PROFILE,
+         FLAC2WMA_QUALITY, or AUDIO_UTILS_WMA_QUALITY
+EOF
+          return 1
+          ;;
+      esac
+      ;;
+    speex)
+      case "$profile" in
+        q4|4) LOSSY_QUALITY_NAME=q4; LOSSY_FF_ARGS=(-codec:a libspeex -q:a 4) ;;
+        q5|5) LOSSY_QUALITY_NAME=q5; LOSSY_FF_ARGS=(-codec:a libspeex -q:a 5) ;;
+        q6|6) LOSSY_QUALITY_NAME=q6; LOSSY_FF_ARGS=(-codec:a libspeex -q:a 6) ;;
+        q7|7) LOSSY_QUALITY_NAME=q7; LOSSY_FF_ARGS=(-codec:a libspeex -q:a 7) ;;
+        q8|8) LOSSY_QUALITY_NAME=q8; LOSSY_FF_ARGS=(-codec:a libspeex -q:a 8) ;;
+        *)
+          cat >&2 <<'EOF'
+Error: unknown speex quality profile.
+
+Profiles (default: q6):
+  q4 q5 q6 q7 q8  — libspeex -q:a N
+
+Set via: -Q PROFILE, --quality PROFILE,
+         FLAC2SPEEX_QUALITY, or AUDIO_UTILS_SPEEX_QUALITY
 EOF
           return 1
           ;;
