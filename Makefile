@@ -18,7 +18,8 @@ CONVERSION = \
 	conversion/bluray-to-flac
 
 UTIL = \
-	util/flac-verify util/flac-replaygain util/flac-artwork util/flac-audit
+	util/flac-verify util/flac-replaygain util/flac-artwork util/flac-audit \
+	util/flac-authenticity
 
 TOOLS = $(CONVERSION) $(UTIL)
 

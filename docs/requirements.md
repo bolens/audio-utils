@@ -22,13 +22,14 @@ Core (all tools): Linux, `bash` 4+, `flac`, `ffmpeg`/`ffprobe`, `flock`, GNU `fi
 | flac-replaygain | `metaflac` + **rsgain** (preferred) or **loudgain** |
 | flac-artwork | `metaflac` |
 | flac-audit | `metaflac` |
+| flac-authenticity | `ffmpeg`/`ffprobe`, `metaflac`, `od`, `awk`; optional **`sox`** (`-p` spectrograms), **`mediainfo`** (notes) |
 
 ## Arch / CachyOS
 
 ```bash
 sudo pacman -S flac ffmpeg shellcheck
 # optional:
-sudo pacman -S libdvdcss cdparanoia libbluray libaacs
+sudo pacman -S libdvdcss cdparanoia libbluray libaacs sox mediainfo
 # libbdplus / makemkv often AUR; KEYDB.cfg is operator-supplied (see discs.md)
 # libfdk-aac may be in AUR / extra-ffmpeg builds
 # rsgain often AUR/chaotic-aur (flac-replaygain)
@@ -38,6 +39,7 @@ sudo pacman -S libdvdcss cdparanoia libbluray libaacs
 
 ```bash
 sudo apt-get install flac ffmpeg shellcheck libdvdcss2 cdparanoia libbluray2 libaacs0
+# Optional: sox mediainfo (flac-authenticity -p / notes)
 # Ensure ffmpeg has lame/opus/vorbis (universe builds usually do)
 # flac-replaygain: apt install rsgain (Debian/Ubuntu) or loudgain
 ```

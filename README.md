@@ -32,6 +32,7 @@ Docs: **[docs/](docs/)** — [requirements](docs/requirements.md) · [formats](d
 | [`util/flac-replaygain/`](util/flac-replaygain/) | ReplayGain 2.0 tags (album+track via rsgain/loudgain) |
 | [`util/flac-artwork/`](util/flac-artwork/) | Embed / extract cover art |
 | [`util/flac-audit/`](util/flac-audit/) | Library audit (integrity, tags, cover, leftover PCM) |
+| [`util/flac-authenticity/`](util/flac-authenticity/) | Detect fake lossless / upsampled “hi-res” / padded 16→24 |
 
 ## Quick start
 

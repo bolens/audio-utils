@@ -2,7 +2,7 @@
 
 Library lifecycle tools (verify, ReplayGain, artwork, audit) live under [`util/`](../util/). They share the converter CLI stack but do **not** use the convert pipelines (`pcm_to_flac`, `lossy`, `lossless`, …).
 
-First-wave tools: [`util/flac-verify/`](../util/flac-verify/) → [`util/flac-replaygain/`](../util/flac-replaygain/) → [`util/flac-artwork/`](../util/flac-artwork/) → [`util/flac-audit/`](../util/flac-audit/).
+First-wave tools: [`util/flac-verify/`](../util/flac-verify/) → [`util/flac-replaygain/`](../util/flac-replaygain/) → [`util/flac-artwork/`](../util/flac-artwork/) → [`util/flac-audit/`](../util/flac-audit/) → [`util/flac-authenticity/`](../util/flac-authenticity/).
 
 ## When to use this vs a converter
 
