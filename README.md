@@ -33,6 +33,13 @@ Docs: **[docs/](docs/)** — [requirements](docs/requirements.md) · [formats](d
 | [`util/flac-artwork/`](util/flac-artwork/) | Embed / extract cover art |
 | [`util/flac-audit/`](util/flac-audit/) | Library audit (integrity, tags, cover, leftover PCM) |
 | [`util/flac-authenticity/`](util/flac-authenticity/) | Detect fake lossless / upsampled “hi-res” / padded 16→24 |
+| [`util/flac-tags/`](util/flac-tags/) | Normalize tags (case, track/date, strip junk) |
+| [`util/flac-dupes/`](util/flac-dupes/) | Content duplicates (STREAMINFO MD5 / decode / fingerprint) |
+| [`util/flac-optimize/`](util/flac-optimize/) | Recompress FLAC (bit-identical PCM) |
+| [`util/flac-rename/`](util/flac-rename/) | Rename / layout from tags |
+| [`util/flac-cue-export/`](util/flac-cue-export/) | Album tracks → image FLAC + CUE |
+| [`util/flac-strip/`](util/flac-strip/) | Strip padding / APPLICATION; optional core-tags-only |
+| [`util/flac-inventory/`](util/flac-inventory/) | Library inventory report (rate/depth/RG/art/size) |
 
 ## Quick start
 

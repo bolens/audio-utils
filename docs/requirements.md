@@ -23,6 +23,13 @@ Core (all tools): Linux, `bash` 4+, `flac`, `ffmpeg`/`ffprobe`, `flock`, GNU `fi
 | flac-artwork | `metaflac` |
 | flac-audit | `metaflac` |
 | flac-authenticity | `ffmpeg`/`ffprobe`, `metaflac`, `od`, `awk`; optional **`sox`** (`-p` spectrograms), **`mediainfo`** (notes) |
+| flac-tags | `metaflac` |
+| flac-dupes | `metaflac`; `-M` needs `ffmpeg`; `--fingerprint` needs **fpcalc** (chromaprint) |
+| flac-optimize | `flac`, `metaflac`, `ffmpeg`/`ffprobe` |
+| flac-rename | `metaflac` |
+| flac-cue-export | `flac`, `metaflac`, `ffmpeg`/`ffprobe` |
+| flac-strip | `metaflac` |
+| flac-inventory | `metaflac`, `ffmpeg`/`ffprobe` |
 
 ## Arch / CachyOS
 

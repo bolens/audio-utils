@@ -19,7 +19,8 @@ CONVERSION = \
 
 UTIL = \
 	util/flac-verify util/flac-replaygain util/flac-artwork util/flac-audit \
-	util/flac-authenticity
+	util/flac-authenticity util/flac-tags util/flac-dupes util/flac-optimize \
+	util/flac-rename util/flac-cue-export util/flac-strip util/flac-inventory
 
 TOOLS = $(CONVERSION) $(UTIL)
 

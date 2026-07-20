@@ -10,6 +10,6 @@
 | [tak.md](tak.md) | Takc / Wine setup |
 | [lossy.md](lossy.md) | MP3 / Opus / AAC / Vorbis + resample |
 | [adding-a-converter.md](adding-a-converter.md) | Converter plugin contract |
-| [adding-a-util.md](adding-a-util.md) | Non-conversion util contract (verify, RG, art, audit) |
+| [adding-a-util.md](adding-a-util.md) | Non-conversion util contract (verify, RG, art, audit, tags, …) |
 
 Start at the [root README](../README.md).

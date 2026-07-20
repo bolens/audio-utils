@@ -4,6 +4,8 @@ Library lifecycle tools (verify, ReplayGain, artwork, audit) live under [`util/`
 
 First-wave tools: [`util/flac-verify/`](../util/flac-verify/) → [`util/flac-replaygain/`](../util/flac-replaygain/) → [`util/flac-artwork/`](../util/flac-artwork/) → [`util/flac-audit/`](../util/flac-audit/) → [`util/flac-authenticity/`](../util/flac-authenticity/).
 
+Second-wave: [`util/flac-tags/`](../util/flac-tags/) → [`util/flac-dupes/`](../util/flac-dupes/) → [`util/flac-optimize/`](../util/flac-optimize/) → [`util/flac-rename/`](../util/flac-rename/) → [`util/flac-cue-export/`](../util/flac-cue-export/) → [`util/flac-strip/`](../util/flac-strip/) → [`util/flac-inventory/`](../util/flac-inventory/).
+
 ## When to use this vs a converter
 
 | | Converter (`conversion/`) | Util (`util/`) |
@@ -45,7 +47,7 @@ Still the driver contract from [`lib/driver.sh`](../lib/driver.sh):
 - `init_success_log` — from [`lib/success_log.sh`](../lib/success_log.sh)
 - `plugin_require_deps`
 
-Optional: `plugin_parse_opt`, `plugin_after_flags`, `plugin_banner_extra`, `plugin_export_env`, `plugin_accept_source`.
+Optional: `plugin_parse_opt`, `plugin_after_flags`, `plugin_banner_extra`, `plugin_export_env`, `plugin_accept_source`, `plugin_finalize`.
 
 ## Make targets
 
