@@ -2,62 +2,57 @@
 
 [![CI](https://github.com/bolens/audio-utils/actions/workflows/ci.yml/badge.svg)](https://github.com/bolens/audio-utils/actions/workflows/ci.yml)
 
-Collection of small, verified **audio conversion utilities** for Linux libraries.
+Collection of small, verified **audio conversion utilities** for Linux libraries. **FLAC** is the archive hub; other lossless formats convert through it.
 
 | Tool | Description |
 |------|-------------|
-| [`wav-to-flac/`](wav-to-flac/) | Verified WAV → FLAC (remux, encode checks, tags/cover, cleanup/retag) |
-| [`flac-to-wav/`](flac-to-wav/) | Verified FLAC → WAV (bit-depth matched, dual-decode MD5, tags) |
-| [`flac-to-mp3/`](flac-to-mp3/) | FLAC → MP3 (libmp3lame; default VBR **v0**; duration/tag checks) |
-
-More converters can be added as sibling directories that reuse [`lib/`](lib/).
+| [`wav-to-flac/`](wav-to-flac/) | Verified WAV → FLAC |
+| [`flac-to-wav/`](flac-to-wav/) | Verified FLAC → WAV (bit-depth matched, dual-decode MD5) |
+| [`aiff-to-flac/`](aiff-to-flac/) | Verified AIFF/AIF → FLAC |
+| [`flac-to-aiff/`](flac-to-aiff/) | Verified FLAC → AIFF (big-endian PCM) |
+| [`flac-to-alac/`](flac-to-alac/) / [`alac-to-flac/`](alac-to-flac/) | FLAC ↔ ALAC (`.m4a`, codec-gated) |
+| [`flac-to-wv/`](flac-to-wv/) / [`wv-to-flac/`](wv-to-flac/) | FLAC ↔ WavPack (`.wv`; hybrid `.wvc` rejected) |
+| [`flac-to-mp3/`](flac-to-mp3/) | FLAC → MP3 (libmp3lame; default VBR **v0**) |
 
 ## Quick start
 
 ```bash
-# Config (recommended)
 mkdir -p "${XDG_CONFIG_HOME:-$HOME/.config}/audio-utils"
 cp config.example "${XDG_CONFIG_HOME:-$HOME/.config}/audio-utils/config"
 # edit AUDIO_UTILS_ROOTS
 
-# WAV → FLAC
 make -C wav-to-flac convert-quiet
-
-# FLAC → WAV (PCM matches source bit depth)
-make -C flac-to-wav convert-quiet
-
-# FLAC → MP3 (suggested quality: v0)
-make -C flac-to-mp3 convert-quiet
-make -C flac-to-mp3 convert-quiet ARGS='-Q 320'
-```
-
-Or:
-
-```bash
-export AUDIO_UTILS_ROOTS="$HOME/Music $HOME/Downloads"
-./wav-to-flac/convert-all.sh -q
-./flac-to-wav/convert-all.sh -q
-./flac-to-mp3/convert-all.sh -q -Q v0
+make -C aiff-to-flac convert-quiet
+make -C flac-to-alac convert-quiet
+make -C flac-to-wv convert-quiet
+make -C flac-to-mp3 convert-quiet ARGS='-Q v0'
 ```
 
 ## Requirements
 
 - Linux (GNU `find` with `-printf`)
 - `bash` 4+, `flac`, `ffmpeg`/`ffprobe`, `flock`, coreutils
-- **flac-to-mp3**: ffmpeg built with `libmp3lame`
+- **flac-to-mp3**: ffmpeg with `libmp3lame`
+- ALAC / WavPack: ffmpeg encoders for `alac` / `wavpack`
 
 ## Layout
 
 ```
 audio-utils/
-  LICENSE, README.md, VERSION, Makefile, config.example
-  lib/                     # shared helpers, driver, worker, find-audio-dirs
-  wav-to-flac/             # thin CLI + lib/plugin.sh + codec modules
-  flac-to-wav/
-  flac-to-mp3/
+  lib/          # load, driver, worker, pcm_flac, probe, find-audio-dirs
+  <tool>/       # thin CLI + lib/plugin.sh + convert/cleanup/success_log
 ```
 
-Shared CLI lives in [`lib/driver.sh`](lib/driver.sh) (`audio_utils_run`) and [`lib/worker.sh`](lib/worker.sh). Each tool is a plugin: set contract vars, implement `convert_one` / `delete_one_existing` / `init_success_log`, optional flag hooks.
+Shared CLI: [`lib/driver.sh`](lib/driver.sh) (`audio_utils_run`) + [`lib/worker.sh`](lib/worker.sh).
+PCM↔FLAC helpers: [`lib/pcm_flac.sh`](lib/pcm_flac.sh).
+
+### Plugin contract
+
+Set: `AU_TOOL_NAME`, `AU_SOURCE_EXT`, `AU_DEST_EXT`, optional `AU_SOURCE_EXTS` (space-separated), `AU_DISK_FACTOR`, `AU_WORKDIR_PREFIX`, `AU_SUCCESS_COLUMNS`, `AU_GETOPT_EXTRA`.
+
+Require: `convert_one`, `delete_one_existing`, `init_success_log`, `plugin_require_deps`.
+
+Optional: `plugin_parse_opt`, `plugin_consume_arg`, `plugin_after_flags`, `plugin_banner_extra`, `plugin_export_env`, `plugin_accept_source` (skip non-matching sources, e.g. AAC-in-`.m4a`).
 
 ### Paths (XDG)
 
@@ -66,7 +61,6 @@ Shared CLI lives in [`lib/driver.sh`](lib/driver.sh) (`audio_utils_run`) and [`l
 | Config | `$XDG_CONFIG_HOME/audio-utils/config` |
 | Logs | `$XDG_STATE_HOME/audio-utils/<tool>/` |
 | Runtime temps | `$XDG_RUNTIME_DIR/audio-utils/` (else cache) |
-| Album workdirs | `.${AUDIO_UTILS_WORKDIR_PREFIX}.*` beside media |
 
 ### Exit codes
 
@@ -76,18 +70,11 @@ Shared CLI lives in [`lib/driver.sh`](lib/driver.sh) (`audio_utils_run`) and [`l
 | 1 | One or more conversions/preflight failures |
 | 2 | Usage, config, missing deps, or bad arguments |
 
-### Adding another converter
-
-1. Copy a sibling tool dir; keep codec code in `lib/{encode,convert,cleanup,…}.sh`.
-2. Write `lib/plugin.sh`: set `AU_TOOL_NAME`, `AU_SOURCE_EXT`, `AU_DEST_EXT`, `AU_DISK_FACTOR`, `AU_WORKDIR_PREFIX`, `AU_SUCCESS_COLUMNS`, optional `AU_GETOPT_EXTRA`; source `../../lib/load.sh` and local modules; define `plugin_require_deps` and optional `plugin_parse_opt` / `plugin_consume_arg` / `plugin_after_flags` / `plugin_banner_extra` / `plugin_export_env`.
-3. Thin CLI: set `AU_USAGE_*`, `source lib/plugin.sh`, `source ../lib/driver.sh`, `audio_utils_load_config`, `audio_utils_run "$@"`.
-4. Wire `make check` and a `tool-%` delegate in the root Makefile.
-
 ## Development
 
 ```bash
 make check
-make -C flac-to-mp3 help
+make -C flac-to-alac help
 ```
 
 ## License

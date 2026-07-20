@@ -1,22 +1,23 @@
 # audio-utils — top-level helpers
 #
-# Tools live in subdirectories (wav-to-flac/, flac-to-wav/, flac-to-mp3/).
-# Shared library: lib/
+# Tools live in subdirectories. Shared library: lib/
 
 SHELLCHECK = shellcheck -x -a
 
-.PHONY: help check test wav-to-flac-% flac-to-wav-% flac-to-mp3-%
+TOOLS = wav-to-flac flac-to-wav flac-to-mp3 \
+	aiff-to-flac flac-to-aiff \
+	flac-to-alac alac-to-flac \
+	flac-to-wv wv-to-flac
+
+.PHONY: help check test $(addsuffix -%,$(TOOLS))
 
 help:
 	@echo "audio-utils"
 	@echo ""
 	@echo "  make check                 shellcheck shared lib + all tools"
-	@echo "  make -C wav-to-flac help"
-	@echo "  make -C flac-to-wav help"
-	@echo "  make -C flac-to-mp3 help"
-	@echo "  make wav-to-flac-convert   # delegates"
-	@echo "  make flac-to-wav-convert"
-	@echo "  make flac-to-mp3-convert"
+	@echo "  make -C TOOL help          per-tool targets"
+	@echo ""
+	@echo "Tools: $(TOOLS)"
 	@echo ""
 	@echo "Set library roots:"
 	@echo "  export AUDIO_UTILS_ROOTS=\"\$$HOME/Music \$$HOME/Downloads\""
@@ -27,10 +28,8 @@ help:
 check:
 	$(SHELLCHECK) lib/load.sh lib/log.sh lib/xdg.sh lib/config.sh lib/version.sh \
 		lib/progress.sh lib/tmpdir.sh lib/probe.sh lib/disk.sh lib/util.sh \
-		lib/find-audio-dirs.sh lib/driver.sh lib/worker.sh
-	$(MAKE) -C wav-to-flac check
-	$(MAKE) -C flac-to-wav check
-	$(MAKE) -C flac-to-mp3 check
+		lib/find-audio-dirs.sh lib/driver.sh lib/worker.sh lib/pcm_flac.sh
+	@for t in $(TOOLS); do $(MAKE) -C $$t check || exit 1; done
 
 wav-to-flac-%:
 	$(MAKE) -C wav-to-flac $*
@@ -40,3 +39,21 @@ flac-to-wav-%:
 
 flac-to-mp3-%:
 	$(MAKE) -C flac-to-mp3 $*
+
+aiff-to-flac-%:
+	$(MAKE) -C aiff-to-flac $*
+
+flac-to-aiff-%:
+	$(MAKE) -C flac-to-aiff $*
+
+flac-to-alac-%:
+	$(MAKE) -C flac-to-alac $*
+
+alac-to-flac-%:
+	$(MAKE) -C alac-to-flac $*
+
+flac-to-wv-%:
+	$(MAKE) -C flac-to-wv $*
+
+wv-to-flac-%:
+	$(MAKE) -C wv-to-flac $*

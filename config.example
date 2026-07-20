@@ -18,6 +18,8 @@ AUDIO_UTILS_ROOTS="$HOME/Music $HOME/Downloads"
 # AUDIO_UTILS_MP3_QUALITY=v0
 # FLAC2MP3_QUALITY=v0
 
+# Lossless hub tools (aiff/alac/wv) share the same roots and XDG paths.
+
 # XDG overrides (optional — defaults match the Base Directory Spec):
 # XDG_CONFIG_HOME="$HOME/.config"       # this file: …/audio-utils/config
 # XDG_STATE_HOME="$HOME/.local/state"   # logs: …/audio-utils/<tool>/
