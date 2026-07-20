@@ -3,6 +3,7 @@
 # Tools live under conversion/ and util/. Shared library: lib/
 
 SHELLCHECK = shellcheck -x -a
+JOBS ?= $(shell nproc 2>/dev/null || sysctl -n hw.ncpu 2>/dev/null || echo 4)
 
 CONVERSION = \
 	conversion/wav-to-flac conversion/flac-to-wav conversion/flac-to-mp3 \
@@ -31,15 +32,31 @@ UTIL = \
 
 TOOLS = $(CONVERSION) $(UTIL)
 
-.PHONY: help check test $(addsuffix -%,$(TOOLS))
+LIB_SCRIPTS = \
+	lib/load.sh lib/log.sh lib/xdg.sh lib/config.sh lib/version.sh \
+	lib/progress.sh lib/tmpdir.sh lib/probe.sh lib/disk.sh lib/util.sh \
+	lib/success_log.sh lib/delete.sh lib/convert_all.sh lib/pcm_remux.sh \
+	lib/pcm_to_flac.sh lib/lossless.sh lib/plugin_init.sh lib/cli.sh \
+	lib/find-audio-dirs.sh lib/driver.sh lib/worker.sh lib/pcm_flac.sh \
+	lib/cue.sh lib/tags.sh lib/audio_meta.sh lib/lossy.sh lib/tak.sh lib/dvd.sh lib/cdda.sh \
+	lib/bluray.sh lib/run_parallel.sh
+
+RUN_PARALLEL = $(CURDIR)/lib/run_parallel.sh
+
+.PHONY: help check check-lib check-conversion check-util check-tools test $(addsuffix -%,$(TOOLS))
 
 help:
 	@echo "audio-utils"
 	@echo ""
-	@echo "  make check                 shellcheck shared lib + all tools"
+	@echo "  make check                 shellcheck shared lib + all tools (parallel)"
+	@echo "  make check-lib             shellcheck shared lib only"
+	@echo "  make check-tools           shellcheck all tools (bash job pool)"
+	@echo "  make check-conversion      shellcheck conversion/ tools (parallel)"
+	@echo "  make check-util            shellcheck util/ tools (parallel)"
 	@echo "  make -C conversion/TOOL help"
 	@echo "  make -C util/TOOL help"
 	@echo "  make TOOL-check            short alias (e.g. wav-to-flac-check)"
+	@echo "  JOBS=N                     concurrency for parallel checks (default: nproc)"
 	@echo ""
 	@echo "Conversion: $(notdir $(CONVERSION))"
 	@echo "Util:       $(notdir $(UTIL))"
@@ -51,15 +68,21 @@ help:
 	@echo "Logs:   \$${XDG_STATE_HOME:-\$$HOME/.local/state}/audio-utils/"
 	@echo "Config: \$${XDG_CONFIG_HOME:-\$$HOME/.config}/audio-utils/config"
 
-check:
-	$(SHELLCHECK) lib/load.sh lib/log.sh lib/xdg.sh lib/config.sh lib/version.sh \
-		lib/progress.sh lib/tmpdir.sh lib/probe.sh lib/disk.sh lib/util.sh \
-		lib/success_log.sh lib/delete.sh lib/convert_all.sh lib/pcm_remux.sh \
-		lib/pcm_to_flac.sh lib/lossless.sh lib/plugin_init.sh lib/cli.sh \
-		lib/find-audio-dirs.sh lib/driver.sh lib/worker.sh lib/pcm_flac.sh \
-		lib/cue.sh lib/tags.sh lib/audio_meta.sh lib/lossy.sh lib/tak.sh lib/dvd.sh lib/cdda.sh \
-		lib/bluray.sh
-	@for t in $(TOOLS); do $(MAKE) -C $$t check || exit 1; done
+check-lib:
+	$(SHELLCHECK) $(LIB_SCRIPTS)
+
+# Single job pool over all tools (avoids oversubscribe from nested -j pools).
+check-tools:
+	@JOBS=$(JOBS) $(RUN_PARALLEL) -j $(JOBS) $(TOOLS)
+
+check-conversion:
+	@JOBS=$(JOBS) $(RUN_PARALLEL) -j $(JOBS) $(CONVERSION)
+
+check-util:
+	@JOBS=$(JOBS) $(RUN_PARALLEL) -j $(JOBS) $(UTIL)
+
+# Lib first (fast), then one parallel pool across every tool.
+check: check-lib check-tools
 
 # Forward make -C PATH TARGET via e.g. `make conversion/cue-to-flac-check`
 define TOOL_FORWARD
