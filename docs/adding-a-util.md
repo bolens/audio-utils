@@ -8,6 +8,8 @@ Second-wave: [`util/flac-tags/`](../util/flac-tags/) → [`util/flac-dupes/`](..
 
 Third-wave (multi-format / library): [`util/audio-replaygain/`](../util/audio-replaygain/) → [`util/audio-tags/`](../util/audio-tags/) → [`util/audio-dupes/`](../util/audio-dupes/) → [`util/audio-artwork/`](../util/audio-artwork/) → [`util/library-sync/`](../util/library-sync/) → [`util/tree-diff/`](../util/tree-diff/) → [`util/hash-verify/`](../util/hash-verify/) → [`util/pcm-cleanup/`](../util/pcm-cleanup/) → [`util/cue-audit/`](../util/cue-audit/) → [`util/silence-detect/`](../util/silence-detect/) → [`util/disc-inventory/`](../util/disc-inventory/) → [`util/lossy-audit/`](../util/lossy-audit/).
 
+Fourth-wave (playlists): [`util/playlist-audit/`](../util/playlist-audit/) → [`util/playlist-normalize/`](../util/playlist-normalize/) → [`util/playlist-generate/`](../util/playlist-generate/) → [`util/playlist-dedupe/`](../util/playlist-dedupe/). See [playlists.md](playlists.md).
+
 ## When to use this vs a converter
 
 | | Converter (`conversion/`) | Util (`util/`) |

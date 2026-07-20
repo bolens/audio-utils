@@ -2,6 +2,23 @@
 
 Core (all tools): Linux, `bash` 4+, `flac`, `ffmpeg`/`ffprobe`, `flock`, GNU `find` (`-printf`), coreutils.
 
+## Core binaries → packages
+
+| Binary / need | Arch / CachyOS | Debian / Ubuntu | Fedora |
+|---------------|----------------|-----------------|--------|
+| `bash` | `bash` | `bash` | `bash` |
+| `flac` / `metaflac` | `flac` | `flac` | `flac` |
+| `ffmpeg` / `ffprobe` | `ffmpeg` | `ffmpeg` | `ffmpeg` |
+| `flock` | `util-linux` | `util-linux` | `util-linux` |
+| GNU `find` (`-printf`) | `findutils` | `findutils` | `findutils` |
+| `iconv` | **`glibc`** (base; not a separate package) | **`libc-bin`** | **`glibc-common`** |
+| `sha256sum` / `md5sum` | `coreutils` | `coreutils` | `coreutils` |
+| `shellcheck` (dev / `make check`) | `shellcheck` | `shellcheck` | `ShellCheck` |
+
+`metaflac` ships in the same package as `flac`. `ffprobe` ships with `ffmpeg`. `iconv` is part of the C library package on glibc systems — do **not** install `libiconv` on Arch unless you know you need it.
+
+## Tool extras
+
 | Tool / feature | Extra dependency |
 |----------------|------------------|
 | flac-to-mp3 | ffmpeg `libmp3lame` |
@@ -50,28 +67,66 @@ Core (all tools): Linux, `bash` 4+, `flac`, `ffmpeg`/`ffprobe`, `flock`, GNU `fi
 | silence-detect | `ffmpeg`/`ffprobe`, `awk` |
 | disc-inventory | core set |
 | lossy-audit | `ffmpeg`/`ffprobe` |
+| playlist-audit | `lib/playlist.sh`; optional `iconv` (UTF-8); `--by title` uses `ffprobe`/`metaflac` when present |
+| playlist-normalize / playlist-dedupe | `lib/playlist.sh` only (`flock`); `--by title` / `--dedupe --by title` use tags when `ffprobe`/`metaflac` available |
+| playlist-generate | `lib/playlist.sh`; `#EXTINF` from `ffprobe`/`metaflac` when present (still works without — paths only) |
 
 ## Arch / CachyOS
 
 ```bash
+# Core (flac→metaflac, ffmpeg→ffprobe; iconv via glibc)
 sudo pacman -S flac ffmpeg shellcheck
-# optional:
+
+# Optional extras used by discs / authenticity / portable / playlists-adjacent tools:
 sudo pacman -S libdvdcss cdparanoia libbluray libaacs sox mediainfo musepack-tools chromaprint
 # libbdplus / makemkv often AUR; KEYDB.cfg is operator-supplied (see discs.md)
 # libfdk-aac may be in AUR / extra-ffmpeg builds
 # rsgain often AUR/chaotic-aur (flac-replaygain)
 ```
 
+Verify providers:
+
+```bash
+pacman -Qo "$(command -v iconv)"    # glibc
+pacman -Qo "$(command -v ffprobe)"  # ffmpeg
+pacman -Qo "$(command -v metaflac)" # flac
+```
+
 ## Debian / Ubuntu
 
 ```bash
-sudo apt-get install flac ffmpeg shellcheck libdvdcss2 cdparanoia libbluray2 libaacs0
+# Core (flac→metaflac, ffmpeg→ffprobe; iconv via libc-bin)
+sudo apt-get install flac ffmpeg shellcheck
+
+# Discs / optional:
+sudo apt-get install libdvdcss2 cdparanoia libbluray2 libaacs0
 # Optional: sox mediainfo musepack-tools libchromaprint-tools
 #   (dsf-to-flac DFF / flac-authenticity -p / flac-to-mpc / audio-dupes fpcalc)
 # Ensure ffmpeg has lame/opus/vorbis/speex (universe builds usually do)
 # flac-replaygain: apt install rsgain (Debian/Ubuntu) or loudgain
 ```
 
+```bash
+dpkg -S "$(command -v iconv)"     # libc-bin
+dpkg -S "$(command -v ffprobe)"   # ffmpeg
+dpkg -S "$(command -v metaflac)"  # flac
+```
+
+## Fedora
+
+```bash
+sudo dnf install flac ffmpeg ShellCheck
+# Optional: libdvdcss cdparanoia libbluray libaacs sox mediainfo musepack-tools chromaprint
+```
+
+```bash
+rpm -qf "$(command -v iconv)"     # glibc-common
+rpm -qf "$(command -v ffprobe)"   # ffmpeg
+rpm -qf "$(command -v metaflac)"  # flac
+```
+
 Takc is not packaged — download from the upstream TAK site and set `AUDIO_UTILS_TAKC` (see [tak.md](tak.md)).
 
 Streaming DRM (Widevine, etc.) is **not** supported — see [streaming.md](streaming.md).
+
+Playlist formats and tools: [playlists.md](playlists.md).

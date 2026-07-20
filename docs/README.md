@@ -10,6 +10,7 @@
 | [tak.md](tak.md) | Takc / Wine setup |
 | [dsd.md](dsd.md) | DSF/DFF → FLAC rates and sox fallback |
 | [lossy.md](lossy.md) | MP3 / Opus / AAC / Vorbis / WMA / Speex / MPC + resample |
+| [playlists.md](playlists.md) | M3U / PLS / XSPF audit, normalize, generate, dedupe |
 | [adding-a-converter.md](adding-a-converter.md) | Converter plugin contract |
 | [adding-a-util.md](adding-a-util.md) | Non-conversion util contract (verify, RG, art, audit, tags, …) |
 
