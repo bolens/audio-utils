@@ -22,12 +22,10 @@ export AUDIO_UTILS_WORKDIR_PREFIX="${AUDIO_UTILS_WORKDIR_PREFIX:-$AU_WORKDIR_PRE
 
 # shellcheck source=../../lib/load.sh
 source "${_ROOT}/lib/load.sh"
-# shellcheck source=success_log.sh
-source "${_LIB}/success_log.sh"
+
+plugin_sibling_ok() { sibling_matches_source "$1" "$2"; }
 # shellcheck source=convert.sh
 source "${_LIB}/convert.sh"
-# shellcheck source=cleanup.sh
-source "${_LIB}/cleanup.sh"
 
 plugin_consume_arg() {
   case "$1" in

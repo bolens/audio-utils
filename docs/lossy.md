@@ -11,13 +11,16 @@ AUDIO_UTILS_MP3_QUALITY=v0
 
 ## Opus / AAC / Vorbis
 
-| Tool | Default `-Q` | Examples |
-|------|----------------|----------|
-| flac-to-opus | `128` | `96`, `128`, `160`, `192`, `256` |
-| flac-to-aac | `192` | `vbr`, `96`, `128`, `192`, `256` (libfdk_aac if present) |
-| flac-to-vorbis | `q6` | `q4`…`q10` |
+Profiles live in shared `lib/lossy.sh` (`lossy_resolve_quality`).
 
-Env: `AUDIO_UTILS_OPUS_QUALITY`, `AUDIO_UTILS_AAC_QUALITY`, `AUDIO_UTILS_VORBIS_QUALITY`.
+| Tool | Default `-Q` | Profiles |
+|------|----------------|----------|
+| flac-to-opus | `128` | `64` `96` `128` `160` `192` `256` (CBR kbps, libopus) |
+| flac-to-aac | `192` | `128` `160` `192` `256` `320` (CBR kbps, aac) |
+| flac-to-vorbis | `q6` | `q4`…`q8` (libvorbis `-q:a`) |
+
+Env: `AUDIO_UTILS_OPUS_QUALITY`, `AUDIO_UTILS_AAC_QUALITY`, `AUDIO_UTILS_VORBIS_QUALITY`
+(and tool-specific `FLAC2*_QUALITY` overrides).
 
 ## Resample / downmix
 

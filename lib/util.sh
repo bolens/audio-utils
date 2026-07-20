@@ -37,3 +37,27 @@ audio_utils_roots_from_env() {
   _out=($raw)
   ((${#_out[@]} > 0))
 }
+
+# Resolve roots from "$@" or AUDIO_UTILS_ROOTS; print error and return 2 if empty.
+# Usage: audio_utils_resolve_roots ROOTS_ARRAY_NAME "$@"
+audio_utils_resolve_roots() {
+  local -n _roots=$1
+  shift
+  _roots=("$@")
+  if ((${#_roots[@]} == 0)); then
+    audio_utils_roots_from_env _roots || {
+      echo "Error: pass roots or set AUDIO_UTILS_ROOTS" >&2
+      return 2
+    }
+  fi
+  return 0
+}
+
+# List directories named NAME (case-insensitive) under roots.
+# Usage: find_named_dirs NAME ROOT [ROOT ...]
+find_named_dirs() {
+  local name=$1
+  shift
+  [[ -n "$name" && $# -gt 0 ]] || return 2
+  LC_ALL=C find -P "$@" -type d -iname "$name" 2>/dev/null | LC_ALL=C sort -u
+}

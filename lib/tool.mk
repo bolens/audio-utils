@@ -1,0 +1,97 @@
+# Shared per-tool Makefile fragment.
+#
+# Before include, set:
+#   TOOL            — e.g. flac-to-mp3
+#   SCRIPTS         — shellcheck targets
+#   FIND_SCRIPT     — e.g. find-flac-dirs.sh (optional; omit find-dirs if empty)
+#   WORKDIR_GLOB    — e.g. .flac2mp3.*
+# Optional:
+#   HELP_EXTRA      — extra help lines
+#   CONVERT         — default ./convert-all.sh
+#   EXTRA_PHONY     — additional .PHONY targets
+#   HAS_CONVERT_VERBOSE / HAS_CONVERT_CLEAN / HAS_RETAG — set to 1 to enable
+#   DELETE_TARGET   — make target name for -D (default delete-sources)
+
+SHELLCHECK ?= shellcheck -x -a
+CONVERT ?= ./convert-all.sh
+ARGS ?=
+ROOTS ?= $(AUDIO_UTILS_ROOTS)
+DELETE_TARGET ?= delete-sources
+
+.PHONY: help check dry-run convert convert-quiet convert-delete \
+	$(DELETE_TARGET) $(DELETE_TARGET)-dry clean clean-tmp \
+	$(EXTRA_PHONY)
+
+help:
+	@echo "$(TOOL): make check | convert | convert-quiet | convert-delete | $(DELETE_TARGET)"
+	@echo "  make dry-run / clean / clean-tmp"
+ifneq ($(FIND_SCRIPT),)
+	@echo "  make find-dirs   (needs AUDIO_UTILS_ROOTS or ROOTS=)"
+endif
+ifdef HELP_EXTRA
+	@echo "$(HELP_EXTRA)"
+endif
+
+check:
+	$(SHELLCHECK) $(SCRIPTS)
+
+ifneq ($(FIND_SCRIPT),)
+.PHONY: find-dirs
+find-dirs:
+	@if [ -z "$(ROOTS)" ] && [ -z "$(AUDIO_UTILS_ROOTS)" ] && [ -z "$(WAV2FLAC_ROOTS)" ]; then \
+		echo "Set AUDIO_UTILS_ROOTS or ROOTS="; exit 1; \
+	fi
+	./$(FIND_SCRIPT) $(ROOTS)
+endif
+
+dry-run:
+	$(CONVERT) -n $(ARGS)
+
+convert:
+	$(CONVERT) $(ARGS)
+
+convert-quiet:
+	$(CONVERT) -q $(ARGS)
+
+convert-delete:
+	$(CONVERT) -d $(ARGS)
+
+$(DELETE_TARGET)-dry:
+	$(CONVERT) -D -n $(ARGS)
+
+$(DELETE_TARGET):
+	$(CONVERT) -D $(ARGS)
+
+ifeq ($(HAS_CONVERT_VERBOSE),1)
+.PHONY: convert-verbose
+convert-verbose:
+	$(CONVERT) -v $(ARGS)
+endif
+
+ifeq ($(HAS_CONVERT_CLEAN),1)
+.PHONY: convert-clean
+convert-clean:
+	$(CONVERT) -c $(ARGS)
+endif
+
+ifeq ($(HAS_RETAG),1)
+.PHONY: retag retag-dry
+retag-dry:
+	$(CONVERT) -R -n $(ARGS)
+retag:
+	$(CONVERT) -R $(ARGS)
+endif
+
+clean:
+	@state="$${XDG_STATE_HOME:-$$HOME/.local/state}/audio-utils/$(TOOL)"; \
+	rm -f "$$state/failures.log" "$$state/success.csv" "$$state/success.jsonl"; \
+	$(CLEAN_EXTRA) \
+	echo "cleaned $$state"
+
+clean-tmp:
+	@roots="$(ROOTS)"; \
+	[ -n "$$roots" ] || roots="$(AUDIO_UTILS_ROOTS)"; \
+	[ -n "$$roots" ] || roots="$(WAV2FLAC_ROOTS)"; \
+	[ -n "$$roots" ] || { echo "Set AUDIO_UTILS_ROOTS or ROOTS="; exit 1; }; \
+	find $$roots -type d -name '$(WORKDIR_GLOB)' -print0 2>/dev/null | xargs -0 -r rm -rf --; \
+	echo done

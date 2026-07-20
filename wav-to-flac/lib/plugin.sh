@@ -24,16 +24,14 @@ export AUDIO_UTILS_WORKDIR_PREFIX="${AUDIO_UTILS_WORKDIR_PREFIX:-$AU_WORKDIR_PRE
 # shellcheck source=../../lib/load.sh
 source "${_AUDIO_UTILS_ROOT}/lib/load.sh"
 
-# shellcheck source=success_log.sh
-source "${_WAV2FLAC_LIB_DIR}/success_log.sh"
+plugin_sibling_ok() { flac_ok "$2"; }
+
 # shellcheck source=prepare.sh
 source "${_WAV2FLAC_LIB_DIR}/prepare.sh"
 # shellcheck source=encode.sh
 source "${_WAV2FLAC_LIB_DIR}/encode.sh"
 # shellcheck source=convert.sh
 source "${_WAV2FLAC_LIB_DIR}/convert.sh"
-# shellcheck source=cleanup.sh
-source "${_WAV2FLAC_LIB_DIR}/cleanup.sh"
 
 plugin_parse_opt() {
   local opt=$1

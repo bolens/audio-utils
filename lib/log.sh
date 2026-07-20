@@ -84,7 +84,7 @@ probe_debug_fields() {
   codec=$(audio_codec "$path" 2>/dev/null || true)
   bytes=$(file_bytes "$path" 2>/dev/null || echo 0)
   samples=$(audio_samples "$path" 2>/dev/null || true)
-  printf '%s\t%s\t%s' "${codec:-?}" "${bytes:-0}" "${samples:-?}"
+  printf '%s\t%s\t%s\n' "${codec:-?}" "${bytes:-0}" "${samples:-?}"
 }
 
 # Write failure-log header (TSV) or no-op for .jsonl.

@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
 set -euo pipefail
 SCRIPT_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
-exec "${SCRIPT_DIR}/../lib/find-audio-dirs.sh" --ext mkv --ext mka --ext mp4 --ext mov --ext ts --ext m2ts --ext aob "$@"
+exec "${SCRIPT_DIR}/../lib/find-audio-dirs.sh" \
+  --ext mkv --ext mka --ext mp4 --ext mov --ext ts --ext m2ts --ext aob "$@"

@@ -1,7 +1,14 @@
 #!/usr/bin/env bash
-# WAV → AIFF PCM remux
+# PCM container remux (WAV ↔ AIFF): copy audio, map tags, verify MD5.
+#
+# Requires: AU_DEST_EXT (wav|aiff|aif)
+# Optional: AU_SOURCE_LABEL for delete notes (default: AU_SOURCE_EXT)
+#
+# convert_one → pcm_remux_convert_one
 
-_tag_pcm_from_pcm() {
+# Copy metadata from SRC onto PCM_IN → PCM_OUT without touching audio.
+# Falls back to plain copy if ffmpeg metadata map fails.
+tag_pcm_from_pcm() {
   local src="$1" pcm_in="$2" pcm_out="$3"
   local err md5_before md5_after
   err="$(dirname -- "$pcm_out")/tag.err"
@@ -19,17 +26,19 @@ _tag_pcm_from_pcm() {
   fi
 }
 
-convert_one() {
+pcm_remux_convert_one() {
   local src="$1"
-  local aiff="${src%.*}.aiff"
+  local dest_ext="${AU_DEST_EXT:?AU_DEST_EXT required}"
+  local dest="${src%.*}.${dest_ext}"
   local dest_dir tmpdir remuxed tagged md5 sha notes=""
   local force_reconvert=0
+  local src_label="${AU_SOURCE_LABEL:-${AU_SOURCE_EXT:-src}}"
 
-  if [[ -f "$aiff" && "${OVERWRITE:-0}" -eq 0 ]]; then
-    if pcm_ok "$aiff" && sibling_matches_source "$src" "$aiff"; then
-      log_progress "skip (aiff ok): $aiff"
+  if [[ -f "$dest" && "${OVERWRITE:-0}" -eq 0 ]]; then
+    if pcm_ok "$dest" && sibling_matches_source "$src" "$dest"; then
+      log_progress "skip (${dest_ext} ok): $dest"
       if [[ "${DRY_RUN:-0}" -eq 0 ]]; then
-        log_success "$src" "$aiff" "$(audio_md5 "$aiff")" "$(file_sha256 "$aiff")" "skipped-existing-ok"
+        log_success "$src" "$dest" "$(audio_md5 "$dest")" "$(file_sha256 "$dest")" "skipped-existing-ok"
       fi
       return 0
     fi
@@ -37,15 +46,15 @@ convert_one() {
   fi
 
   if [[ "${DRY_RUN:-0}" -eq 1 ]]; then
-    log_progress "would remux+verify: $src -> $aiff"
+    log_progress "would remux+verify: $src -> $dest"
     [[ "${DELETE_SOURCE:-0}" -eq 1 ]] && log_info "would delete: $src"
     return 0
   fi
 
-  dest_dir=$(dirname -- "$aiff")
+  dest_dir=$(dirname -- "$dest")
   tmpdir=$(make_workdir "$dest_dir")
-  remuxed="${tmpdir}/remux.aiff"
-  tagged="${tmpdir}/tagged.aiff"
+  remuxed="${tmpdir}/remux.${dest_ext}"
+  tagged="${tmpdir}/tagged.${dest_ext}"
   cleanup() { unregister_tmpdir "$tmpdir"; rm -rf -- "$tmpdir" 2>/dev/null || true; }
 
   log_progress "convert: $src"
@@ -54,22 +63,22 @@ convert_one() {
     cleanup
     return 1
   fi
-  if ! _tag_pcm_from_pcm "$src" "$remuxed" "$tagged"; then
+  if ! tag_pcm_from_pcm "$src" "$remuxed" "$tagged"; then
     log_fail "$src" "tag copy failed"
     cleanup
     return 1
   fi
 
-  mv -f -- "$tagged" "$aiff"
-  md5=$(audio_md5 "$aiff")
-  sha=$(file_sha256 "$aiff")
+  mv -f -- "$tagged" "$dest"
+  md5=$(audio_md5 "$dest")
+  sha=$(file_sha256 "$dest")
   notes="converted"
   ((force_reconvert)) && notes="reconverted"
   if [[ "${DELETE_SOURCE:-0}" -eq 1 ]]; then
     rm -f -- "$src"
-    notes="${notes};deleted-wav"
+    notes="${notes};deleted-${src_label}"
   fi
-  log_info "verified: $aiff  audio_md5=$md5"
-  log_success "$src" "$aiff" "$md5" "$sha" "$notes"
+  log_info "verified: $dest  audio_md5=$md5"
+  log_success "$src" "$dest" "$md5" "$sha" "$notes"
   cleanup
 }

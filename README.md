@@ -39,8 +39,8 @@ make -C flac-to-mp3 convert-quiet
 ```
 audio-utils/
   docs/           # requirements, formats, discs, streaming, tak, lossy, …
-  lib/            # driver, worker, pcm_flac, cue, lossy, tak, dvd, cdda, bluray
-  <tool>/         # thin CLI + lib/plugin.sh
+  lib/            # driver, worker, success_log, delete, lossy, pcm_*, cue, discs, tool.mk
+  <tool>/         # thin CLI + lib/plugin.sh (+ convert when not using a shared pipeline)
 ```
 
 Plugin contract: [docs/adding-a-converter.md](docs/adding-a-converter.md).

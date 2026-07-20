@@ -23,8 +23,16 @@ source "${_AUDIO_UTILS_LIB_DIR}/probe.sh"
 source "${_AUDIO_UTILS_LIB_DIR}/disk.sh"
 # shellcheck source=util.sh
 source "${_AUDIO_UTILS_LIB_DIR}/util.sh"
+# shellcheck source=success_log.sh
+source "${_AUDIO_UTILS_LIB_DIR}/success_log.sh"
+# shellcheck source=delete.sh
+source "${_AUDIO_UTILS_LIB_DIR}/delete.sh"
+# shellcheck source=convert_all.sh
+source "${_AUDIO_UTILS_LIB_DIR}/convert_all.sh"
 # shellcheck source=pcm_flac.sh
 source "${_AUDIO_UTILS_LIB_DIR}/pcm_flac.sh"
+# shellcheck source=pcm_remux.sh
+source "${_AUDIO_UTILS_LIB_DIR}/pcm_remux.sh"
 # shellcheck source=cue.sh
 source "${_AUDIO_UTILS_LIB_DIR}/cue.sh"
 # shellcheck source=lossy.sh
