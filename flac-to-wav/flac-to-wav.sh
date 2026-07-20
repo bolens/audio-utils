@@ -29,18 +29,10 @@
 #
 # Exit codes: 0 all ok, 1 some failures, 2 usage/config/deps
 
-set -euo pipefail
 
-SCRIPT_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
-AU_USAGE_FILE="$0"
+set -euo pipefail
 AU_USAGE_START=2
 AU_USAGE_END=30
-export AU_USAGE_FILE AU_USAGE_START AU_USAGE_END
-
-# shellcheck source=lib/plugin.sh
-source "${SCRIPT_DIR}/lib/plugin.sh"
-# shellcheck source=../lib/driver.sh
-source "${SCRIPT_DIR}/../lib/driver.sh"
-
-audio_utils_load_config
-audio_utils_run "$@"
+# shellcheck source=../lib/cli.sh
+source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/../lib/cli.sh"
+audio_utils_cli_run "$@"

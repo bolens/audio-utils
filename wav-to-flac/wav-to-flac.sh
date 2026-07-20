@@ -14,7 +14,7 @@
 # Temps live next to the destination (atomic mv); cleaned on EXIT/INT/TERM.
 # Failures → failure log; successes → success CSV/JSONL log.
 #
-# Layout: shared ../lib/driver + local lib/plugin (prepare, encode, convert, cleanup).
+# Layout: shared lib/cli + pcm_to_flac + driver; local lib/plugin.sh.
 #
 # Usage:
 #   wav-to-flac.sh DIR [DIR ...]
@@ -40,18 +40,10 @@
 #
 # Exit codes: 0 all ok, 1 some conversions failed, 2 usage/config/deps error
 
-set -euo pipefail
 
-SCRIPT_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
-AU_USAGE_FILE="$0"
+set -euo pipefail
 AU_USAGE_START=2
 AU_USAGE_END=41
-export AU_USAGE_FILE AU_USAGE_START AU_USAGE_END
-
-# shellcheck source=lib/plugin.sh
-source "${SCRIPT_DIR}/lib/plugin.sh"
-# shellcheck source=../lib/driver.sh
-source "${SCRIPT_DIR}/../lib/driver.sh"
-
-audio_utils_load_config
-audio_utils_run "$@"
+# shellcheck source=../lib/cli.sh
+source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/../lib/cli.sh"
+audio_utils_cli_run "$@"

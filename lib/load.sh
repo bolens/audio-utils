@@ -31,6 +31,8 @@ source "${_AUDIO_UTILS_LIB_DIR}/delete.sh"
 source "${_AUDIO_UTILS_LIB_DIR}/convert_all.sh"
 # shellcheck source=pcm_flac.sh
 source "${_AUDIO_UTILS_LIB_DIR}/pcm_flac.sh"
+# shellcheck source=pcm_to_flac.sh
+source "${_AUDIO_UTILS_LIB_DIR}/pcm_to_flac.sh"
 # shellcheck source=pcm_remux.sh
 source "${_AUDIO_UTILS_LIB_DIR}/pcm_remux.sh"
 # shellcheck source=lossless.sh
