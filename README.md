@@ -46,6 +46,18 @@ Docs: **[docs/](docs/)** — [requirements](docs/requirements.md) · [formats](d
 | [`util/flac-cue-export/`](util/flac-cue-export/) | Album tracks → image FLAC + CUE |
 | [`util/flac-strip/`](util/flac-strip/) | Strip padding / APPLICATION; optional core-tags-only |
 | [`util/flac-inventory/`](util/flac-inventory/) | Library inventory report (rate/depth/RG/art/size) |
+| [`util/audio-replaygain/`](util/audio-replaygain/) | ReplayGain for FLAC + lossy (rsgain/loudgain) |
+| [`util/audio-tags/`](util/audio-tags/) | Normalize tags across FLAC + lossy |
+| [`util/audio-dupes/`](util/audio-dupes/) | Cross-format duplicates (chromaprint / MD5) |
+| [`util/audio-artwork/`](util/audio-artwork/) | Embed / extract covers (multi-format) |
+| [`util/library-sync/`](util/library-sync/) | FLAC ↔ portable sibling presence check |
+| [`util/tree-diff/`](util/tree-diff/) | Compare library tree vs backup (`--against`) |
+| [`util/hash-verify/`](util/hash-verify/) | Sidecar `.sha256` / `.md5` verify or write |
+| [`util/pcm-cleanup/`](util/pcm-cleanup/) | Leftover WAV/AIFF/CAF beside verified FLAC |
+| [`util/cue-audit/`](util/cue-audit/) | CUE health (image, tracks, UTF-8) |
+| [`util/silence-detect/`](util/silence-detect/) | Leading/trailing silence + clipping QC |
+| [`util/disc-inventory/`](util/disc-inventory/) | Catalog VIDEO_TS / BDMV / CUE units |
+| [`util/lossy-audit/`](util/lossy-audit/) | Portable lossy audit (tags, cover, bitrate) |
 
 ## Quick start
 

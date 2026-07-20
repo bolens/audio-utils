@@ -6,6 +6,8 @@ First-wave tools: [`util/flac-verify/`](../util/flac-verify/) → [`util/flac-re
 
 Second-wave: [`util/flac-tags/`](../util/flac-tags/) → [`util/flac-dupes/`](../util/flac-dupes/) → [`util/flac-optimize/`](../util/flac-optimize/) → [`util/flac-rename/`](../util/flac-rename/) → [`util/flac-cue-export/`](../util/flac-cue-export/) → [`util/flac-strip/`](../util/flac-strip/) → [`util/flac-inventory/`](../util/flac-inventory/).
 
+Third-wave (multi-format / library): [`util/audio-replaygain/`](../util/audio-replaygain/) → [`util/audio-tags/`](../util/audio-tags/) → [`util/audio-dupes/`](../util/audio-dupes/) → [`util/audio-artwork/`](../util/audio-artwork/) → [`util/library-sync/`](../util/library-sync/) → [`util/tree-diff/`](../util/tree-diff/) → [`util/hash-verify/`](../util/hash-verify/) → [`util/pcm-cleanup/`](../util/pcm-cleanup/) → [`util/cue-audit/`](../util/cue-audit/) → [`util/silence-detect/`](../util/silence-detect/) → [`util/disc-inventory/`](../util/disc-inventory/) → [`util/lossy-audit/`](../util/lossy-audit/).
+
 ## When to use this vs a converter
 
 | | Converter (`conversion/`) | Util (`util/`) |

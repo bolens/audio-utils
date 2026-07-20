@@ -38,13 +38,25 @@ Core (all tools): Linux, `bash` 4+, `flac`, `ffmpeg`/`ffprobe`, `flock`, GNU `fi
 | flac-cue-export | `flac`, `metaflac`, `ffmpeg`/`ffprobe` |
 | flac-strip | `metaflac` |
 | flac-inventory | `metaflac`, `ffmpeg`/`ffprobe` |
+| audio-replaygain | **rsgain** or **loudgain**, `ffmpeg`/`ffprobe` |
+| audio-tags | `ffmpeg`/`ffprobe`; `metaflac` for FLAC |
+| audio-dupes | **fpcalc** (default); `-M` needs `ffmpeg` |
+| audio-artwork | `ffmpeg`/`ffprobe`; `metaflac` optional for FLAC |
+| library-sync | `flac` |
+| tree-diff | coreutils; `--hash` needs `sha256sum` |
+| hash-verify | `sha256sum` or `md5sum` |
+| pcm-cleanup | `flac`, `ffmpeg`/`ffprobe` |
+| cue-audit | shared `lib/cue.sh`; optional `iconv` for UTF-8 |
+| silence-detect | `ffmpeg`/`ffprobe`, `awk` |
+| disc-inventory | core set |
+| lossy-audit | `ffmpeg`/`ffprobe` |
 
 ## Arch / CachyOS
 
 ```bash
 sudo pacman -S flac ffmpeg shellcheck
 # optional:
-sudo pacman -S libdvdcss cdparanoia libbluray libaacs sox mediainfo musepack-tools
+sudo pacman -S libdvdcss cdparanoia libbluray libaacs sox mediainfo musepack-tools chromaprint
 # libbdplus / makemkv often AUR; KEYDB.cfg is operator-supplied (see discs.md)
 # libfdk-aac may be in AUR / extra-ffmpeg builds
 # rsgain often AUR/chaotic-aur (flac-replaygain)
@@ -54,7 +66,8 @@ sudo pacman -S libdvdcss cdparanoia libbluray libaacs sox mediainfo musepack-too
 
 ```bash
 sudo apt-get install flac ffmpeg shellcheck libdvdcss2 cdparanoia libbluray2 libaacs0
-# Optional: sox mediainfo musepack-tools (dsf-to-flac DFF / flac-authenticity -p / flac-to-mpc)
+# Optional: sox mediainfo musepack-tools libchromaprint-tools
+#   (dsf-to-flac DFF / flac-authenticity -p / flac-to-mpc / audio-dupes fpcalc)
 # Ensure ffmpeg has lame/opus/vorbis/speex (universe builds usually do)
 # flac-replaygain: apt install rsgain (Debian/Ubuntu) or loudgain
 ```

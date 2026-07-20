@@ -24,7 +24,10 @@ CONVERSION = \
 UTIL = \
 	util/flac-verify util/flac-replaygain util/flac-artwork util/flac-audit \
 	util/flac-authenticity util/flac-tags util/flac-dupes util/flac-optimize \
-	util/flac-rename util/flac-cue-export util/flac-strip util/flac-inventory
+	util/flac-rename util/flac-cue-export util/flac-strip util/flac-inventory \
+	util/audio-replaygain util/audio-tags util/audio-dupes util/audio-artwork \
+	util/library-sync util/tree-diff util/hash-verify util/pcm-cleanup \
+	util/cue-audit util/silence-detect util/disc-inventory util/lossy-audit
 
 TOOLS = $(CONVERSION) $(UTIL)
 
