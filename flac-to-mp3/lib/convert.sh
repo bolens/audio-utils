@@ -24,7 +24,7 @@ convert_one() {
     log_progress "would convert+verify: $flac -> $mp3"
     log_info "would encode:         libmp3lame quality=$quality (${MP3_FF_ARGS[*]})"
     log_info "would verify:         duration ±50ms + audio stream"
-    if [[ "${DELETE_FLAC:-0}" -eq 1 ]]; then
+    if [[ "${DELETE_SOURCE:-${DELETE_FLAC:-0}}" -eq 1 ]]; then
       log_info "would delete:         $flac"
     fi
     return 0
@@ -83,7 +83,7 @@ convert_one() {
   notes="converted"
   ((force_reconvert)) && notes="reconverted-corrupt-mp3"
 
-  if [[ "${DELETE_FLAC:-0}" -eq 1 ]]; then
+  if [[ "${DELETE_SOURCE:-${DELETE_FLAC:-0}}" -eq 1 ]]; then
     rm -f -- "$flac"
     log_info "deleted: $flac"
     notes="${notes};deleted-flac"
