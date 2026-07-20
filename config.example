@@ -4,24 +4,29 @@
 #   mkdir -p "${XDG_CONFIG_HOME:-$HOME/.config}/audio-utils"
 #   cp config.example "${XDG_CONFIG_HOME:-$HOME/.config}/audio-utils/config"
 #
-# Or: set -a && source config.example && set +a
-#
 # Environment variables already set in the shell take precedence over this file.
 
-# Space-separated library roots (find / convert-all / clean-tmp / orphan sweep)
 AUDIO_UTILS_ROOTS="$HOME/Music $HOME/Downloads"
 
-# Optional alias (same meaning):
 # WAV2FLAC_ROOTS="$HOME/Music"
 
-# flac-to-mp3 default quality (v0 recommended; also v2, 320, 192):
+# --- Lossy quality (MP3 default stays v0) ---
 # AUDIO_UTILS_MP3_QUALITY=v0
 # FLAC2MP3_QUALITY=v0
+# AUDIO_UTILS_OPUS_QUALITY=128
+# AUDIO_UTILS_AAC_QUALITY=192
+# AUDIO_UTILS_VORBIS_QUALITY=q6
+# LOSSY_NO_RESAMPLE=1
 
-# Lossless hub tools (aiff/alac/wv) share the same roots and XDG paths.
+# --- TAK (see docs/tak.md) ---
+# AUDIO_UTILS_TAKC=/path/to/Takc.exe
+# AUDIO_UTILS_TAK_PRESET=p2
 
-# XDG overrides (optional — defaults match the Base Directory Spec):
-# XDG_CONFIG_HOME="$HOME/.config"       # this file: …/audio-utils/config
-# XDG_STATE_HOME="$HOME/.local/state"   # logs: …/audio-utils/<tool>/
-# XDG_CACHE_HOME="$HOME/.cache"         # runtime fallback if no XDG_RUNTIME_DIR
-# XDG_RUNTIME_DIR is usually set by the session (e.g. /run/user/$UID)
+# --- Optical ---
+# AUDIO_UTILS_DVD_DEVICE=/dev/sr0
+# AUDIO_UTILS_CD_DEVICE=/dev/sr0
+
+# XDG overrides (optional):
+# XDG_CONFIG_HOME="$HOME/.config"
+# XDG_STATE_HOME="$HOME/.local/state"
+# XDG_CACHE_HOME="$HOME/.cache"
