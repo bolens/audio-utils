@@ -13,7 +13,7 @@ TOOLS = wav-to-flac flac-to-wav flac-to-mp3 \
 	tak-to-flac flac-to-tak \
 	wav-to-aiff aiff-to-wav \
 	flac-to-opus flac-to-aac flac-to-vorbis \
-	streams-to-flac dvd-to-flac cdda-to-flac
+	streams-to-flac dvd-to-flac cdda-to-flac bluray-to-flac
 
 .PHONY: help check test $(addsuffix -%,$(TOOLS))
 
@@ -25,7 +25,7 @@ help:
 	@echo ""
 	@echo "Tools: $(TOOLS)"
 	@echo ""
-	@echo "Docs:  docs/  (requirements, formats, cue, discs, tak, lossy)"
+	@echo "Docs:  docs/  (requirements, formats, cue, discs, streaming, tak, lossy)"
 	@echo "Set library roots:"
 	@echo "  export AUDIO_UTILS_ROOTS=\"\$$HOME/Music \$$HOME/Downloads\""
 	@echo ""
@@ -36,7 +36,7 @@ check:
 	$(SHELLCHECK) lib/load.sh lib/log.sh lib/xdg.sh lib/config.sh lib/version.sh \
 		lib/progress.sh lib/tmpdir.sh lib/probe.sh lib/disk.sh lib/util.sh \
 		lib/find-audio-dirs.sh lib/driver.sh lib/worker.sh lib/pcm_flac.sh \
-		lib/cue.sh lib/lossy.sh lib/tak.sh lib/dvd.sh lib/cdda.sh
+		lib/cue.sh lib/lossy.sh lib/tak.sh lib/dvd.sh lib/cdda.sh lib/bluray.sh
 	@for t in $(TOOLS); do $(MAKE) -C $$t check || exit 1; done
 
 # Forward make -C TOOL TARGET via e.g. `make cue-to-flac-check`
