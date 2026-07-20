@@ -243,21 +243,8 @@ pcm_to_flac_plugin_export_env() {
   export CLEAN_WAV RETAG_ONLY
 }
 
-# Wire convert_one + -c/-R hooks after plugin_init (expects CLEAN_WAV/RETAG_ONLY set).
+# Prep -c/-R defaults after plugin_init; then source lib/pcm_to_flac_hooks.sh at top level.
 pcm_to_flac_plugin_wire() {
   CLEAN_WAV="${CLEAN_WAV:-0}"
   RETAG_ONLY="${RETAG_ONLY:-0}"
-  # Drivers call these by name; shellcheck cannot see the indirection.
-  # shellcheck disable=SC2329
-  convert_one() { pcm_to_flac_convert_one "$@"; }
-  # shellcheck disable=SC2329
-  plugin_sibling_ok() { flac_ok "$2"; }
-  # shellcheck disable=SC2329
-  plugin_parse_opt() { pcm_to_flac_plugin_parse_opt "$@"; }
-  # shellcheck disable=SC2329
-  plugin_require_deps() { require_cmds flac ffmpeg ffprobe flock; }
-  # shellcheck disable=SC2329
-  plugin_after_flags() { pcm_to_flac_plugin_after_flags; }
-  # shellcheck disable=SC2329
-  plugin_export_env() { pcm_to_flac_plugin_export_env; }
 }

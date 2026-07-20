@@ -480,29 +480,9 @@ lossy_restore_ff_args() {
   fi
 }
 
-# Wire convert_one + shared hooks after plugin_init (expects LOSSY_* set).
+# Prep quality env after plugin_init; then source lib/lossy_hooks.sh at top level.
 lossy_plugin_wire() {
   QUALITY_CLI="${QUALITY_CLI:-}"
   LOSSY_NO_RESAMPLE="${LOSSY_NO_RESAMPLE:-0}"
   lossy_restore_ff_args
-  # Drivers call these by name; shellcheck cannot see the indirection.
-  # shellcheck disable=SC2329
-  convert_one() { lossy_convert_one "$@"; }
-  # shellcheck disable=SC2329
-  plugin_sibling_ok() { lossy_ok "$2"; }
-  # shellcheck disable=SC2329
-  plugin_consume_arg() { lossy_plugin_consume_arg "$@"; }
-  # shellcheck disable=SC2329
-  plugin_parse_opt() { lossy_plugin_parse_opt "$@"; }
-  # shellcheck disable=SC2329
-  plugin_require_deps() {
-    require_cmds flac ffmpeg ffprobe flock || return 1
-    require_ffmpeg_encoder "$LOSSY_FFMPEG_ENCODER"
-  }
-  # shellcheck disable=SC2329
-  plugin_after_flags() { lossy_plugin_after_flags; }
-  # shellcheck disable=SC2329
-  plugin_banner_extra() { lossy_plugin_banner; }
-  # shellcheck disable=SC2329
-  plugin_export_env() { lossy_plugin_export_env; }
 }

@@ -17,3 +17,5 @@ RETAG_ONLY="${RETAG_ONLY:-0}"
 source "$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)/lib/plugin_init.sh"
 
 pcm_to_flac_plugin_wire
+# shellcheck source=../../lib/pcm_to_flac_hooks.sh
+source "$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)/lib/pcm_to_flac_hooks.sh"

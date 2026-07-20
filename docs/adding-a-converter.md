@@ -7,8 +7,8 @@
    - Source `../../lib/plugin_init.sh` (loads shared libs; auto-sources local `prepare.sh` / `encode.sh` / `convert.sh` if present)
    - Define `plugin_require_deps` and optional hooks (`plugin_parse_opt`, `plugin_sibling_ok`, …)
 3. Implement `convert_one` (or call a shared helper):
-   - Lossy: set `LOSSY_*`; call `lossy_plugin_wire`
-   - PCM → FLAC (WAV/AIFF): set `-c`/`-R` via `AU_GETOPT_EXTRA=cR`; call `pcm_to_flac_plugin_wire`
+   - Lossy: set `LOSSY_*`; call `lossy_plugin_wire`; source `lib/lossy_hooks.sh`
+   - PCM → FLAC (WAV/AIFF): set `-c`/`-R` via `AU_GETOPT_EXTRA=cR`; call `pcm_to_flac_plugin_wire`; source `lib/pcm_to_flac_hooks.sh`
    - PCM remux: `convert_one() { pcm_remux_convert_one "$@"; }`
    - Into FLAC: `convert_one() { to_flac_convert_one "$@"; }` (optional `plugin_decode_prep`)
    - From FLAC lossless: set `AU_LOSSLESS_CODEC`; `convert_one() { from_flac_lossless_convert_one "$@"; }`

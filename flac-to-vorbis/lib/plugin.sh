@@ -19,3 +19,5 @@ LOSSY_QUALITY_ENV_ALT=FLAC2VORBIS_QUALITY
 source "$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)/lib/plugin_init.sh"
 
 lossy_plugin_wire
+# shellcheck source=../../lib/lossy_hooks.sh
+source "$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)/lib/lossy_hooks.sh"
