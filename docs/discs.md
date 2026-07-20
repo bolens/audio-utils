@@ -1,6 +1,6 @@
-# Discs: DVD CSS / CPPM / CDDA
+# Discs: DVD / Blu-ray / CDDA
 
-Intended for archiving discs **you are allowed to copy**. This project does **not** ship CSS keys or circumvention blobs — install distro libraries yourself.
+Intended for archiving discs **you are allowed to copy**. This project does **not** ship CSS/AACS keys, BD+ dumps, or circumvention blobs — install distro libraries and operator key material yourself.
 
 ## DVD-Video CSS (`dvd-to-flac`)
 
@@ -21,6 +21,31 @@ Env: `AUDIO_UTILS_DVD_DEVICE` (for backup helpers), paths passed as `VIDEO_TS` d
 
 Open Linux CPPM tooling is scarce. Prefer **already-decrypted** AUDIO_TS / AOB inputs and `streams-to-flac`. Encrypted CPPM-only discs fail closed with a clear message.
 
+## Blu-ray AACS / BD+ (`bluray-to-flac`) — hybrid
+
+Two paths:
+
+1. **Already decrypted** — BDMV `STREAM/*.m2ts` or a directory of `.m2ts` / `.mkv` that `ffprobe` can open → per-stream FLAC (same bar as `streams-to-flac`).
+2. **Encrypted disc** — when system tooling is present:
+   - **libbluray** + **libaacs** (optional **libbdplus** for BD+) and an operator-supplied **`KEYDB.cfg`** under `$XDG_CONFIG_HOME/aacs/` (never vendored here), and/or
+   - **MakeMKV** (`makemkvcon`, or `AUDIO_UTILS_MAKEMKV=/path/to/makemkvcon`).
+
+Device rip: `bluray-to-flac.sh -D /dev/sr0` (or `AUDIO_UTILS_BD_DEVICE`). Prefer MakeMKV for devices when available.
+
+```bash
+# Arch (packages; KEYDB is still operator-supplied)
+sudo pacman -S libbluray libaacs
+# libbdplus often AUR; MakeMKV often AUR (makemkv)
+
+# Debian/Ubuntu
+sudo apt-get install libbluray2 libaacs0
+# libbdplus0 / MakeMKV from your preferred source
+```
+
+Place `KEYDB.cfg` at `${XDG_CONFIG_HOME:-$HOME/.config}/aacs/KEYDB.cfg`. This repo will not download or ship it.
+
+BD+ titles may need **libbdplus** + operator VM/cache dumps, or MakeMKV. Fail closed with install hints when streams are unreadable.
+
 ## CDDA (`cdda-to-flac`)
 
 - Requires **cdparanoia**.
@@ -40,5 +65,7 @@ sudo apt-get install cdparanoia
 | CSS / cannot read VOB | libdvdcss installed? readable VIDEO_TS? |
 | No tracks on CD | correct `/dev/srN`? permissions in `cdrom` group? |
 | CPPM fail | use decrypted dump; see requirements |
+| Blu-ray unreadable | KEYDB.cfg present? libaacs/libbluray? Try MakeMKV; or use decrypted M2TS/MKV |
+| BD+ fail | libbdplus + dumps, or MakeMKV |
 
-Blu-ray AACS / BD+ are **out of scope**.
+Streaming DRM (Widevine / FairPlay / …) is documented in [streaming.md](streaming.md) — forever out of scope.

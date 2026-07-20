@@ -15,6 +15,7 @@ Core (all tools): Linux, `bash` 4+, `flac`, `ffmpeg`/`ffprobe`, `flock`, GNU `fi
 | flac-to-tak | Official **Takc** (+ Wine if `.exe`); see [tak.md](tak.md) |
 | tak-to-flac | ffmpeg TAK decoder and/or Takc |
 | dvd-to-flac | **libdvdcss**; optional `dvdbackup` |
+| bluray-to-flac | **libbluray** + **libaacs** (+ operator `KEYDB.cfg`); optional **libbdplus**, **MakeMKV** (`AUDIO_UTILS_MAKEMKV`); or already-decrypted M2TS/MKV |
 | cdda-to-flac | **cdparanoia**; optional `whipper` |
 | cue / remux / streams | core set only |
 
@@ -23,15 +24,18 @@ Core (all tools): Linux, `bash` 4+, `flac`, `ffmpeg`/`ffprobe`, `flock`, GNU `fi
 ```bash
 sudo pacman -S flac ffmpeg shellcheck
 # optional:
-sudo pacman -S libdvdcss cdparanoia
+sudo pacman -S libdvdcss cdparanoia libbluray libaacs
+# libbdplus / makemkv often AUR; KEYDB.cfg is operator-supplied (see discs.md)
 # libfdk-aac may be in AUR / extra-ffmpeg builds
 ```
 
 ## Debian / Ubuntu
 
 ```bash
-sudo apt-get install flac ffmpeg shellcheck libdvdcss2 cdparanoia
+sudo apt-get install flac ffmpeg shellcheck libdvdcss2 cdparanoia libbluray2 libaacs0
 # Ensure ffmpeg has lame/opus/vorbis (universe builds usually do)
 ```
 
 Takc is not packaged — download from the upstream TAK site and set `AUDIO_UTILS_TAKC` (see [tak.md](tak.md)).
+
+Streaming DRM (Widevine, etc.) is **not** supported — see [streaming.md](streaming.md).

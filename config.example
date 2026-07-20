@@ -25,6 +25,9 @@ AUDIO_UTILS_ROOTS="$HOME/Music $HOME/Downloads"
 # --- Optical ---
 # AUDIO_UTILS_DVD_DEVICE=/dev/sr0
 # AUDIO_UTILS_CD_DEVICE=/dev/sr0
+# AUDIO_UTILS_BD_DEVICE=/dev/sr0
+# AUDIO_UTILS_MAKEMKV=/usr/bin/makemkvcon
+# AACS KEYDB.cfg is operator-supplied at $XDG_CONFIG_HOME/aacs/KEYDB.cfg (never vendored)
 
 # XDG overrides (optional):
 # XDG_CONFIG_HOME="$HOME/.config"

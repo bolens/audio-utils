@@ -4,7 +4,7 @@
 
 Verified **audio conversion utilities** for Linux libraries. **FLAC** is the archive hub.
 
-Docs: **[docs/](docs/)** — [requirements](docs/requirements.md) · [formats](docs/formats.md) · [cue](docs/cue.md) · [discs](docs/discs.md) · [tak](docs/tak.md) · [lossy](docs/lossy.md)
+Docs: **[docs/](docs/)** — [requirements](docs/requirements.md) · [formats](docs/formats.md) · [cue](docs/cue.md) · [discs](docs/discs.md) · [streaming](docs/streaming.md) · [tak](docs/tak.md) · [lossy](docs/lossy.md)
 
 | Tool | Description |
 |------|-------------|
@@ -18,6 +18,7 @@ Docs: **[docs/](docs/)** — [requirements](docs/requirements.md) · [formats](d
 | [`cue-to-flac/`](cue-to-flac/) | CUE + image → tracks |
 | [`streams-to-flac/`](streams-to-flac/) | Multi-stream → `.aN.flac` |
 | [`dvd-to-flac/`](dvd-to-flac/) / [`cdda-to-flac/`](cdda-to-flac/) | DVD VIDEO_TS / CDDA → FLAC |
+| [`bluray-to-flac/`](bluray-to-flac/) | Blu-ray BDMV / decrypted M2TS\|MKV → FLAC ([discs](docs/discs.md)) |
 | [`flac-to-mp3/`](flac-to-mp3/) | FLAC → MP3 (default **v0**) |
 | [`flac-to-opus/`](flac-to-opus/) / [`flac-to-aac/`](flac-to-aac/) / [`flac-to-vorbis/`](flac-to-vorbis/) | FLAC → Opus / AAC / Vorbis |
 
@@ -37,8 +38,8 @@ make -C flac-to-mp3 convert-quiet
 
 ```
 audio-utils/
-  docs/           # requirements, formats, discs, tak, lossy, …
-  lib/            # driver, worker, pcm_flac, cue, lossy, tak, dvd, cdda
+  docs/           # requirements, formats, discs, streaming, tak, lossy, …
+  lib/            # driver, worker, pcm_flac, cue, lossy, tak, dvd, cdda, bluray
   <tool>/         # thin CLI + lib/plugin.sh
 ```
 
