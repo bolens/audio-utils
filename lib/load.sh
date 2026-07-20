@@ -35,3 +35,5 @@ source "${_AUDIO_UTILS_LIB_DIR}/tak.sh"
 source "${_AUDIO_UTILS_LIB_DIR}/dvd.sh"
 # shellcheck source=cdda.sh
 source "${_AUDIO_UTILS_LIB_DIR}/cdda.sh"
+# shellcheck source=bluray.sh
+source "${_AUDIO_UTILS_LIB_DIR}/bluray.sh"
