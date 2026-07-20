@@ -1,5 +1,7 @@
 # Adding a converter
 
+For library lifecycle tools that do **not** convert formats (verify, ReplayGain, artwork, audit), see [adding-a-util.md](adding-a-util.md).
+
 1. Copy a sibling tool directory (prefer a similar lossless or lossy peer).
 2. Write `lib/plugin.sh`:
    - Set `AU_TOOL_NAME`, `AU_SOURCE_EXT`, `AU_DEST_EXT`, `AU_DISK_FACTOR`, `AU_WORKDIR_PREFIX`, `AU_SUCCESS_COLUMNS`

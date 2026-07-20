@@ -9,6 +9,7 @@
 | [streaming.md](streaming.md) | DRM-free local files; Widevine forever OOS |
 | [tak.md](tak.md) | Takc / Wine setup |
 | [lossy.md](lossy.md) | MP3 / Opus / AAC / Vorbis + resample |
-| [adding-a-converter.md](adding-a-converter.md) | Plugin contract |
+| [adding-a-converter.md](adding-a-converter.md) | Converter plugin contract |
+| [adding-a-util.md](adding-a-util.md) | Non-conversion util contract (verify, RG, art, audit) |
 
 Start at the [root README](../README.md).

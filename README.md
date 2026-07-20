@@ -4,7 +4,7 @@
 
 Verified **audio conversion utilities** for Linux libraries. **FLAC** is the archive hub.
 
-Docs: **[docs/](docs/)** — [requirements](docs/requirements.md) · [formats](docs/formats.md) · [cue](docs/cue.md) · [discs](docs/discs.md) · [streaming](docs/streaming.md) · [tak](docs/tak.md) · [lossy](docs/lossy.md)
+Docs: **[docs/](docs/)** — [requirements](docs/requirements.md) · [formats](docs/formats.md) · [cue](docs/cue.md) · [discs](docs/discs.md) · [streaming](docs/streaming.md) · [tak](docs/tak.md) · [lossy](docs/lossy.md) · [adding a util](docs/adding-a-util.md)
 
 | Tool | Description |
 |------|-------------|
@@ -43,7 +43,7 @@ audio-utils/
   <tool>/         # thin CLI + lib/plugin.sh (+ convert when not using a shared pipeline)
 ```
 
-Plugin contract: [docs/adding-a-converter.md](docs/adding-a-converter.md).
+Plugin contract: [docs/adding-a-converter.md](docs/adding-a-converter.md). Util contract: [docs/adding-a-util.md](docs/adding-a-util.md).
 
 ### Paths (XDG)
 
