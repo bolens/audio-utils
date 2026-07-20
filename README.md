@@ -22,6 +22,7 @@ Docs: **[docs/](docs/)** — [requirements](docs/requirements.md) · [formats](d
 | [`flac-to-mp3/`](flac-to-mp3/) | FLAC → MP3 (default **v0**) |
 | [`flac-to-opus/`](flac-to-opus/) / [`flac-to-aac/`](flac-to-aac/) / [`flac-to-vorbis/`](flac-to-vorbis/) | FLAC → Opus / AAC / Vorbis |
 | [`flac-verify/`](flac-verify/) | FLAC integrity (`flac -t`; optional decode MD5) |
+| [`flac-replaygain/`](flac-replaygain/) | ReplayGain 2.0 tags (album+track via rsgain/loudgain) |
 
 ## Quick start
 

@@ -19,6 +19,7 @@ Core (all tools): Linux, `bash` 4+, `flac`, `ffmpeg`/`ffprobe`, `flock`, GNU `fi
 | cdda-to-flac | **cdparanoia**; optional `whipper` |
 | cue / remux / streams | core set only |
 | flac-verify | core `flac` + `flock`; `-M` needs `ffmpeg`/`ffprobe`/`metaflac` |
+| flac-replaygain | `metaflac` + **rsgain** (preferred) or **loudgain** |
 
 ## Arch / CachyOS
 
@@ -28,6 +29,7 @@ sudo pacman -S flac ffmpeg shellcheck
 sudo pacman -S libdvdcss cdparanoia libbluray libaacs
 # libbdplus / makemkv often AUR; KEYDB.cfg is operator-supplied (see discs.md)
 # libfdk-aac may be in AUR / extra-ffmpeg builds
+# rsgain often AUR/chaotic-aur (flac-replaygain)
 ```
 
 ## Debian / Ubuntu
@@ -35,6 +37,7 @@ sudo pacman -S libdvdcss cdparanoia libbluray libaacs
 ```bash
 sudo apt-get install flac ffmpeg shellcheck libdvdcss2 cdparanoia libbluray2 libaacs0
 # Ensure ffmpeg has lame/opus/vorbis (universe builds usually do)
+# flac-replaygain: apt install rsgain (Debian/Ubuntu) or loudgain
 ```
 
 Takc is not packaged — download from the upstream TAK site and set `AUDIO_UTILS_TAKC` (see [tak.md](tak.md)).
