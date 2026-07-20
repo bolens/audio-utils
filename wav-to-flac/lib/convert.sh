@@ -84,7 +84,7 @@ convert_one() {
     log_info "would remux:          ${codec:-unknown} → clean PCM temp (dual + e2e MD5)"
     log_info "would tag:            copy metadata/cover from WAV → FLAC"
     log_info "would workdir:        next to destination (atomic mv)"
-    if [[ "${DELETE_WAV:-0}" -eq 1 ]]; then
+    if [[ "${DELETE_SOURCE:-${DELETE_WAV:-0}}" -eq 1 ]]; then
       log_info "would delete:         $wav"
     elif [[ "${CLEAN_WAV:-0}" -eq 1 ]]; then
       log_info "would clean:          $wav (replace with FLAC decode)"
@@ -199,7 +199,7 @@ convert_one() {
   notes="converted"
   ((force_reconvert)) && notes="reconverted-corrupt-flac"
 
-  if [[ "${DELETE_WAV:-0}" -eq 1 ]]; then
+  if [[ "${DELETE_SOURCE:-${DELETE_WAV:-0}}" -eq 1 ]]; then
     rm -f -- "$wav"
     log_info "deleted: $wav"
     notes="${notes};deleted-wav"
