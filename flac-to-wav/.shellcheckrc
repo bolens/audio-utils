@@ -1,7 +1,0 @@
-# Project shellcheck config.
-source-path=SCRIPTDIR
-source-path=lib
-source-path=../lib
-external-sources=true
-shell=bash
-disable=SC1093
