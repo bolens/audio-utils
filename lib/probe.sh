@@ -17,6 +17,24 @@ audio_samples() {
   ffprobe -v error -select_streams a:0 -show_entries stream=duration_ts -of csv=p=0 -- "$1" 2>/dev/null
 }
 
+# Duration in seconds (float), empty on failure.
+audio_duration_sec() {
+  ffprobe -v error -select_streams a:0 -show_entries stream=duration -of csv=p=0 -- "$1" 2>/dev/null
+}
+
+# Bits per sample (raw preferred). Empty on failure.
+audio_bits_per_sample() {
+  local b
+  b=$(ffprobe -v error -select_streams a:0 -show_entries stream=bits_per_raw_sample -of csv=p=0 -- "$1" 2>/dev/null)
+  if [[ -z "$b" || "$b" == "N/A" || "$b" == "0" ]]; then
+    b=$(ffprobe -v error -select_streams a:0 -show_entries stream=bits_per_sample -of csv=p=0 -- "$1" 2>/dev/null)
+  fi
+  if [[ -z "$b" || "$b" == "N/A" || "$b" == "0" ]]; then
+    return 1
+  fi
+  printf '%s\n' "$b"
+}
+
 file_bytes() {
   stat -c%s -- "$1" 2>/dev/null || echo 0
 }

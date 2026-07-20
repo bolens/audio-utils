@@ -6,11 +6,13 @@ bytes_avail() {
 }
 
 # check_disk_space DIR FILE [FILE...]
-# Requires ~3× largest FILE free on DIR's filesystem (temps + encodes).
+# Requires CHECK_DISK_FACTOR × largest FILE free (default 3).
+# Factor may be fractional (e.g. 1.5, 2).
 check_disk_space() {
   local dir="$1"
   shift
   local largest=0 sz need free human_need human_free
+  local factor="${CHECK_DISK_FACTOR:-3}"
 
   ((${#} == 0)) && return 0
 
@@ -21,7 +23,7 @@ check_disk_space() {
     fi
   done
 
-  need=$((largest * 3))
+  need=$(awk -v l="$largest" -v f="$factor" 'BEGIN { printf "%d", (l * f) + 0.999 }')
   free=$(bytes_avail "$dir")
   if [[ -z "$free" || ! "$free" =~ ^[0-9]+$ ]]; then
     log_info "warning: could not determine free space for $dir; continuing"
@@ -36,5 +38,5 @@ check_disk_space() {
     return 1
   fi
 
-  log_verbose "disk ok: $dir free=$(numfmt --to=iec --suffix=B "$free" 2>/dev/null || echo "$free") need~=$(numfmt --to=iec --suffix=B "$need" 2>/dev/null || echo "$need")"
+  log_verbose "disk ok: $dir free=$(numfmt --to=iec --suffix=B "$free" 2>/dev/null || echo "$free") need~=$(numfmt --to=iec --suffix=B "$need" 2>/dev/null || echo "$need") (×${factor})"
 }
