@@ -124,7 +124,7 @@ log_fail() {
 
   IFS=$'\t' read -r codec bytes samples < <(probe_debug_fields "$path")
   human=$(human_bytes "${bytes:-0}")
-  ts=$(date -Iseconds)
+  ts=$(au_iso_timestamp)
   if [[ -n "$idx" && -n "$total" ]]; then
     progress="${idx}/${total}"
   else

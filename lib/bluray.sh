@@ -3,22 +3,7 @@
 
 # True if NAME.so* appears via ldconfig or common lib paths.
 _bluray_so_present() {
-  local name="$1" hit
-  if command -v ldconfig >/dev/null 2>&1; then
-    if ldconfig -p 2>/dev/null | grep -qiE "${name}\\.so"; then
-      return 0
-    fi
-  fi
-  for hit in \
-    /usr/lib/"${name}".so* \
-    /usr/lib/*/"${name}".so* \
-    /usr/local/lib/"${name}".so*; do
-    # shellcheck disable=SC2086
-    if compgen -G "$hit" >/dev/null 2>&1; then
-      return 0
-    fi
-  done
-  return 1
+  au_so_present "$1"
 }
 
 bluray_libbluray_present() { _bluray_so_present libbluray; }
@@ -39,6 +24,7 @@ bluray_require_libs() {
   if ((ok == 0)); then
     log_err "  Arch/CachyOS: libbluray libaacs (libbdplus optional for BD+)"
     log_err "  Debian/Ubuntu: libbluray2 libaacs0 (libbdplus0 optional)"
+    log_err "  Fedora: libbluray libaacs (RPM Fusion for some extras)"
     log_err "  This project does not ship AACS keys or BD+ dumps — see docs/discs.md"
     return 1
   fi

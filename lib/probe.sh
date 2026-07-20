@@ -6,7 +6,7 @@ audio_md5() {
 }
 
 file_sha256() {
-  sha256sum -- "$1" | awk '{print $1}'
+  au_sha256 "$1"
 }
 
 audio_codec() {
@@ -36,7 +36,7 @@ audio_bits_per_sample() {
 }
 
 file_bytes() {
-  stat -c%s -- "$1" 2>/dev/null || echo 0
+  au_file_bytes "$1"
 }
 
 # Channel count for first audio stream; empty on failure.

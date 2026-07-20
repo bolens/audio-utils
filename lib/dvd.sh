@@ -3,25 +3,9 @@
 
 # Fail closed unless libdvdcss looks available on the system.
 dvd_require_css() {
-  local hit=""
-
-  if command -v ldconfig >/dev/null 2>&1; then
-    if ldconfig -p 2>/dev/null | grep -qi 'libdvdcss\.so'; then
-      return 0
-    fi
+  if au_so_present libdvdcss; then
+    return 0
   fi
-
-  # Common library locations (multiarch / local).
-  for hit in \
-    /usr/lib/libdvdcss.so \
-    /usr/lib/libdvdcss.so.2 \
-    /usr/lib/*/libdvdcss.so* \
-    /usr/local/lib/libdvdcss.so*; do
-    # shellcheck disable=SC2086
-    if compgen -G "$hit" >/dev/null 2>&1; then
-      return 0
-    fi
-  done
 
   # Last resort: ffmpeg DVD demuxer present (still needs libdvdcss at runtime).
   if ffmpeg -hide_banner -demuxers 2>/dev/null | grep -qiE '[[:space:]]dvd($|[[:space:]])'; then
@@ -31,7 +15,7 @@ dvd_require_css() {
 
   log_err "Error: libdvdcss not found (needed for encrypted DVD CSS)"
   log_err "  Install distro package libdvdcss (e.g. libdvdcss2 / libdvdcss) and retry"
-  log_err "  Arch/CachyOS: libdvdcss   Debian/Ubuntu: libdvdcss2"
+  log_err "  Arch/CachyOS: libdvdcss   Debian/Ubuntu: libdvdcss2   Fedora: libdvdcss (RPM Fusion)"
   return 1
 }
 

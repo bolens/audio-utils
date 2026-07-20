@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
 # Misc shared helpers: deps, jobs, library roots.
 
-# Default parallel jobs: max(1, nproc/2)
+# Default parallel jobs: max(1, cpu_count/2)
 default_jobs() {
   local n
-  n=$(nproc 2>/dev/null || echo 2)
+  n=$(au_cpu_count)
   if ((n < 2)); then
     echo 1
   else

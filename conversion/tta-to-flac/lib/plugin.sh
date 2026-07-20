@@ -16,5 +16,4 @@ source "$(cd "$(dirname "${BASH_SOURCE[0]}")/../../.." && pwd)/lib/plugin_init.s
 plugin_sibling_ok() { flac_ok "$2" && sibling_matches_source "$1" "$2"; }
 convert_one() { to_flac_convert_one "$@"; }
 plugin_accept_source() { is_tta "$1"; }
-plugin_require_deps() { require_cmds flac ffmpeg ffprobe flock; }
 plugin_export_env() { export DELETE_SOURCE DELETE_WAV="$DELETE_SOURCE" AU_SOURCE_LABEL; }

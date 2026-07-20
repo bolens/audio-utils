@@ -2,7 +2,7 @@
 # Disk free-space preflight.
 
 bytes_avail() {
-  df -B1 --output=avail "$1" 2>/dev/null | tail -n1 | tr -d ' '
+  au_bytes_avail "$1"
 }
 
 # check_disk_space DIR FILE [FILE...]

@@ -2,7 +2,7 @@
 # Apply ReplayGain to one FLAC (album: once per directory; track: per file).
 
 _rg_dir_key() {
-  printf '%s' "$1" | sha256sum | awk '{print $1}'
+  au_sha256_str "$1"
 }
 
 _rg_has_track_gain() {

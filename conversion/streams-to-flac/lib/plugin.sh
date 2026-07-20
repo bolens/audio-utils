@@ -22,9 +22,6 @@ plugin_accept_source() {
   ((n >= 1))
 }
 
-plugin_require_deps() {
-  require_cmds flac ffmpeg ffprobe flock
-}
 
 plugin_export_env() {
   export DELETE_SOURCE

@@ -7,6 +7,8 @@ _AUDIO_UTILS_LIB_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
 
 # shellcheck source=log.sh
 source "${_AUDIO_UTILS_LIB_DIR}/log.sh"
+# shellcheck source=compat.sh
+source "${_AUDIO_UTILS_LIB_DIR}/compat.sh"
 # shellcheck source=xdg.sh
 source "${_AUDIO_UTILS_LIB_DIR}/xdg.sh"
 # shellcheck source=config.sh

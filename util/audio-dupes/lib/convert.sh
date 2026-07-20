@@ -43,7 +43,7 @@ convert_one() {
   if [[ "${DRY_RUN:-0}" -eq 1 ]]; then
     log_progress "would check-dupe: $src"; return 0
   fi
-  abs=$(readlink -f -- "$src" 2>/dev/null || printf '%s' "$src")
+  abs=$(au_abspath "$src")
   if ! key=$(_dupes_content_key "$src"); then
     log_fail "$src" "content key failed"; return 1
   fi

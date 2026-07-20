@@ -33,7 +33,7 @@ convert_one() {
       kind=video_ts
       parent=$(dirname -- "$dir")
       # Dedupe: only first IFO in this VIDEO_TS
-      key=$(printf '%s' "$dir" | sha256sum | awk '{print $1}')
+      key=$(au_sha256_str "$dir")
       lock="${AU_DISCINV_STATE:?}/$key.lock"
       done_f="${AU_DISCINV_STATE}/$key.done"
       if ! (

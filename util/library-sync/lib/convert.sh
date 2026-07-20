@@ -16,7 +16,7 @@ convert_one() {
     local -a roots=()
     if audio_utils_roots_from_env roots; then
       local r abs
-      abs=$(readlink -f -- "$flac" 2>/dev/null || printf '%s' "$flac")
+      abs=$(au_abspath "$flac")
       for r in "${roots[@]}"; do
         r=$(cd -- "$r" 2>/dev/null && pwd) || continue
         case "$abs" in

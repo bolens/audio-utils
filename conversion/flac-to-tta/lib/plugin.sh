@@ -16,5 +16,8 @@ source "$(cd "$(dirname "${BASH_SOURCE[0]}")/../../.." && pwd)/lib/plugin_init.s
 plugin_sibling_ok() { is_tta "$2" && sibling_matches_source "$1" "$2"; }
 
 convert_one() { from_flac_lossless_convert_one "$@"; }
-plugin_require_deps() { require_cmds flac ffmpeg ffprobe flock; }
+plugin_require_deps() {
+  require_cmds flac ffmpeg ffprobe flock || return 1
+  require_ffmpeg_encoder "$AU_LOSSLESS_CODEC"
+}
 plugin_export_env() { export DELETE_SOURCE DELETE_FLAC="$DELETE_SOURCE" AU_LOSSLESS_CODEC; }

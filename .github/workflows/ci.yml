@@ -189,6 +189,23 @@ jobs:
           cat .ci-tools.txt
           xargs -a .ci-tools.txt -P"$(nproc)" -I{} make -C {} check
 
+  # Cross-distro smoke: Fedora ShellCheck + full make check (lib change or workflow).
+  shellcheck-fedora:
+    name: shellcheck (Fedora)
+    needs: changes
+    if: needs.changes.outputs.lib == 'true'
+    runs-on: ubuntu-latest
+    container: fedora:latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Install ShellCheck
+        run: dnf install -y ShellCheck make findutils
+
+      - name: shellcheck lib + all tools
+        run: make check
+
   # Single required status for branch protection when path filters skip jobs.
   ci:
     name: CI
@@ -197,6 +214,7 @@ jobs:
       - shellcheck-lib
       - shellcheck-conversion
       - shellcheck-util
+      - shellcheck-fedora
     if: always()
     runs-on: ubuntu-latest
     steps:
@@ -208,6 +226,7 @@ jobs:
             "${{ needs.shellcheck-lib.result }}"
             "${{ needs.shellcheck-conversion.result }}"
             "${{ needs.shellcheck-util.result }}"
+            "${{ needs.shellcheck-fedora.result }}"
           )
           for r in "${results[@]}"; do
             case "$r" in

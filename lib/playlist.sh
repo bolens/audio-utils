@@ -50,12 +50,8 @@ playlist_ext_for_format() {
 playlist_canon_path() {
   local p=$1
   if [[ -e "$p" ]]; then
-    readlink -f -- "$p" 2>/dev/null || realpath -- "$p" 2>/dev/null || {
-      local d b
-      d=$(cd -- "$(dirname -- "$p")" && pwd) || { printf '%s\n' "$p"; return 0; }
-      b=$(basename -- "$p")
-      printf '%s/%s\n' "$d" "$b"
-    }
+    au_abspath "$p"
+    printf '\n'
   else
     # Non-existent: resolve parent if possible
     local d b

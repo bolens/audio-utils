@@ -74,7 +74,7 @@ audio_relpath_under() {
   local root=$1 file=$2
   local abs_root abs_file
   abs_root=$(cd -- "$root" && pwd) || return 1
-  abs_file=$(readlink -f -- "$file" 2>/dev/null || realpath -- "$file" 2>/dev/null || printf '%s' "$file")
+  abs_file=$(au_abspath "$file")
   case "$abs_file" in
     "$abs_root"/*) printf '%s\n' "${abs_file#"$abs_root"/}" ;;
     *) return 1 ;;

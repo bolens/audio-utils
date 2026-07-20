@@ -20,5 +20,4 @@ plugin_accept_source() {
   n=$(ffprobe -v error -select_streams a -show_entries stream=index -of csv=p=0 -- "$1" 2>/dev/null | grep -c . || true)
   ((n >= 1))
 }
-plugin_require_deps() { require_cmds flac ffmpeg ffprobe flock; }
 plugin_export_env() { export DELETE_SOURCE DELETE_WAV="$DELETE_SOURCE" AU_SOURCE_LABEL; }

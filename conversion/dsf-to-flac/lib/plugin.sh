@@ -71,7 +71,6 @@ plugin_decode_prep() {
   return 1
 }
 
-plugin_require_deps() { require_cmds flac ffmpeg ffprobe flock; }
 plugin_export_env() {
   export DELETE_SOURCE DELETE_WAV="$DELETE_SOURCE" AU_SOURCE_LABEL
   export AUDIO_UTILS_DSD_RATE="${AUDIO_UTILS_DSD_RATE:-88200}"

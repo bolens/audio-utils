@@ -39,7 +39,7 @@ _success_log_fields() {
   local IFS=,
 
   IFS=$'\t' read -r codec bytes samples < <(probe_debug_fields "$src")
-  ts=$(date -Iseconds)
+  ts=$(au_iso_timestamp)
 
   _sl_keys=()
   _sl_vals=()

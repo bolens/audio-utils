@@ -60,8 +60,8 @@ convert_one() {
     return 1
   fi
 
-  abs_src=$(readlink -f -- "$flac" 2>/dev/null || printf '%s' "$flac")
-  abs_dest=$(readlink -f -- "$dest" 2>/dev/null || printf '%s' "$dest")
+  abs_src=$(au_abspath "$flac")
+  abs_dest=$(au_abspath "$dest")
   # If dest doesn't exist yet, resolve parent + basename
   if [[ ! -e "$dest" ]]; then
     dest_dir=$(dirname -- "$dest")

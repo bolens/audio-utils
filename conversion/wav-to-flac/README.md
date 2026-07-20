@@ -6,8 +6,8 @@ Part of **[audio-utils](../../)** — a collection of audio conversion tools.
 
 ## Requirements
 
-- Linux with **GNU find** (`-printf`). On macOS: `brew install findutils` and use `gfind`, or pass directory lists another way.
-- `bash` 4+ (associative arrays)
+- Linux with **GNU find** (`-printf`); optional `AUDIO_UTILS_FIND` if the binary is not named `find`
+- `bash` 4.3+
 - `flac`
 - `ffmpeg` / `ffprobe`
 - `flock` (util-linux) — parallel-safe log appends

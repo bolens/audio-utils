@@ -1,21 +1,46 @@
 # Requirements
 
-Core (all tools): Linux, `bash` 4+, `flac`, `ffmpeg`/`ffprobe`, `flock`, GNU `find` (`-printf`), coreutils.
+**Platform:** Linux with **GNU** userland (`coreutils`, `findutils`, `util-linux`). Not macOS, BSD, Windows, BusyBox, or Alpine/musl.
+
+**Core (all tools):** `bash` **4.3+**, `flac`, `ffmpeg`/`ffprobe`, `flock`, GNU `find` (`-printf`), coreutils (`sha256sum`, `stat -c`, `df --output`, `date -Iseconds`, …).
+
+Override the find binary if needed: `AUDIO_UTILS_FIND=gfind` (must still support GNU `-printf`).
 
 ## Core binaries → packages
 
 | Binary / need | Arch / CachyOS | Debian / Ubuntu | Fedora |
 |---------------|----------------|-----------------|--------|
-| `bash` | `bash` | `bash` | `bash` |
+| `bash` (≥ 4.3) | `bash` | `bash` | `bash` |
 | `flac` / `metaflac` | `flac` | `flac` | `flac` |
-| `ffmpeg` / `ffprobe` | `ffmpeg` | `ffmpeg` | `ffmpeg` |
+| `ffmpeg` / `ffprobe` | `ffmpeg` | `ffmpeg` | `ffmpeg` (**RPM Fusion**) |
 | `flock` | `util-linux` | `util-linux` | `util-linux` |
 | GNU `find` (`-printf`) | `findutils` | `findutils` | `findutils` |
 | `iconv` | **`glibc`** (base; not a separate package) | **`libc-bin`** | **`glibc-common`** |
-| `sha256sum` / `md5sum` | `coreutils` | `coreutils` | `coreutils` |
+| `sha256sum` / `md5sum` / `nproc` / `numfmt` | `coreutils` | `coreutils` | `coreutils` |
 | `shellcheck` (dev / `make check`) | `shellcheck` | `shellcheck` | `ShellCheck` |
 
 `metaflac` ships in the same package as `flac`. `ffprobe` ships with `ffmpeg`. `iconv` is part of the C library package on glibc systems — do **not** install `libiconv` on Arch unless you know you need it.
+
+On Fedora, enable [RPM Fusion](https://rpmfusion.org/) before installing `ffmpeg` and most disc CSS/AACS packages.
+
+## Optional binaries → packages
+
+| Binary / need | Arch / CachyOS | Debian / Ubuntu | Fedora |
+|---------------|----------------|-----------------|--------|
+| `fpcalc` (chromaprint) | `chromaprint` | `libchromaprint-tools` | `chromaprint` (RPM Fusion) |
+| `mpcenc` | `musepack-tools` | `musepack-tools` | `musepack-tools` |
+| `rsgain` (preferred ReplayGain) | AUR / chaotic-aur | `rsgain` | COPR / third-party (or use `loudgain`) |
+| `loudgain` (ReplayGain fallback) | AUR | `loudgain` | check COPR / third-party |
+| `dvdbackup` | `dvdbackup` | `dvdbackup` | `dvdbackup` |
+| `libdvdcss` | `libdvdcss` | `libdvdcss2` | `libdvdcss` (RPM Fusion) |
+| `libbluray` | `libbluray` | `libbluray2` | `libbluray` |
+| `libaacs` | `libaacs` | `libaacs0` | `libaacs` |
+| `libbdplus` | often AUR | `libbdplus0` | check RPM Fusion / COPR |
+| `cdparanoia` | `cdparanoia` | `cdparanoia` | `cdparanoia` |
+| `sox` | `sox` | `sox` | `sox` |
+| `mediainfo` | `mediainfo` | `mediainfo` | `mediainfo` |
+| `makemkvcon` | often AUR (`makemkv`) | third-party | third-party |
+| `wine` (Takc `.exe`) | `wine` | `wine` | `wine` |
 
 ## Tool extras
 
@@ -23,14 +48,14 @@ Core (all tools): Linux, `bash` 4+, `flac`, `ffmpeg`/`ffprobe`, `flock`, GNU `fi
 |----------------|------------------|
 | flac-to-mp3 | ffmpeg `libmp3lame` |
 | flac-to-opus | ffmpeg `libopus` |
-| flac-to-aac | `libfdk_aac` (preferred) or ffmpeg `aac` |
+| flac-to-aac | ffmpeg native **`aac`** encoder |
 | flac-to-vorbis | ffmpeg `libvorbis` |
 | flac-to-wma | ffmpeg `wmav2` |
 | flac-to-speex | ffmpeg `libspeex` |
 | flac-to-mpc | **mpcenc** (`musepack-tools`) |
 | flac-to-alac / alac-to-flac | ffmpeg `alac` |
 | flac-to-wv / wv-to-flac | ffmpeg `wavpack` |
-| flac-to-ape | ffmpeg **ape encoder** (often missing in distro builds) |
+| flac-to-ape | ffmpeg **ape encoder** (often missing in distro builds; preflighted at startup) |
 | ape-to-flac | ffmpeg ape **decoder** (usually present) |
 | flac-to-tta / tta-to-flac | ffmpeg `tta` |
 | shn-to-flac | ffmpeg Shorten **decoder** (no encoder) |
@@ -41,7 +66,7 @@ Core (all tools): Linux, `bash` 4+, `flac`, `ffmpeg`/`ffprobe`, `flock`, GNU `fi
 | tak-to-flac | ffmpeg TAK decoder and/or Takc |
 | dvd-to-flac | **libdvdcss**; optional `dvdbackup` |
 | bluray-to-flac | **libbluray** + **libaacs** (+ operator `KEYDB.cfg`); optional **libbdplus**, **MakeMKV** (`AUDIO_UTILS_MAKEMKV`); or already-decrypted M2TS/MKV |
-| cdda-to-flac | **cdparanoia**; optional `whipper` |
+| cdda-to-flac | **cdparanoia** (AccurateRip / MusicBrainz workflows are external — not wired here) |
 | cue / remux / streams | core set only |
 | flac-verify | core `flac` + `flock`; `-M` needs `ffmpeg`/`ffprobe`/`metaflac` |
 | flac-replaygain | `metaflac` + **rsgain** (preferred) or **loudgain** |
@@ -77,10 +102,9 @@ Core (all tools): Linux, `bash` 4+, `flac`, `ffmpeg`/`ffprobe`, `flock`, GNU `fi
 # Core (flac→metaflac, ffmpeg→ffprobe; iconv via glibc)
 sudo pacman -S flac ffmpeg shellcheck
 
-# Optional extras used by discs / authenticity / portable / playlists-adjacent tools:
-sudo pacman -S libdvdcss cdparanoia libbluray libaacs sox mediainfo musepack-tools chromaprint
+# Optional extras used by discs / authenticity / playlists-adjacent tools:
+sudo pacman -S libdvdcss cdparanoia libbluray libaacs sox mediainfo musepack-tools chromaprint dvdbackup
 # libbdplus / makemkv often AUR; KEYDB.cfg is operator-supplied (see discs.md)
-# libfdk-aac may be in AUR / extra-ffmpeg builds
 # rsgain often AUR/chaotic-aur (flac-replaygain)
 ```
 
@@ -99,7 +123,7 @@ pacman -Qo "$(command -v metaflac)" # flac
 sudo apt-get install flac ffmpeg shellcheck
 
 # Discs / optional:
-sudo apt-get install libdvdcss2 cdparanoia libbluray2 libaacs0
+sudo apt-get install libdvdcss2 cdparanoia libbluray2 libaacs0 dvdbackup
 # Optional: sox mediainfo musepack-tools libchromaprint-tools
 #   (dsf-to-flac DFF / flac-authenticity -p / flac-to-mpc / audio-dupes fpcalc)
 # Ensure ffmpeg has lame/opus/vorbis/speex (universe builds usually do)
@@ -109,20 +133,26 @@ sudo apt-get install libdvdcss2 cdparanoia libbluray2 libaacs0
 ```bash
 dpkg -S "$(command -v iconv)"     # libc-bin
 dpkg -S "$(command -v ffprobe)"   # ffmpeg
-dpkg -S "$(command -v metaflac)"  # flac
+dpkg -S "$(command -v metaflac)" # flac
 ```
 
 ## Fedora
 
+Enable [RPM Fusion](https://rpmfusion.org/) (free + nonfree) first — stock Fedora often lacks `ffmpeg` and `libdvdcss`.
+
 ```bash
+# After RPM Fusion:
 sudo dnf install flac ffmpeg ShellCheck
-# Optional: libdvdcss cdparanoia libbluray libaacs sox mediainfo musepack-tools chromaprint
+# Discs / optional:
+sudo dnf install libdvdcss cdparanoia libbluray libaacs sox mediainfo \
+  musepack-tools chromaprint dvdbackup
+# ReplayGain: prefer rsgain from COPR if available, else loudgain
 ```
 
 ```bash
 rpm -qf "$(command -v iconv)"     # glibc-common
 rpm -qf "$(command -v ffprobe)"   # ffmpeg
-rpm -qf "$(command -v metaflac)"  # flac
+rpm -qf "$(command -v metaflac)" # flac
 ```
 
 Takc is not packaged — download from the upstream TAK site and set `AUDIO_UTILS_TAKC` (see [tak.md](tak.md)).

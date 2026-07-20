@@ -14,9 +14,6 @@ AU_CLEANUP_SKIP=1
 # shellcheck source=../../../lib/plugin_init.sh
 source "$(cd "$(dirname "${BASH_SOURCE[0]}")/../../.." && pwd)/lib/plugin_init.sh"
 
-plugin_require_deps() {
-  require_cmds flac ffmpeg ffprobe flock
-}
 
 plugin_export_env() {
   export DELETE_SOURCE

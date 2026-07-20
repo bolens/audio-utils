@@ -14,5 +14,4 @@ source "$(cd "$(dirname "${BASH_SOURCE[0]}")/../../.." && pwd)/lib/plugin_init.s
 
 plugin_sibling_ok() { pcm_ok "$2" && sibling_matches_source "$1" "$2"; }
 convert_one() { flac_to_pcm_convert_one "$@"; }
-plugin_require_deps() { require_cmds flac ffmpeg ffprobe flock; }
 plugin_export_env() { export DELETE_SOURCE DELETE_FLAC="$DELETE_SOURCE"; }

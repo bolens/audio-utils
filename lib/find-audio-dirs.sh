@@ -11,7 +11,7 @@
 #   3. $XDG_CONFIG_HOME/audio-utils/config
 #
 # Does not follow symlinks (-P). Output sorted with LC_ALL=C.
-# Note: uses GNU find -printf (Linux). On macOS: brew install findutils && use gfind.
+# Uses GNU find -printf (Linux). Override binary via AUDIO_UTILS_FIND if needed.
 #
 # Exit codes: 0 ok, 2 usage/config error
 
@@ -24,6 +24,7 @@ audio_utils_load_config
 
 EXTS=()
 ROOTS=()
+FIND_BIN=$(au_find_bin)
 
 usage() {
   cat >&2 <<'EOF'
@@ -115,6 +116,16 @@ for root in "${ROOTS[@]}"; do
 done
 ((missing_count == 0)) || exit 2
 
+if ! command -v "$FIND_BIN" >/dev/null 2>&1; then
+  echo "Error: find binary not found: $FIND_BIN (set AUDIO_UTILS_FIND or install findutils)" >&2
+  exit 2
+fi
+# Require GNU -printf (BusyBox / BSD find will fail this check).
+if ! "$FIND_BIN" . -maxdepth 0 -printf '' >/dev/null 2>&1; then
+  echo "Error: $FIND_BIN lacks GNU -printf (need GNU findutils; or set AUDIO_UTILS_FIND)" >&2
+  exit 2
+fi
+
 find_expr=()
 _first=1
 for _e in "${EXTS[@]}"; do
@@ -128,6 +139,6 @@ done
 
 # List unique parent dirs of every matching file, sorted (C locale).
 set +o pipefail
-LC_ALL=C find -P "${ROOTS[@]}" -type f \( "${find_expr[@]}" \) -printf '%h\n' 2>/dev/null \
+LC_ALL=C "$FIND_BIN" -P "${ROOTS[@]}" -type f \( "${find_expr[@]}" \) -printf '%h\n' 2>/dev/null \
   | LC_ALL=C sort -u
 set -o pipefail

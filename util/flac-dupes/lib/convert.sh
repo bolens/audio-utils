@@ -78,7 +78,7 @@ convert_one() {
     return 1
   fi
 
-  abs=$(readlink -f -- "$flac" 2>/dev/null || realpath -- "$flac" 2>/dev/null || printf '%s' "$flac")
+  abs=$(au_abspath "$flac")
 
   if ! key=$(_dupes_content_key "$flac"); then
     log_fail "$flac" "content key failed"

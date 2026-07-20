@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Apply ReplayGain to one audio file (album once per dir; track per file).
 
-_rg_dir_key() { printf '%s' "$1" | sha256sum | awk '{print $1}'; }
+_rg_dir_key() { au_sha256_str "$1"; }
 
 _rg_has_track_gain() {
   local v

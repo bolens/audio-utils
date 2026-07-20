@@ -79,12 +79,13 @@ durations_match() {
   }'
 }
 
-# True if ffmpeg lists encoder NAME (e.g. libmp3lame, libopus).
+# True if ffmpeg lists encoder NAME as its own encoder field (e.g. libmp3lame, aac).
 require_ffmpeg_encoder() {
   local name="$1"
   local out
   out=$(ffmpeg -hide_banner -encoders 2>/dev/null) || true
-  if [[ "$out" == *"$name"* ]]; then
+  # Encoder lines look like: " A..... name  Description"
+  if printf '%s\n' "$out" | grep -qE "^[[:space:]]*[A-Z.]+[[:space:]]+${name}([[:space:]]|$)"; then
     return 0
   fi
   log_err "Error: ffmpeg lacks encoder '$name' (install matching lib / ffmpeg build)."

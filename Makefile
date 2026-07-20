@@ -35,7 +35,7 @@ UTIL = \
 TOOLS = $(CONVERSION) $(UTIL)
 
 LIB_SCRIPTS = \
-	lib/load.sh lib/log.sh lib/xdg.sh lib/config.sh lib/version.sh \
+	lib/load.sh lib/log.sh lib/compat.sh lib/xdg.sh lib/config.sh lib/version.sh \
 	lib/progress.sh lib/tmpdir.sh lib/probe.sh lib/disk.sh lib/util.sh \
 	lib/success_log.sh lib/delete.sh lib/convert_all.sh lib/pcm_remux.sh \
 	lib/pcm_to_flac.sh lib/lossless.sh lib/plugin_init.sh lib/cli.sh \
@@ -45,7 +45,7 @@ LIB_SCRIPTS = \
 
 RUN_PARALLEL = $(CURDIR)/lib/run_parallel.sh
 
-.PHONY: help check check-lib check-conversion check-util check-tools test $(addsuffix -%,$(TOOLS))
+.PHONY: help check check-lib check-conversion check-util check-tools $(addsuffix -%,$(TOOLS))
 
 help:
 	@echo "audio-utils"

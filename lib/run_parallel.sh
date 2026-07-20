@@ -26,7 +26,11 @@ _run_parallel_default_jobs() {
     printf '%s\n' "$n"
     return
   fi
-  n=$(nproc 2>/dev/null || sysctl -n hw.ncpu 2>/dev/null || echo 4)
+  if declare -F au_cpu_count >/dev/null 2>&1; then
+    n=$(au_cpu_count)
+  else
+    n=$(nproc 2>/dev/null || sysctl -n hw.ncpu 2>/dev/null || echo 4)
+  fi
   printf '%s\n' "$n"
 }
 

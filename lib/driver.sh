@@ -247,7 +247,7 @@ audio_utils_run() {
     init_fail_log || { echo "Error: cannot write failure log: $FAIL_LOG" >&2; exit 2; }
     init_success_log || exit 2
     log_always "=== $(audio_utils_print_version "$AU_TOOL_NAME" | tr -d '\n') ==="
-    log_always "start:     $(date -Iseconds)"
+    log_always "start:     $(au_iso_timestamp)"
     log_always "host:      $(hostname 2>/dev/null || echo unknown)"
     log_always "fail_log:  $FAIL_LOG"
     log_always "success:   $SUCCESS_LOG"

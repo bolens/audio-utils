@@ -28,9 +28,6 @@ plugin_accept_source() {
   [[ "$c" == "tak" || "${1,,}" == *.tak ]]
 }
 
-plugin_require_deps() {
-  require_cmds flac ffmpeg ffprobe flock
-}
 
 plugin_export_env() {
   export DELETE_SOURCE AU_SOURCE_LABEL AU_TAG_FROM_SOURCE

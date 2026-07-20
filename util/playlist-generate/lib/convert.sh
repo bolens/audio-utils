@@ -2,7 +2,7 @@
 # Once per directory: write <dirname>.m3u beside tracks (relative paths, path-deduped).
 
 _plgen_dir_key() {
-  printf '%s' "$1" | sha256sum | awk '{print $1}'
+  au_sha256_str "$1"
 }
 
 _plgen_build_dir() {

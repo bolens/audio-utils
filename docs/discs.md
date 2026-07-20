@@ -13,6 +13,8 @@ Intended for archiving discs **you are allowed to copy**. This project does **no
 sudo pacman -S libdvdcss
 # Debian/Ubuntu
 sudo apt-get install libdvdcss2
+# Fedora (RPM Fusion)
+sudo dnf install libdvdcss
 ```
 
 Env: `AUDIO_UTILS_DVD_DEVICE` (for backup helpers), paths passed as `VIDEO_TS` dirs to the tool.
@@ -40,6 +42,10 @@ sudo pacman -S libbluray libaacs
 # Debian/Ubuntu
 sudo apt-get install libbluray2 libaacs0
 # libbdplus0 / MakeMKV from your preferred source
+
+# Fedora (RPM Fusion for some extras)
+sudo dnf install libbluray libaacs
+# libbdplus / MakeMKV from COPR or vendor packages
 ```
 
 Place `KEYDB.cfg` at `${XDG_CONFIG_HOME:-$HOME/.config}/aacs/KEYDB.cfg`. This repo will not download or ship it.
@@ -49,13 +55,14 @@ BD+ titles may need **libbdplus** + operator VM/cache dumps, or MakeMKV. Fail cl
 ## CDDA (`cdda-to-flac`)
 
 - Requires **cdparanoia**.
-- Optional: **whipper** for MusicBrainz / AccurateRip (not required).
+- MusicBrainz / AccurateRip workflows (e.g. whipper) are **external** — not wired into this tool.
 - Device: `AUDIO_UTILS_CD_DEVICE` or `-D /dev/sr0` (default `/dev/sr0`).
 - Output directory defaults under the working tree (`./cdda-rip/` unless configured).
 
 ```bash
 sudo pacman -S cdparanoia   # Arch
 sudo apt-get install cdparanoia
+sudo dnf install cdparanoia # Fedora
 ```
 
 ## Troubleshooting
@@ -63,7 +70,7 @@ sudo apt-get install cdparanoia
 | Symptom | Check |
 |---------|--------|
 | CSS / cannot read VOB | libdvdcss installed? readable VIDEO_TS? |
-| No tracks on CD | correct `/dev/srN`? permissions in `cdrom` group? |
+| No tracks on CD | correct `/dev/srN`? permissions in `cdrom` / optical group? |
 | CPPM fail | use decrypted dump; see requirements |
 | Blu-ray unreadable | KEYDB.cfg present? libaacs/libbluray? Try MakeMKV; or use decrypted M2TS/MKV |
 | BD+ fail | libbdplus + dumps, or MakeMKV |

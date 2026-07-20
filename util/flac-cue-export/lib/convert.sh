@@ -2,7 +2,7 @@
 # Once per album directory: concat FLACs → image.flac + matching CUE.
 
 _cueexp_dir_key() {
-  printf '%s' "$1" | sha256sum | awk '{print $1}'
+  au_sha256_str "$1"
 }
 
 _cueexp_list_flacs() {
@@ -60,8 +60,8 @@ _cueexp_build_album() {
   # Don't include image.flac itself in the track list if re-running.
   local -a tracks=()
   for f in "${flacs[@]}"; do
-    if [[ "$(readlink -f -- "$f" 2>/dev/null || echo "$f")" == \
-          "$(readlink -f -- "$image" 2>/dev/null || echo "$image")" ]]; then
+    if [[ "$(au_abspath "$f")" == \
+          "$(au_abspath "$image")" ]]; then
       continue
     fi
     tracks+=("$f")

@@ -16,14 +16,14 @@ init_tmpdir_registry() {
 register_tmpdir() {
   local dir="$1" id
   [[ -n "${AUDIO_UTILS_TMP_REGISTRY:-}" && -d "${AUDIO_UTILS_TMP_REGISTRY}" ]] || return 0
-  id=$(printf '%s' "$dir" | sha256sum | awk '{print $1}')
+  id=$(au_sha256_str "$dir")
   printf '%s\n' "$dir" >"${AUDIO_UTILS_TMP_REGISTRY}/${id}"
 }
 
 unregister_tmpdir() {
   local dir="$1" id
   [[ -n "${AUDIO_UTILS_TMP_REGISTRY:-}" && -d "${AUDIO_UTILS_TMP_REGISTRY}" ]] || return 0
-  id=$(printf '%s' "$dir" | sha256sum | awk '{print $1}')
+  id=$(au_sha256_str "$dir")
   rm -f -- "${AUDIO_UTILS_TMP_REGISTRY}/${id}"
 }
 
