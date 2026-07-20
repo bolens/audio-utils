@@ -14,7 +14,7 @@ TOOLS = wav-to-flac flac-to-wav flac-to-mp3 \
 	wav-to-aiff aiff-to-wav \
 	flac-to-opus flac-to-aac flac-to-vorbis \
 	streams-to-flac dvd-to-flac cdda-to-flac bluray-to-flac \
-	flac-verify flac-replaygain
+	flac-verify flac-replaygain flac-artwork
 
 .PHONY: help check test $(addsuffix -%,$(TOOLS))
 

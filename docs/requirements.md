@@ -20,6 +20,7 @@ Core (all tools): Linux, `bash` 4+, `flac`, `ffmpeg`/`ffprobe`, `flock`, GNU `fi
 | cue / remux / streams | core set only |
 | flac-verify | core `flac` + `flock`; `-M` needs `ffmpeg`/`ffprobe`/`metaflac` |
 | flac-replaygain | `metaflac` + **rsgain** (preferred) or **loudgain** |
+| flac-artwork | `metaflac` |
 
 ## Arch / CachyOS
 
