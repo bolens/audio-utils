@@ -7,7 +7,13 @@ SHELLCHECK = shellcheck -x -a
 TOOLS = wav-to-flac flac-to-wav flac-to-mp3 \
 	aiff-to-flac flac-to-aiff \
 	flac-to-alac alac-to-flac \
-	flac-to-wv wv-to-flac
+	flac-to-wv wv-to-flac \
+	cue-to-flac \
+	ape-to-flac flac-to-ape \
+	tak-to-flac flac-to-tak \
+	wav-to-aiff aiff-to-wav \
+	flac-to-opus flac-to-aac flac-to-vorbis \
+	streams-to-flac dvd-to-flac cdda-to-flac
 
 .PHONY: help check test $(addsuffix -%,$(TOOLS))
 
@@ -19,6 +25,7 @@ help:
 	@echo ""
 	@echo "Tools: $(TOOLS)"
 	@echo ""
+	@echo "Docs:  docs/  (requirements, formats, cue, discs, tak, lossy)"
 	@echo "Set library roots:"
 	@echo "  export AUDIO_UTILS_ROOTS=\"\$$HOME/Music \$$HOME/Downloads\""
 	@echo ""
@@ -28,32 +35,13 @@ help:
 check:
 	$(SHELLCHECK) lib/load.sh lib/log.sh lib/xdg.sh lib/config.sh lib/version.sh \
 		lib/progress.sh lib/tmpdir.sh lib/probe.sh lib/disk.sh lib/util.sh \
-		lib/find-audio-dirs.sh lib/driver.sh lib/worker.sh lib/pcm_flac.sh
+		lib/find-audio-dirs.sh lib/driver.sh lib/worker.sh lib/pcm_flac.sh \
+		lib/cue.sh lib/lossy.sh lib/tak.sh lib/dvd.sh lib/cdda.sh
 	@for t in $(TOOLS); do $(MAKE) -C $$t check || exit 1; done
 
-wav-to-flac-%:
-	$(MAKE) -C wav-to-flac $*
-
-flac-to-wav-%:
-	$(MAKE) -C flac-to-wav $*
-
-flac-to-mp3-%:
-	$(MAKE) -C flac-to-mp3 $*
-
-aiff-to-flac-%:
-	$(MAKE) -C aiff-to-flac $*
-
-flac-to-aiff-%:
-	$(MAKE) -C flac-to-aiff $*
-
-flac-to-alac-%:
-	$(MAKE) -C flac-to-alac $*
-
-alac-to-flac-%:
-	$(MAKE) -C alac-to-flac $*
-
-flac-to-wv-%:
-	$(MAKE) -C flac-to-wv $*
-
-wv-to-flac-%:
-	$(MAKE) -C wv-to-flac $*
+# Forward make -C TOOL TARGET via e.g. `make cue-to-flac-check`
+define TOOL_FORWARD
+$(1)-%:
+	$$(MAKE) -C $(1) $$*
+endef
+$(foreach t,$(TOOLS),$(eval $(call TOOL_FORWARD,$(t))))
