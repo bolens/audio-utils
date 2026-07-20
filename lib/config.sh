@@ -51,9 +51,8 @@ _audio_utils_expand_value() {
 
 # Load config file. Existing env vars win. Returns 0 even if file missing.
 audio_utils_load_config() {
-  local conf="${1:-}"
-  local line key val
-  [[ -n "$conf" ]] || conf=$(audio_utils_config_path)
+  local conf line key val
+  conf=$(audio_utils_config_path)
   [[ -f "$conf" ]] || return 0
 
   while IFS= read -r line || [[ -n "$line" ]]; do

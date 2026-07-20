@@ -39,6 +39,25 @@ file_bytes() {
   stat -c%s -- "$1" 2>/dev/null || echo 0
 }
 
+# Channel count for first audio stream; empty on failure.
+audio_channels() {
+  ffprobe -v error -select_streams a:0 -show_entries stream=channels -of csv=p=0 -- "$1" 2>/dev/null
+}
+
+# Sample rate (Hz) for first audio stream; empty on failure.
+audio_sample_rate() {
+  ffprobe -v error -select_streams a:0 -show_entries stream=sample_rate -of csv=p=0 -- "$1" 2>/dev/null
+}
+
+# True if SRC and DEST have the same non-empty audio MD5 (lossless sibling check).
+sibling_matches_source() {
+  local src="$1" dest="$2" md5_src md5_dest
+  [[ -f "$src" && -f "$dest" ]] || return 1
+  md5_src=$(audio_md5 "$src")
+  md5_dest=$(audio_md5 "$dest")
+  [[ -n "$md5_src" && -n "$md5_dest" && "$md5_src" == "$md5_dest" ]]
+}
+
 # Max abs sample level + NaN/Inf guard via ffmpeg astats (normalized float domain).
 float_abs_peak() {
   local report nans infs

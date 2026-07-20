@@ -7,16 +7,16 @@ convert_one() {
   local dest_dir tmpdir target tagged src md5 sha notes=""
   local force_reconvert=0
 
-  # Smart skip
+  # Smart skip: probe OK + audio MD5 matches FLAC
   if [[ -f "$wav" && "${OVERWRITE:-0}" -eq 0 ]]; then
-    if wav_ok "$wav"; then
+    if wav_ok "$wav" && sibling_matches_source "$flac" "$wav"; then
       log_progress "skip (wav ok): $wav"
       if [[ "${DRY_RUN:-0}" -eq 0 ]]; then
         log_success "$flac" "$wav" "$(audio_md5 "$wav")" "$(file_sha256 "$wav")" "skipped-existing-ok"
       fi
       return 0
     fi
-    log_info "note: existing wav failed probe; reconverting: $wav"
+    log_info "note: existing wav failed probe/MD5; reconverting: $wav"
     force_reconvert=1
   fi
 

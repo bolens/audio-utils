@@ -10,16 +10,16 @@ delete_one_existing() {
     return 0
   fi
 
-  if ! wav_ok "$wav"; then
-    log_fail "$flac" "sibling wav missing/corrupt" "wav=$wav"
+  if ! wav_ok "$wav" || ! sibling_matches_source "$flac" "$wav"; then
+    log_fail "$flac" "sibling wav missing/corrupt or MD5 mismatch" "wav=$wav"
     return 1
   fi
 
   if [[ "${DRY_RUN:-0}" -eq 1 ]]; then
-    log_progress "would delete: $flac (wav ok: $wav)"
+    log_progress "would delete: $flac (wav ok+md5: $wav)"
     return 0
   fi
 
   rm -f -- "$flac"
-  log_progress "deleted: $flac (wav ok: $wav)"
+  log_progress "deleted: $flac (wav ok+md5: $wav)"
 }

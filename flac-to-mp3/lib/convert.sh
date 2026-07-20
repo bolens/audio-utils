@@ -40,6 +40,21 @@ convert_one() {
     return 1
   fi
 
+  local ch rate
+  ch=$(audio_channels "$flac" || true)
+  rate=$(audio_sample_rate "$flac" || true)
+  if [[ -z "$ch" ]] || ((ch > 2)); then
+    log_fail "$flac" "unsupported channel count for MP3" "channels=${ch:-unknown} (max 2)"
+    return 1
+  fi
+  case "$rate" in
+    8000|11025|12000|16000|22050|24000|32000|44100|48000) ;;
+    *)
+      log_fail "$flac" "unsupported sample rate for MP3" "rate=${rate:-unknown} (no silent resample)"
+      return 1
+      ;;
+  esac
+
   dest_dir=$(dirname -- "$mp3")
   tmpdir=$(make_workdir "$dest_dir")
   out="${tmpdir}/out.mp3"
