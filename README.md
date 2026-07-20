@@ -4,7 +4,7 @@
 
 Verified **audio conversion utilities** for Linux libraries. **FLAC** is the archive hub.
 
-Docs: **[docs/](docs/)** — [requirements](docs/requirements.md) · [formats](docs/formats.md) · [cue](docs/cue.md) · [discs](docs/discs.md) · [streaming](docs/streaming.md) · [tak](docs/tak.md) · [dsd](docs/dsd.md) · [lossy](docs/lossy.md) · [adding a util](docs/adding-a-util.md)
+Docs: **[docs/](docs/)** — [requirements](docs/requirements.md) · [formats](docs/formats.md) · [cue](docs/cue.md) · [discs](docs/discs.md) · [streaming](docs/streaming.md) · [tak](docs/tak.md) · [dsd](docs/dsd.md) · [lossy](docs/lossy.md) · [playlists](docs/playlists.md) · [adding a util](docs/adding-a-util.md)
 
 ### Conversion
 
@@ -58,6 +58,10 @@ Docs: **[docs/](docs/)** — [requirements](docs/requirements.md) · [formats](d
 | [`util/silence-detect/`](util/silence-detect/) | Leading/trailing silence + clipping QC |
 | [`util/disc-inventory/`](util/disc-inventory/) | Catalog VIDEO_TS / BDMV / CUE units |
 | [`util/lossy-audit/`](util/lossy-audit/) | Portable lossy audit (tags, cover, bitrate) |
+| [`util/playlist-audit/`](util/playlist-audit/) | Playlist health (paths, empty, dupes, UTF-8) |
+| [`util/playlist-normalize/`](util/playlist-normalize/) | Rewrite format / relative↔absolute paths |
+| [`util/playlist-generate/`](util/playlist-generate/) | Build `.m3u` per audio directory |
+| [`util/playlist-dedupe/`](util/playlist-dedupe/) | Drop duplicate songs from playlists |
 
 ## Quick start
 

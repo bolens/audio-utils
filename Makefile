@@ -28,7 +28,9 @@ UTIL = \
 	util/flac-rename util/flac-cue-export util/flac-strip util/flac-inventory \
 	util/audio-replaygain util/audio-tags util/audio-dupes util/audio-artwork \
 	util/library-sync util/tree-diff util/hash-verify util/pcm-cleanup \
-	util/cue-audit util/silence-detect util/disc-inventory util/lossy-audit
+  util/cue-audit util/silence-detect util/disc-inventory util/lossy-audit \
+	util/playlist-audit util/playlist-normalize util/playlist-generate \
+	util/playlist-dedupe
 
 TOOLS = $(CONVERSION) $(UTIL)
 
@@ -38,7 +40,7 @@ LIB_SCRIPTS = \
 	lib/success_log.sh lib/delete.sh lib/convert_all.sh lib/pcm_remux.sh \
 	lib/pcm_to_flac.sh lib/lossless.sh lib/plugin_init.sh lib/cli.sh \
 	lib/find-audio-dirs.sh lib/driver.sh lib/worker.sh lib/pcm_flac.sh \
-	lib/cue.sh lib/tags.sh lib/audio_meta.sh lib/lossy.sh lib/tak.sh lib/dvd.sh lib/cdda.sh \
+	lib/cue.sh lib/playlist.sh lib/tags.sh lib/audio_meta.sh lib/lossy.sh lib/tak.sh lib/dvd.sh lib/cdda.sh \
 	lib/bluray.sh lib/run_parallel.sh
 
 RUN_PARALLEL = $(CURDIR)/lib/run_parallel.sh
@@ -61,7 +63,7 @@ help:
 	@echo "Conversion: $(notdir $(CONVERSION))"
 	@echo "Util:       $(notdir $(UTIL))"
 	@echo ""
-	@echo "Docs:  docs/  (requirements, formats, cue, discs, streaming, tak, lossy, utils)"
+	@echo "Docs:  docs/  (requirements, formats, cue, discs, streaming, tak, lossy, playlists, utils)"
 	@echo "Set library roots:"
 	@echo "  export AUDIO_UTILS_ROOTS=\"\$$HOME/Music \$$HOME/Downloads\""
 	@echo ""
