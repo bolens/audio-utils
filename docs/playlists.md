@@ -38,3 +38,7 @@ make -C util/playlist-audit convert-quiet
 make -C util/playlist-normalize convert-quiet -- --relative
 make -C util/playlist-dedupe convert-quiet -- -y
 ```
+
+## See also
+
+[docs index](README.md) · [requirements.md](requirements.md) · [formats.md](formats.md) · [adding-a-util.md](adding-a-util.md) · [root README](../README.md) (util table)

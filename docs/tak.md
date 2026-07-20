@@ -31,3 +31,7 @@ Takc is unreliable with non-ASCII paths. Tools encode via **ASCII temp paths** u
 ## Verify
 
 After encode: decode TAK → PCM audio MD5 must match source FLAC.
+
+## See also
+
+[docs index](README.md) · [formats.md](formats.md) · [requirements.md](requirements.md) · [adding-a-converter.md](adding-a-converter.md) · [root README](../README.md)

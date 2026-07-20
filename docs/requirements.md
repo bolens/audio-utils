@@ -129,4 +129,6 @@ Takc is not packaged — download from the upstream TAK site and set `AUDIO_UTIL
 
 Streaming DRM (Widevine, etc.) is **not** supported — see [streaming.md](streaming.md).
 
-Playlist formats and tools: [playlists.md](playlists.md).
+## See also
+
+[docs index](README.md) · [playlists.md](playlists.md) · [discs.md](discs.md) · [tak.md](tak.md) · [lossy.md](lossy.md) · [dsd.md](dsd.md) · [formats.md](formats.md) · [adding-a-converter.md](adding-a-converter.md) · [adding-a-util.md](adding-a-util.md) · [root README](../README.md)

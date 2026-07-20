@@ -69,3 +69,7 @@ sudo apt-get install cdparanoia
 | BD+ fail | libbdplus + dumps, or MakeMKV |
 
 Streaming DRM (Widevine / FairPlay / …) is documented in [streaming.md](streaming.md) — forever out of scope.
+
+## See also
+
+[docs index](README.md) · [requirements.md](requirements.md) · [streaming.md](streaming.md) · [formats.md](formats.md) · [`util/disc-inventory/`](../util/disc-inventory/) · [root README](../README.md)

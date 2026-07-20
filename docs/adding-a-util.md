@@ -1,14 +1,8 @@
 # Adding a non-conversion util
 
-Library lifecycle tools (verify, ReplayGain, artwork, audit) live under [`util/`](../util/). They share the converter CLI stack but do **not** use the convert pipelines (`pcm_to_flac`, `lossy`, `lossless`, …).
+Library lifecycle tools live under [`util/`](../util/). They share the converter CLI stack but do **not** use the convert pipelines (`pcm_to_flac`, `lossy`, `lossless`, …).
 
-First-wave tools: [`util/flac-verify/`](../util/flac-verify/) → [`util/flac-replaygain/`](../util/flac-replaygain/) → [`util/flac-artwork/`](../util/flac-artwork/) → [`util/flac-audit/`](../util/flac-audit/) → [`util/flac-authenticity/`](../util/flac-authenticity/).
-
-Second-wave: [`util/flac-tags/`](../util/flac-tags/) → [`util/flac-dupes/`](../util/flac-dupes/) → [`util/flac-optimize/`](../util/flac-optimize/) → [`util/flac-rename/`](../util/flac-rename/) → [`util/flac-cue-export/`](../util/flac-cue-export/) → [`util/flac-strip/`](../util/flac-strip/) → [`util/flac-inventory/`](../util/flac-inventory/).
-
-Third-wave (multi-format / library): [`util/audio-replaygain/`](../util/audio-replaygain/) → [`util/audio-tags/`](../util/audio-tags/) → [`util/audio-dupes/`](../util/audio-dupes/) → [`util/audio-artwork/`](../util/audio-artwork/) → [`util/library-sync/`](../util/library-sync/) → [`util/tree-diff/`](../util/tree-diff/) → [`util/hash-verify/`](../util/hash-verify/) → [`util/pcm-cleanup/`](../util/pcm-cleanup/) → [`util/cue-audit/`](../util/cue-audit/) → [`util/silence-detect/`](../util/silence-detect/) → [`util/disc-inventory/`](../util/disc-inventory/) → [`util/lossy-audit/`](../util/lossy-audit/).
-
-Fourth-wave (playlists): [`util/playlist-audit/`](../util/playlist-audit/) → [`util/playlist-normalize/`](../util/playlist-normalize/) → [`util/playlist-generate/`](../util/playlist-generate/) → [`util/playlist-dedupe/`](../util/playlist-dedupe/). See [playlists.md](playlists.md).
+**Tool inventory** lives in the root [README](../README.md) util table — do not duplicate lists here. Topic notes: [playlists.md](playlists.md), [cue.md](cue.md), [discs.md](discs.md), [formats.md](formats.md). Deps: [requirements.md](requirements.md). Converters: [adding-a-converter.md](adding-a-converter.md).
 
 ## When to use this vs a converter
 
@@ -21,7 +15,7 @@ Fourth-wave (playlists): [`util/playlist-audit/`](../util/playlist-audit/) → [
 
 ## Scaffold
 
-1. Copy [`util/flac-verify/`](../util/flac-verify/) (or a thin FLAC-scanning peer).
+1. Copy a peer under [`util/`](../util/) (e.g. [`util/flac-verify/`](../util/flac-verify/) or a thin multi-ext tool like [`util/cue-audit/`](../util/cue-audit/)).
 2. Write `lib/plugin.sh`:
    - Set `AU_TOOL_NAME`, `AU_SOURCE_EXT`, `AU_DEST_EXT`, `AU_DISK_FACTOR`, `AU_WORKDIR_PREFIX`, `AU_SUCCESS_COLUMNS`
    - For in-place / no-output tools: `AU_DEST_EXT` may equal `AU_SOURCE_EXT` (driver still requires it)
@@ -40,7 +34,7 @@ Fourth-wave (playlists): [`util/playlist-audit/`](../util/playlist-audit/) → [
    ```
 
 4. Add `find-*-dirs.sh`, `convert-all.sh` (`audio_utils_convert_all`), `Makefile` (`include ../../lib/tool.mk`), `.shellcheckrc` (`source-path=../../lib`).
-5. Wire into root `Makefile` `UTIL` / `TOOLS`, [README](../README.md), and [requirements.md](requirements.md) if deps differ.
+5. Wire into root `Makefile` `UTIL` / `TOOLS`, root [README](../README.md) util table, and [requirements.md](requirements.md) if deps differ. Add or update a topic doc under [`docs/`](README.md) when behavior needs more than a README row.
 
 ## Required plugin surface
 
@@ -57,6 +51,6 @@ Optional: `plugin_parse_opt`, `plugin_after_flags`, `plugin_banner_extra`, `plug
 
 `tool.mk` still exposes `convert` / `convert-quiet` / `dry-run` — for utils these mean “run the batch op over roots,” not “encode.” Prefer that naming over forking Make for each util.
 
-## Docs
+## See also
 
-Link new tools from the root README util table and this doc’s first-wave list when they land.
+[docs index](README.md) · [adding-a-converter.md](adding-a-converter.md) · [requirements.md](requirements.md) · [root README](../README.md)

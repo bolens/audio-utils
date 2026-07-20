@@ -1,6 +1,8 @@
 # Adding a converter
 
-Converters live under [`conversion/`](../conversion/). For library lifecycle tools (verify, ReplayGain, artwork, audit), see [adding-a-util.md](adding-a-util.md).
+Converters live under [`conversion/`](../conversion/). For library lifecycle tools (verify, ReplayGain, artwork, audit, playlists, …), see [adding-a-util.md](adding-a-util.md).
+
+**Tool inventory** lives in the root [README](../README.md) conversion table — do not duplicate lists here. Format hub: [formats.md](formats.md). Topic notes: [cue.md](cue.md), [discs.md](discs.md), [dsd.md](dsd.md), [lossy.md](lossy.md), [tak.md](tak.md), [streaming.md](streaming.md). Deps: [requirements.md](requirements.md).
 
 1. Copy a sibling under `conversion/` (prefer a similar lossless or lossy peer).
 2. Write `lib/plugin.sh`:
@@ -28,6 +30,10 @@ Converters live under [`conversion/`](../conversion/). For library lifecycle too
    ```
    (Custom flag parsers — DVD/Blu-ray/CDDA — skip `cli.sh` and call the driver or own main.)
 6. Add `find-*-dirs.sh`, `convert-all.sh` (`audio_utils_convert_all`), `Makefile` (`include ../../lib/tool.mk`), `.shellcheckrc` (`source-path=../../lib`).
-7. Wire into root `Makefile` `CONVERSION` / `TOOLS` and README / docs.
+7. Wire into root `Makefile` `CONVERSION` / `TOOLS`, root [README](../README.md) conversion table, and [requirements.md](requirements.md) / topic docs when deps or behavior differ.
 
 Shared helpers: [`lib/`](../lib/) — `cli.sh`, `plugin_init.sh`, `lossless.sh`, `pcm_to_flac.sh`, `lossy.sh`, `pcm_remux.sh`, `success_log.sh`, `delete.sh`, `convert_all.sh`, `tool.mk`, …
+
+## See also
+
+[docs index](README.md) · [adding-a-util.md](adding-a-util.md) · [formats.md](formats.md) · [requirements.md](requirements.md) · [root README](../README.md)

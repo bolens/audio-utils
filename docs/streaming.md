@@ -15,4 +15,4 @@ Purchased downloads, podcasts, self-hosted rips you are allowed to archive, and 
 
 audio-utils will not add converters or helpers that circumvent streaming DRM. Use DRM-free sources, or archives you already unlocked by lawful means outside this project.
 
-See also: [formats.md](formats.md), [discs.md](discs.md) (optical is separate; Blu-ray hybrid still does not ship keys).
+See also: [formats.md](formats.md) · [discs.md](discs.md) (optical is separate; Blu-ray hybrid still does not ship keys) · [requirements.md](requirements.md) · [docs index](README.md) · [root README](../README.md)

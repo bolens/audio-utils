@@ -22,4 +22,4 @@ Album/
 - Filename sanitization strips path separators and control chars.
 - `|` in TITLE/PERFORMER is stripped when emitting internal track records (pipe-delimited).
 
-See also: [formats.md](formats.md).
+See also: [formats.md](formats.md) · [discs.md](discs.md) · [requirements.md](requirements.md) · [`util/cue-audit/`](../util/cue-audit/) · [`util/flac-cue-export/`](../util/flac-cue-export/) · [docs index](README.md) · [root README](../README.md)

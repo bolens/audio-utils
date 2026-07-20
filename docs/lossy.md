@@ -65,3 +65,7 @@ LOSSY_NO_RESAMPLE=1
 ```
 
 Verification: duration within ~50ms; stream probe OK. Skip is probe-only (lossy cannot MD5-match PCM).
+
+## See also
+
+[docs index](README.md) · [formats.md](formats.md) · [requirements.md](requirements.md) · [adding-a-converter.md](adding-a-converter.md) · [`util/lossy-audit/`](../util/lossy-audit/) · [root README](../README.md)

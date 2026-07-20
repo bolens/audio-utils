@@ -17,3 +17,7 @@ SHN / DSD / lossy (normalize) / CUE+image / streams / DVD / CDDA   →  FLAC
 ## Workdirs
 
 Temps live beside media as `.${AUDIO_UTILS_WORKDIR_PREFIX}.*` and under XDG runtime for status dirs.
+
+## See also
+
+[docs index](README.md) · [requirements.md](requirements.md) · [lossy.md](lossy.md) · [cue.md](cue.md) · [discs.md](discs.md) · [dsd.md](dsd.md) · [tak.md](tak.md) · [streaming.md](streaming.md) · [playlists.md](playlists.md) · [adding-a-converter.md](adding-a-converter.md)
