@@ -1,0 +1,36 @@
+#!/usr/bin/env bash
+# bluray-to-flac plugin
+
+AU_TOOL_NAME="${AU_TOOL_NAME:-bluray-to-flac}"
+AU_SOURCE_EXT=m2ts
+AU_DEST_EXT=flac
+AU_DISK_FACTOR=4
+AU_WORKDIR_PREFIX=bluray2flac
+AU_SUCCESS_COLUMNS='timestamp,src,flac,audio_md5,flac_sha256,codec,bytes,samples,notes'
+AU_GETOPT_EXTRA="D:"
+
+_LIB=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
+AU_TOOL_DIR=$(cd "${_LIB}/.." && pwd)
+_ROOT=$(cd "${AU_TOOL_DIR}/.." && pwd)
+
+export AU_TOOL_NAME AU_SOURCE_EXT AU_DEST_EXT AU_DISK_FACTOR AU_WORKDIR_PREFIX \
+  AU_SUCCESS_COLUMNS AU_GETOPT_EXTRA AU_TOOL_DIR
+export AUDIO_UTILS_WORKDIR_PREFIX="${AUDIO_UTILS_WORKDIR_PREFIX:-$AU_WORKDIR_PREFIX}"
+
+# shellcheck source=../../lib/load.sh
+source "${_ROOT}/lib/load.sh"
+# shellcheck source=success_log.sh
+source "${_LIB}/success_log.sh"
+# shellcheck source=convert.sh
+source "${_LIB}/convert.sh"
+# shellcheck source=cleanup.sh
+source "${_LIB}/cleanup.sh"
+
+plugin_require_deps() {
+  require_cmds flac ffmpeg ffprobe flock
+}
+
+plugin_export_env() {
+  export DELETE_SOURCE
+  export AUDIO_UTILS_BD_DEVICE AUDIO_UTILS_MAKEMKV
+}
