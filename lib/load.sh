@@ -23,3 +23,5 @@ source "${_AUDIO_UTILS_LIB_DIR}/probe.sh"
 source "${_AUDIO_UTILS_LIB_DIR}/disk.sh"
 # shellcheck source=util.sh
 source "${_AUDIO_UTILS_LIB_DIR}/util.sh"
+# shellcheck source=pcm_flac.sh
+source "${_AUDIO_UTILS_LIB_DIR}/pcm_flac.sh"
