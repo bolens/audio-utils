@@ -6,7 +6,20 @@
 
 _AU_CALLER_LIB=$(cd "$(dirname "${BASH_SOURCE[1]}")" && pwd)
 AU_TOOL_DIR=$(cd "${_AU_CALLER_LIB}/.." && pwd)
-_AU_ROOT=$(cd "${AU_TOOL_DIR}/.." && pwd)
+# Walk up from the tool dir until the shared lib/ is found. Must not match the
+# tool-local lib/load.sh (which only re-sources plugin.sh).
+_AU_ROOT=$AU_TOOL_DIR
+while [[ ! -f "${_AU_ROOT}/lib/plugin_init.sh" ]]; do
+  _AU_PARENT=$(cd "${_AU_ROOT}/.." && pwd)
+  if [[ "$_AU_PARENT" == "$_AU_ROOT" ]]; then
+    echo "audio-utils: cannot find shared lib/plugin_init.sh above $AU_TOOL_DIR" >&2
+    # Sourced from plugin.sh — return fails the caller; exit if executed.
+    # shellcheck disable=SC2317
+    return 1 2>/dev/null || exit 1
+  fi
+  _AU_ROOT=$_AU_PARENT
+done
+unset _AU_PARENT
 
 : "${AU_TOOL_NAME:?AU_TOOL_NAME required before sourcing plugin_init.sh}"
 : "${AU_SOURCE_EXT:?AU_SOURCE_EXT required before sourcing plugin_init.sh}"

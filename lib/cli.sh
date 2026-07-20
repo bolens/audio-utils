@@ -1,13 +1,14 @@
 #!/usr/bin/env bash
 # Thin CLI bootstrap for driver-based converters.
 #
-# In a tool entrypoint (after the # Usage comment block):
+# In a tool entrypoint under conversion/<tool>/ or util/<tool>/
+# (after the # Usage comment block):
 #
 #   set -euo pipefail
 #   AU_USAGE_START=2
 #   AU_USAGE_END=11
-#   # shellcheck source=../lib/cli.sh
-#   source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/../lib/cli.sh"
+#   # shellcheck source=../../lib/cli.sh
+#   source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/../../lib/cli.sh"
 #   audio_utils_cli_run "$@"
 #
 # Optional: AU_USAGE_FILE (defaults to the calling script).
