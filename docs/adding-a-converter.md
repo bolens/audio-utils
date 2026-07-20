@@ -1,12 +1,12 @@
 # Adding a converter
 
-For library lifecycle tools that do **not** convert formats (verify, ReplayGain, artwork, audit), see [adding-a-util.md](adding-a-util.md).
+Converters live under [`conversion/`](../conversion/). For library lifecycle tools (verify, ReplayGain, artwork, audit), see [adding-a-util.md](adding-a-util.md).
 
-1. Copy a sibling tool directory (prefer a similar lossless or lossy peer).
+1. Copy a sibling under `conversion/` (prefer a similar lossless or lossy peer).
 2. Write `lib/plugin.sh`:
    - Set `AU_TOOL_NAME`, `AU_SOURCE_EXT`, `AU_DEST_EXT`, `AU_DISK_FACTOR`, `AU_WORKDIR_PREFIX`, `AU_SUCCESS_COLUMNS`
    - Optional: `AU_SOURCE_EXTS`, `AU_GETOPT_EXTRA`, `AU_CLEANUP_SKIP=1`, `AU_LOSSLESS_CODEC`, `LOSSY_FAMILY`, …
-   - Source `../../lib/plugin_init.sh` (loads shared libs; auto-sources local `prepare.sh` / `encode.sh` / `convert.sh` if present)
+   - Source `../../../lib/plugin_init.sh` (loads shared libs; auto-sources local `prepare.sh` / `encode.sh` / `convert.sh` if present)
    - Define `plugin_require_deps` and optional hooks (`plugin_parse_opt`, `plugin_sibling_ok`, …)
 3. Implement `convert_one` (or call a shared helper):
    - Lossy: set `LOSSY_*`; call `lossy_plugin_wire`; source `lib/lossy_hooks.sh`
@@ -23,11 +23,11 @@ For library lifecycle tools that do **not** convert formats (verify, ReplayGain,
    set -euo pipefail
    AU_USAGE_START=2
    AU_USAGE_END=<last-comment-line>
-   source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/../lib/cli.sh"
+   source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/../../lib/cli.sh"
    audio_utils_cli_run "$@"
    ```
    (Custom flag parsers — DVD/Blu-ray/CDDA — skip `cli.sh` and call the driver or own main.)
-6. Add `find-*-dirs.sh`, `convert-all.sh` (`audio_utils_convert_all`), `Makefile` (`include ../lib/tool.mk`), `.shellcheckrc`.
-7. Wire into root `Makefile` `TOOLS` and README / docs.
+6. Add `find-*-dirs.sh`, `convert-all.sh` (`audio_utils_convert_all`), `Makefile` (`include ../../lib/tool.mk`), `.shellcheckrc` (`source-path=../../lib`).
+7. Wire into root `Makefile` `CONVERSION` / `TOOLS` and README / docs.
 
 Shared helpers: [`lib/`](../lib/) — `cli.sh`, `plugin_init.sh`, `lossless.sh`, `pcm_to_flac.sh`, `lossy.sh`, `pcm_remux.sh`, `success_log.sh`, `delete.sh`, `convert_all.sh`, `tool.mk`, …

@@ -29,7 +29,7 @@ By default, if channels &gt; 2 or the sample rate is outside the codec allowlist
 Fail closed (reject instead):
 
 ```bash
-./flac-to-mp3/flac-to-mp3.sh -N …
+./conversion/flac-to-mp3/flac-to-mp3.sh -N …
 # or
 LOSSY_NO_RESAMPLE=1
 ```

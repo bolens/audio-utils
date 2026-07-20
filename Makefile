@@ -1,20 +1,26 @@
 # audio-utils — top-level helpers
 #
-# Tools live in subdirectories. Shared library: lib/
+# Tools live under conversion/ and util/. Shared library: lib/
 
 SHELLCHECK = shellcheck -x -a
 
-TOOLS = wav-to-flac flac-to-wav flac-to-mp3 \
-	aiff-to-flac flac-to-aiff \
-	flac-to-alac alac-to-flac \
-	flac-to-wv wv-to-flac \
-	cue-to-flac \
-	ape-to-flac flac-to-ape \
-	tak-to-flac flac-to-tak \
-	wav-to-aiff aiff-to-wav \
-	flac-to-opus flac-to-aac flac-to-vorbis \
-	streams-to-flac dvd-to-flac cdda-to-flac bluray-to-flac \
-	flac-verify flac-replaygain flac-artwork flac-audit
+CONVERSION = \
+	conversion/wav-to-flac conversion/flac-to-wav conversion/flac-to-mp3 \
+	conversion/aiff-to-flac conversion/flac-to-aiff \
+	conversion/flac-to-alac conversion/alac-to-flac \
+	conversion/flac-to-wv conversion/wv-to-flac \
+	conversion/cue-to-flac \
+	conversion/ape-to-flac conversion/flac-to-ape \
+	conversion/tak-to-flac conversion/flac-to-tak \
+	conversion/wav-to-aiff conversion/aiff-to-wav \
+	conversion/flac-to-opus conversion/flac-to-aac conversion/flac-to-vorbis \
+	conversion/streams-to-flac conversion/dvd-to-flac conversion/cdda-to-flac \
+	conversion/bluray-to-flac
+
+UTIL = \
+	util/flac-verify util/flac-replaygain util/flac-artwork util/flac-audit
+
+TOOLS = $(CONVERSION) $(UTIL)
 
 .PHONY: help check test $(addsuffix -%,$(TOOLS))
 
@@ -22,9 +28,12 @@ help:
 	@echo "audio-utils"
 	@echo ""
 	@echo "  make check                 shellcheck shared lib + all tools"
-	@echo "  make -C TOOL help          per-tool targets"
+	@echo "  make -C conversion/TOOL help"
+	@echo "  make -C util/TOOL help"
+	@echo "  make TOOL-check            short alias (e.g. wav-to-flac-check)"
 	@echo ""
-	@echo "Tools: $(TOOLS)"
+	@echo "Conversion: $(notdir $(CONVERSION))"
+	@echo "Util:       $(notdir $(UTIL))"
 	@echo ""
 	@echo "Docs:  docs/  (requirements, formats, cue, discs, streaming, tak, lossy, utils)"
 	@echo "Set library roots:"
@@ -42,9 +51,16 @@ check:
 		lib/cue.sh lib/lossy.sh lib/tak.sh lib/dvd.sh lib/cdda.sh lib/bluray.sh
 	@for t in $(TOOLS); do $(MAKE) -C $$t check || exit 1; done
 
-# Forward make -C TOOL TARGET via e.g. `make cue-to-flac-check`
+# Forward make -C PATH TARGET via e.g. `make conversion/cue-to-flac-check`
 define TOOL_FORWARD
 $(1)-%:
 	$$(MAKE) -C $(1) $$*
 endef
 $(foreach t,$(TOOLS),$(eval $(call TOOL_FORWARD,$(t))))
+
+# Short aliases: make wav-to-flac-check → make -C conversion/wav-to-flac check
+define TOOL_ALIAS
+$(notdir $(1))-%:
+	$$(MAKE) -C $(1) $$*
+endef
+$(foreach t,$(TOOLS),$(eval $(call TOOL_ALIAS,$(t))))

@@ -19,7 +19,7 @@ Or put `takc`/`Takc` on `PATH`. If the path ends in `.exe`, the wrapper runs `wi
 Default **`p2`**. Allowlist: `p0`…`p5`, optional suffixes `e` / `m` (e.g. `p3e`, `p4m`).
 
 ```bash
-./flac-to-tak/flac-to-tak.sh -Q p4m /path/to/album
+./conversion/flac-to-tak/flac-to-tak.sh -Q p4m /path/to/album
 # or
 AUDIO_UTILS_TAK_PRESET=p2
 ```

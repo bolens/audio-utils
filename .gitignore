@@ -12,3 +12,6 @@
 **/success.jsonl
 **/.wav2flac.*/
 **/.audio-utils.*/
+
+# Local auth experiment fixtures
+.tmp-auth-test/
