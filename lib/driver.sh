@@ -3,7 +3,8 @@
 #
 # Call after sourcing the tool's lib/plugin.sh. Plugin must set:
 #   AU_TOOL_NAME          e.g. flac-to-wav
-#   AU_SOURCE_EXT         e.g. flac
+#   AU_SOURCE_EXT         e.g. flac (primary; used in messages)
+#   AU_SOURCE_EXTS        optional space-separated list (default: AU_SOURCE_EXT)
 #   AU_DEST_EXT           e.g. wav
 #   AU_DISK_FACTOR        e.g. 2 or 1.5 (default 3)
 #   AU_SUCCESS_COLUMNS    CSV header hint for finalize tip
@@ -20,6 +21,7 @@
 #   plugin_after_flags           # validate/normalize after shared flag parsing
 #   plugin_banner_extra          # extra log_always lines
 #   plugin_export_env            # export tool-specific env for workers
+#   plugin_accept_source PATH    # return 0 to queue; non-zero to skip
 #
 # Entry: audio_utils_run "$@"
 
@@ -94,6 +96,9 @@ audio_utils_run() {
   : "${AU_SOURCE_EXT:?AU_SOURCE_EXT required}"
   : "${AU_DEST_EXT:?AU_DEST_EXT required}"
   : "${AU_TOOL_DIR:?AU_TOOL_DIR required}"
+
+  AU_SOURCE_EXTS="${AU_SOURCE_EXTS:-$AU_SOURCE_EXT}"
+  export AU_SOURCE_EXTS
 
   AUDIO_UTILS_WORKDIR_PREFIX="${AUDIO_UTILS_WORKDIR_PREFIX:-${AU_WORKDIR_PREFIX:-$AU_TOOL_NAME}}"
   export AUDIO_UTILS_WORKDIR_PREFIX
@@ -254,7 +259,7 @@ audio_utils_run() {
   export DELETE_SOURCE DRY_RUN OVERWRITE DELETE_EXISTING
   export FAIL_LOG SUCCESS_LOG QUIET VERBOSE
   export AUDIO_UTILS_TMP_REGISTRY AUDIO_UTILS_WORKDIR_PREFIX CHECK_DISK_FACTOR
-  export AU_TOOL_DIR AU_TOOL_NAME AU_SOURCE_EXT AU_DEST_EXT
+  export AU_TOOL_DIR AU_TOOL_NAME AU_SOURCE_EXT AU_SOURCE_EXTS AU_DEST_EXT
   # Back-compat aliases used by older convert modules during transition
   export DELETE_WAV="$DELETE_SOURCE" DELETE_FLAC="$DELETE_SOURCE"
 
@@ -276,12 +281,39 @@ audio_utils_run() {
       continue
     fi
 
+    local -a find_expr=() _exts
+    local _e _first=1
+    # shellcheck disable=SC2206
+    _exts=($AU_SOURCE_EXTS)
+    for _e in "${_exts[@]}"; do
+      if ((_first)); then
+        find_expr=( -iname "*.${_e}" )
+        _first=0
+      else
+        find_expr+=( -o -iname "*.${_e}" )
+      fi
+    done
+
     mapfile -t srcs < <(
-      LC_ALL=C find -P "$dir" -maxdepth 1 -type f \( -iname "*.${AU_SOURCE_EXT}" \) | LC_ALL=C sort
+      LC_ALL=C find -P "$dir" -maxdepth 1 -type f \( "${find_expr[@]}" \) | LC_ALL=C sort
     )
+
+    if declare -F plugin_accept_source >/dev/null 2>&1; then
+      local -a _accepted=()
+      local _src
+      for _src in "${srcs[@]}"; do
+        if plugin_accept_source "$_src"; then
+          _accepted+=("$_src")
+        else
+          log_info "skip (not accepted): $_src"
+        fi
+      done
+      srcs=("${_accepted[@]}")
+    fi
+
     if ((${#srcs[@]} == 0)); then
       log_info "==> $dir"
-      log_info "  (no .${AU_SOURCE_EXT} files)"
+      log_info "  (no matching .${AU_SOURCE_EXTS// /|} files)"
       continue
     fi
 
@@ -300,7 +332,7 @@ audio_utils_run() {
       DIR_CHECKED[$dir]=ok
     fi
 
-    log_info "==> $dir (${#srcs[@]} .${AU_SOURCE_EXT})"
+    log_info "==> $dir (${#srcs[@]} files)"
     ALL_SRCS+=("${srcs[@]}")
   done
 
