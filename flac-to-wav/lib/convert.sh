@@ -25,7 +25,7 @@ convert_one() {
     log_progress "would convert+verify: $flac -> $wav"
     log_info "would decode:         flac → $target (dual + audio MD5)"
     log_info "would tag:            copy metadata/cover from FLAC → WAV"
-    if [[ "${DELETE_FLAC:-0}" -eq 1 ]]; then
+    if [[ "${DELETE_SOURCE:-${DELETE_FLAC:-0}}" -eq 1 ]]; then
       log_info "would delete:         $flac"
     fi
     return 0
@@ -82,7 +82,7 @@ convert_one() {
   notes="converted;$target"
   ((force_reconvert)) && notes="reconverted-corrupt-wav;$target"
 
-  if [[ "${DELETE_FLAC:-0}" -eq 1 ]]; then
+  if [[ "${DELETE_SOURCE:-${DELETE_FLAC:-0}}" -eq 1 ]]; then
     rm -f -- "$flac"
     log_info "deleted: $flac"
     notes="${notes};deleted-flac"
