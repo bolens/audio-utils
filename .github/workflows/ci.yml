@@ -5,6 +5,10 @@ on:
     branches: [main, master]
   pull_request:
 
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 permissions:
   contents: read
 
@@ -74,6 +78,7 @@ jobs:
             local tools_json matrix_json
             if ((count == 0)); then
               tools_json='[]'
+              # Always a valid include[] entry so fromJSON never sees "".
               matrix_json='[{"shard":0,"shards":1}]'
             else
               tools_json="$(printf '%s\n' "${tools[@]}" | jq -R . | jq -s -c .)"
@@ -87,14 +92,9 @@ jobs:
                 '[range($n) | {shard: ., shards: $n}]')"
             fi
 
-            {
-              echo "${group}_tools<<EOF"
-              echo "${tools_json}"
-              echo "EOF"
-              echo "${group}_matrix<<EOF"
-              echo "${matrix_json}"
-              echo "EOF"
-            } >>"$GITHUB_OUTPUT"
+            # Single-line outputs (avoid heredoc/newline surprises with fromJSON).
+            printf '%s_tools=%s\n' "$group" "$tools_json" >>"$GITHUB_OUTPUT"
+            printf '%s_matrix=%s\n' "$group" "$matrix_json" >>"$GITHUB_OUTPUT"
 
             echo "${group}: ${count} tool(s), matrix=${matrix_json}"
           }
@@ -126,7 +126,8 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
-      matrix: ${{ fromJSON(needs.changes.outputs.conversion_matrix) }}
+      matrix:
+        include: ${{ fromJSON(needs.changes.outputs.conversion_matrix) }}
     steps:
       - name: Checkout
         uses: actions/checkout@v7
@@ -161,7 +162,8 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
-      matrix: ${{ fromJSON(needs.changes.outputs.util_matrix) }}
+      matrix:
+        include: ${{ fromJSON(needs.changes.outputs.util_matrix) }}
     steps:
       - name: Checkout
         uses: actions/checkout@v7
