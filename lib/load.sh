@@ -19,6 +19,8 @@ source "${_AUDIO_UTILS_LIB_DIR}/progress.sh"
 source "${_AUDIO_UTILS_LIB_DIR}/tmpdir.sh"
 # shellcheck source=probe.sh
 source "${_AUDIO_UTILS_LIB_DIR}/probe.sh"
+# shellcheck source=tags.sh
+source "${_AUDIO_UTILS_LIB_DIR}/tags.sh"
 # shellcheck source=disk.sh
 source "${_AUDIO_UTILS_LIB_DIR}/disk.sh"
 # shellcheck source=util.sh

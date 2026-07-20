@@ -22,6 +22,7 @@
 #   plugin_banner_extra          # extra log_always lines
 #   plugin_export_env            # export tool-specific env for workers
 #   plugin_accept_source PATH    # return 0 to queue; non-zero to skip
+#   plugin_finalize OK FAIL      # after run summary / success-fail logs
 #
 # Entry: audio_utils_run "$@"
 
@@ -421,5 +422,8 @@ audio_utils_run() {
     log_always "Done. ok=$ok failed=$fail elapsed=$(fmt_dur "$elapsed")"
   fi
   audio_utils_finalize_run_logs
+  if declare -F plugin_finalize >/dev/null 2>&1; then
+    plugin_finalize "$ok" "$fail" || true
+  fi
   [[ "$fail" -eq 0 ]]
 }

@@ -49,7 +49,8 @@ check:
 		lib/success_log.sh lib/delete.sh lib/convert_all.sh lib/pcm_remux.sh \
 		lib/pcm_to_flac.sh lib/lossless.sh lib/plugin_init.sh lib/cli.sh \
 		lib/find-audio-dirs.sh lib/driver.sh lib/worker.sh lib/pcm_flac.sh \
-		lib/cue.sh lib/lossy.sh lib/tak.sh lib/dvd.sh lib/cdda.sh lib/bluray.sh
+		lib/cue.sh lib/tags.sh lib/lossy.sh lib/tak.sh lib/dvd.sh lib/cdda.sh \
+		lib/bluray.sh
 	@for t in $(TOOLS); do $(MAKE) -C $$t check || exit 1; done
 
 # Forward make -C PATH TARGET via e.g. `make conversion/cue-to-flac-check`
