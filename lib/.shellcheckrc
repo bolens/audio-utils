@@ -1,0 +1,4 @@
+# Shared audio-utils library
+source-path=SCRIPTDIR
+external-sources=true
+shell=bash

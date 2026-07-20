@@ -1,0 +1,40 @@
+#!/usr/bin/env bash
+# Disk free-space preflight.
+
+bytes_avail() {
+  df -B1 --output=avail "$1" 2>/dev/null | tail -n1 | tr -d ' '
+}
+
+# check_disk_space DIR FILE [FILE...]
+# Requires ~3× largest FILE free on DIR's filesystem (temps + encodes).
+check_disk_space() {
+  local dir="$1"
+  shift
+  local largest=0 sz need free human_need human_free
+
+  ((${#} == 0)) && return 0
+
+  for f in "$@"; do
+    sz=$(file_bytes "$f")
+    if ((sz > largest)); then
+      largest=$sz
+    fi
+  done
+
+  need=$((largest * 3))
+  free=$(bytes_avail "$dir")
+  if [[ -z "$free" || ! "$free" =~ ^[0-9]+$ ]]; then
+    log_info "warning: could not determine free space for $dir; continuing"
+    return 0
+  fi
+
+  if ((free < need)); then
+    human_need=$(numfmt --to=iec --suffix=B "$need" 2>/dev/null || echo "${need}B")
+    human_free=$(numfmt --to=iec --suffix=B "$free" 2>/dev/null || echo "${free}B")
+    printf 'Error: insufficient free space on %s (need ~%s for temps, have %s)\n' \
+      "$dir" "$human_need" "$human_free" >&2
+    return 1
+  fi
+
+  log_verbose "disk ok: $dir free=$(numfmt --to=iec --suffix=B "$free" 2>/dev/null || echo "$free") need~=$(numfmt --to=iec --suffix=B "$need" 2>/dev/null || echo "$need")"
+}

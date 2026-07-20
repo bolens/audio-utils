@@ -1,0 +1,21 @@
+# Example config for audio-utils
+#
+# Install (XDG):
+#   mkdir -p "${XDG_CONFIG_HOME:-$HOME/.config}/audio-utils"
+#   cp config.example "${XDG_CONFIG_HOME:-$HOME/.config}/audio-utils/config"
+#
+# Or: set -a && source config.example && set +a
+#
+# Environment variables already set in the shell take precedence over this file.
+
+# Space-separated library roots (find / convert-all / clean-tmp / orphan sweep)
+AUDIO_UTILS_ROOTS="$HOME/Music $HOME/Downloads"
+
+# Optional alias (same meaning):
+# WAV2FLAC_ROOTS="$HOME/Music"
+
+# XDG overrides (optional — defaults match the Base Directory Spec):
+# XDG_CONFIG_HOME="$HOME/.config"       # this file: …/audio-utils/config
+# XDG_STATE_HOME="$HOME/.local/state"   # logs: …/audio-utils/<tool>/
+# XDG_CACHE_HOME="$HOME/.cache"         # runtime fallback if no XDG_RUNTIME_DIR
+# XDG_RUNTIME_DIR is usually set by the session (e.g. /run/user/$UID)

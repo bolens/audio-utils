@@ -1,0 +1,8 @@
+# Project shellcheck config.
+# SCRIPTDIR: resolve sources relative to the file being checked.
+# lib: tool modules; ../lib: shared audio-utils modules (cwd = wav-to-flac/).
+source-path=SCRIPTDIR
+source-path=lib
+source-path=../lib
+external-sources=true
+shell=bash
