@@ -558,8 +558,8 @@ encode_flac_verified() {
   printf '%s\n' "$hash1"
 }
 
-# Encode FLAC → compressed lossless (alac/wavpack/ape) via ffmpeg; verify PCM MD5.
-# Args: flac dest codec_name  (codec_name: alac | wavpack | ape)
+# Encode FLAC → compressed lossless (alac/wavpack/ape/tta) via ffmpeg; verify PCM MD5.
+# Args: flac dest codec_name  (codec_name: alac | wavpack | ape | tta)
 # Writes dest; returns 0 if audio MD5 matches FLAC.
 encode_lossless_ffmpeg() {
   local flac="$1" dest="$2" codec="$3"

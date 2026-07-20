@@ -8,17 +8,27 @@
 #   Optional: AU_TAG_FROM_SOURCE=0 to skip tagging (copy untagged)
 #
 # from_flac_lossless_convert_one:
-#   Requires AU_LOSSLESS_CODEC (alac|wavpack|ape) and AU_DEST_EXT
+#   Requires AU_LOSSLESS_CODEC (alac|wavpack|ape|tta) and AU_DEST_EXT
 #   Skip via plugin_sibling_ok (or sibling_ok)
 #   Optional: plugin_post_encode_ok DEST (e.g. is_wavpack_pure)
 #
 # flac_to_pcm_convert_one:
-#   Requires AU_DEST_EXT (wav|aiff|aif)
+#   Requires AU_DEST_EXT (wav|aiff|aif|caf)
 #   Skip via pcm_ok + sibling MD5
 
 # True if path is Monkey's Audio.
 is_ape() {
   [[ "$(audio_codec "$1" 2>/dev/null || true)" == "ape" ]]
+}
+
+# True if path is True Audio (TTA).
+is_tta() {
+  [[ "$(audio_codec "$1" 2>/dev/null || true)" == "tta" ]]
+}
+
+# True if path is Shorten.
+is_shorten() {
+  [[ "$(audio_codec "$1" 2>/dev/null || true)" == "shorten" ]]
 }
 
 # --- * → FLAC ----------------------------------------------------------------
@@ -192,6 +202,7 @@ flac_to_pcm_convert_one() {
   case "${dest_ext,,}" in
     wav|wave) target=$(target_pcm_le_codec "$flac" 2>/dev/null || echo pcm_s24le) ;;
     aiff|aif) target=$(target_pcm_be_codec "$flac" 2>/dev/null || echo pcm_s24be) ;;
+    caf) target=$(target_pcm_le_codec "$flac" 2>/dev/null || echo pcm_s24le) ;;
     *)
       log_fail "$flac" "unsupported AU_DEST_EXT for flac_to_pcm: $dest_ext"
       return 1
@@ -217,7 +228,7 @@ flac_to_pcm_convert_one() {
 
   log_progress "convert: $flac"
   case "${dest_ext,,}" in
-    wav|wave) target=$(target_pcm_le_codec "$flac") ;;
+    wav|wave|caf) target=$(target_pcm_le_codec "$flac") ;;
     aiff|aif) target=$(target_pcm_be_codec "$flac") ;;
   esac
 
