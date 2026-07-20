@@ -51,11 +51,13 @@ export AUDIO_UTILS_ROOTS="$HOME/Music $HOME/Downloads"
 ```
 audio-utils/
   LICENSE, README.md, VERSION, Makefile, config.example
-  lib/                     # shared helpers + find-audio-dirs.sh
-  wav-to-flac/
+  lib/                     # shared helpers, driver, worker, find-audio-dirs
+  wav-to-flac/             # thin CLI + lib/plugin.sh + codec modules
   flac-to-wav/
   flac-to-mp3/
 ```
+
+Shared CLI lives in [`lib/driver.sh`](lib/driver.sh) (`audio_utils_run`) and [`lib/worker.sh`](lib/worker.sh). Each tool is a plugin: set contract vars, implement `convert_one` / `delete_one_existing` / `init_success_log`, optional flag hooks.
 
 ### Paths (XDG)
 
@@ -76,9 +78,9 @@ audio-utils/
 
 ### Adding another converter
 
-1. Copy an existing tool layout (CLI + `lib/{load,encode,convert,…}`).
-2. In tool `lib/load.sh`, source `../../lib/load.sh`, set `AUDIO_UTILS_WORKDIR_PREFIX=yourtool`.
-3. Keep codec/pipeline code local; reuse logging, progress, traps, disk, probes, roots.
+1. Copy a sibling tool dir; keep codec code in `lib/{encode,convert,cleanup,…}.sh`.
+2. Write `lib/plugin.sh`: set `AU_TOOL_NAME`, `AU_SOURCE_EXT`, `AU_DEST_EXT`, `AU_DISK_FACTOR`, `AU_WORKDIR_PREFIX`, `AU_SUCCESS_COLUMNS`, optional `AU_GETOPT_EXTRA`; source `../../lib/load.sh` and local modules; define `plugin_require_deps` and optional `plugin_parse_opt` / `plugin_consume_arg` / `plugin_after_flags` / `plugin_banner_extra` / `plugin_export_env`.
+3. Thin CLI: set `AU_USAGE_*`, `source lib/plugin.sh`, `source ../lib/driver.sh`, `audio_utils_load_config`, `audio_utils_run "$@"`.
 4. Wire `make check` and a `tool-%` delegate in the root Makefile.
 
 ## Development
