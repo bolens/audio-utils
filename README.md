@@ -21,6 +21,7 @@ Docs: **[docs/](docs/)** — [requirements](docs/requirements.md) · [formats](d
 | [`bluray-to-flac/`](bluray-to-flac/) | Blu-ray BDMV / decrypted M2TS\|MKV → FLAC ([discs](docs/discs.md)) |
 | [`flac-to-mp3/`](flac-to-mp3/) | FLAC → MP3 (default **v0**) |
 | [`flac-to-opus/`](flac-to-opus/) / [`flac-to-aac/`](flac-to-aac/) / [`flac-to-vorbis/`](flac-to-vorbis/) | FLAC → Opus / AAC / Vorbis |
+| [`flac-verify/`](flac-verify/) | FLAC integrity (`flac -t`; optional decode MD5) |
 
 ## Quick start
 

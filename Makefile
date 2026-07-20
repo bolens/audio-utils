@@ -13,7 +13,8 @@ TOOLS = wav-to-flac flac-to-wav flac-to-mp3 \
 	tak-to-flac flac-to-tak \
 	wav-to-aiff aiff-to-wav \
 	flac-to-opus flac-to-aac flac-to-vorbis \
-	streams-to-flac dvd-to-flac cdda-to-flac bluray-to-flac
+	streams-to-flac dvd-to-flac cdda-to-flac bluray-to-flac \
+	flac-verify
 
 .PHONY: help check test $(addsuffix -%,$(TOOLS))
 
@@ -25,7 +26,7 @@ help:
 	@echo ""
 	@echo "Tools: $(TOOLS)"
 	@echo ""
-	@echo "Docs:  docs/  (requirements, formats, cue, discs, streaming, tak, lossy)"
+	@echo "Docs:  docs/  (requirements, formats, cue, discs, streaming, tak, lossy, utils)"
 	@echo "Set library roots:"
 	@echo "  export AUDIO_UTILS_ROOTS=\"\$$HOME/Music \$$HOME/Downloads\""
 	@echo ""
