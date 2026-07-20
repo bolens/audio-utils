@@ -1,0 +1,6 @@
+# Run artifacts
+failures.log
+success.csv
+success.jsonl
+
+.flacaudit.*/

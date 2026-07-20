@@ -24,6 +24,7 @@ Docs: **[docs/](docs/)** — [requirements](docs/requirements.md) · [formats](d
 | [`flac-verify/`](flac-verify/) | FLAC integrity (`flac -t`; optional decode MD5) |
 | [`flac-replaygain/`](flac-replaygain/) | ReplayGain 2.0 tags (album+track via rsgain/loudgain) |
 | [`flac-artwork/`](flac-artwork/) | Embed / extract cover art |
+| [`flac-audit/`](flac-audit/) | Library audit (integrity, tags, cover, leftover PCM) |
 
 ## Quick start
 
