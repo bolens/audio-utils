@@ -1,0 +1,7 @@
+# Run artifacts
+wav-to-flac-failures.log
+wav-to-flac-success.csv
+wav-to-flac-success.jsonl
+
+# Workdirs left beside albums (NFS / interrupted runs)
+.wav2flac.*/
