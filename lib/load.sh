@@ -21,6 +21,8 @@ source "${_AUDIO_UTILS_LIB_DIR}/tmpdir.sh"
 source "${_AUDIO_UTILS_LIB_DIR}/probe.sh"
 # shellcheck source=tags.sh
 source "${_AUDIO_UTILS_LIB_DIR}/tags.sh"
+# shellcheck source=audio_meta.sh
+source "${_AUDIO_UTILS_LIB_DIR}/audio_meta.sh"
 # shellcheck source=disk.sh
 source "${_AUDIO_UTILS_LIB_DIR}/disk.sh"
 # shellcheck source=util.sh
