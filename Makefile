@@ -27,7 +27,7 @@ help:
 check:
 	$(SHELLCHECK) lib/load.sh lib/log.sh lib/xdg.sh lib/config.sh lib/version.sh \
 		lib/progress.sh lib/tmpdir.sh lib/probe.sh lib/disk.sh lib/util.sh \
-		lib/find-audio-dirs.sh
+		lib/find-audio-dirs.sh lib/driver.sh lib/worker.sh
 	$(MAKE) -C wav-to-flac check
 	$(MAKE) -C flac-to-wav check
 	$(MAKE) -C flac-to-mp3 check
