@@ -43,6 +43,8 @@ source "${_AUDIO_UTILS_LIB_DIR}/pcm_remux.sh"
 source "${_AUDIO_UTILS_LIB_DIR}/lossless.sh"
 # shellcheck source=cue.sh
 source "${_AUDIO_UTILS_LIB_DIR}/cue.sh"
+# shellcheck source=playlist.sh
+source "${_AUDIO_UTILS_LIB_DIR}/playlist.sh"
 # shellcheck source=lossy.sh
 source "${_AUDIO_UTILS_LIB_DIR}/lossy.sh"
 # shellcheck source=tak.sh
