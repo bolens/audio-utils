@@ -7,63 +7,64 @@ Collection of small, verified **audio conversion utilities** for Linux libraries
 | Tool | Description |
 |------|-------------|
 | [`wav-to-flac/`](wav-to-flac/) | Verified WAV → FLAC (remux, encode checks, tags/cover, cleanup/retag) |
+| [`flac-to-wav/`](flac-to-wav/) | Verified FLAC → WAV (bit-depth matched, dual-decode MD5, tags) |
+| [`flac-to-mp3/`](flac-to-mp3/) | FLAC → MP3 (libmp3lame; default VBR **v0**; duration/tag checks) |
 
 More converters can be added as sibling directories that reuse [`lib/`](lib/).
 
-## Quick start (wav-to-flac)
+## Quick start
 
 ```bash
-# Option A: XDG config (recommended)
+# Config (recommended)
 mkdir -p "${XDG_CONFIG_HOME:-$HOME/.config}/audio-utils"
 cp config.example "${XDG_CONFIG_HOME:-$HOME/.config}/audio-utils/config"
-# edit AUDIO_UTILS_ROOTS in that file
+# edit AUDIO_UTILS_ROOTS
 
-# Option B: environment
-export AUDIO_UTILS_ROOTS="$HOME/Music $HOME/Downloads"
+# WAV → FLAC
+make -C wav-to-flac convert-quiet
 
-cd wav-to-flac
-./convert-all.sh -n          # dry-run
-./convert-all.sh -q          # convert quietly
-./convert-all.sh --version
+# FLAC → WAV (PCM matches source bit depth)
+make -C flac-to-wav convert-quiet
+
+# FLAC → MP3 (suggested quality: v0)
+make -C flac-to-mp3 convert-quiet
+make -C flac-to-mp3 convert-quiet ARGS='-Q 320'
 ```
 
-Or pass roots explicitly:
+Or:
 
 ```bash
-./wav-to-flac/find-wav-dirs.sh ~/Music | ./wav-to-flac/wav-to-flac.sh -n
-# same discovery via shared finder:
-./lib/find-audio-dirs.sh --ext wav ~/Music
+export AUDIO_UTILS_ROOTS="$HOME/Music $HOME/Downloads"
+./wav-to-flac/convert-all.sh -q
+./flac-to-wav/convert-all.sh -q
+./flac-to-mp3/convert-all.sh -q -Q v0
 ```
 
 ## Requirements
 
-- Linux (GNU `find` with `-printf`; see tool README for macOS notes)
+- Linux (GNU `find` with `-printf`)
 - `bash` 4+, `flac`, `ffmpeg`/`ffprobe`, `flock`, coreutils
+- **flac-to-mp3**: ffmpeg built with `libmp3lame`
 
 ## Layout
 
 ```
 audio-utils/
-  LICENSE
-  README.md
-  Makefile                 # make check, make wav-to-flac-<target>
-  config.example           # AUDIO_UTILS_ROOTS template
-  .github/workflows/ci.yml # shellcheck on PRs
-  lib/                     # shared: log, xdg, progress, tmpdir, probe, disk, util
-    find-audio-dirs.sh     # generic --ext discovery
-    load.sh                # source shared modules
-    xdg.sh                 # XDG state / cache / runtime paths
-  wav-to-flac/             # WAV → FLAC tool (pipeline-only lib/)
+  LICENSE, README.md, VERSION, Makefile, config.example
+  lib/                     # shared helpers + find-audio-dirs.sh
+  wav-to-flac/
+  flac-to-wav/
+  flac-to-mp3/
 ```
 
 ### Paths (XDG)
 
 | Data | Default |
 |------|---------|
-| Config | `$XDG_CONFIG_HOME/audio-utils/config` (`~/.config/…`) |
-| Logs | `$XDG_STATE_HOME/audio-utils/<tool>/` (`~/.local/state/…`) |
-| Runtime temps | `$XDG_RUNTIME_DIR/audio-utils/` (else `$XDG_CACHE_HOME/audio-utils/runtime/`) |
-| Album workdirs | `.${AUDIO_UTILS_WORKDIR_PREFIX}.*` beside the media (atomic `mv`) |
+| Config | `$XDG_CONFIG_HOME/audio-utils/config` |
+| Logs | `$XDG_STATE_HOME/audio-utils/<tool>/` |
+| Runtime temps | `$XDG_RUNTIME_DIR/audio-utils/` (else cache) |
+| Album workdirs | `.${AUDIO_UTILS_WORKDIR_PREFIX}.*` beside media |
 
 ### Exit codes
 
@@ -75,15 +76,16 @@ audio-utils/
 
 ### Adding another converter
 
-1. Copy `wav-to-flac/` layout (CLI + `lib/{load,prepare,encode,convert,…}`).
+1. Copy an existing tool layout (CLI + `lib/{load,encode,convert,…}`).
 2. In tool `lib/load.sh`, source `../../lib/load.sh`, set `AUDIO_UTILS_WORKDIR_PREFIX=yourtool`.
 3. Keep codec/pipeline code local; reuse logging, progress, traps, disk, probes, roots.
+4. Wire `make check` and a `tool-%` delegate in the root Makefile.
 
 ## Development
 
 ```bash
-make check                 # shellcheck shared lib + all tools
-make -C wav-to-flac help   # wav-to-flac targets
+make check
+make -C flac-to-mp3 help
 ```
 
 ## License

@@ -14,6 +14,10 @@ AUDIO_UTILS_ROOTS="$HOME/Music $HOME/Downloads"
 # Optional alias (same meaning):
 # WAV2FLAC_ROOTS="$HOME/Music"
 
+# flac-to-mp3 default quality (v0 recommended; also v2, 320, 192):
+# AUDIO_UTILS_MP3_QUALITY=v0
+# FLAC2MP3_QUALITY=v0
+
 # XDG overrides (optional — defaults match the Base Directory Spec):
 # XDG_CONFIG_HOME="$HOME/.config"       # this file: …/audio-utils/config
 # XDG_STATE_HOME="$HOME/.local/state"   # logs: …/audio-utils/<tool>/
