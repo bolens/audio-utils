@@ -402,6 +402,84 @@ pcm_ok() {
   [[ -n "$(audio_codec "$f")" ]]
 }
 
+# Dual remux SRC → DEST PCM container (by dest extension).
+# .wav/.wave → little-endian PCM; .aiff/.aif → big-endian PCM.
+# Verifies pass1/pass2 and dest audio MD5 match source. Writes DEST.
+remux_pcm_container() {
+  local src="$1" dest="$2"
+  local ext dest_dir tmpdir target_codec out1 out2 err md5_src md5_1 md5_2
+
+  [[ -f "$src" && -n "$dest" ]] || {
+    log_err "Error: remux_pcm_container requires SRC DEST"
+    return 1
+  }
+
+  ext="${dest##*.}"
+  ext="${ext,,}"
+  case "$ext" in
+    wav|wave)
+      target_codec=$(target_pcm_le_codec "$src")
+      ;;
+    aiff|aif)
+      target_codec=$(target_pcm_be_codec "$src")
+      ;;
+    *)
+      log_err "Error: remux_pcm_container unsupported dest extension '.$ext' (want wav/aiff)"
+      return 1
+      ;;
+  esac
+
+  dest_dir=$(dirname -- "$dest")
+  tmpdir=$(mktemp -d --tmpdir="$dest_dir" remux-pcm.XXXXXX) || return 1
+  out1="${tmpdir}/pass1.${ext}"
+  out2="${tmpdir}/pass2.${ext}"
+  err="${tmpdir}/remux.err"
+
+  if ! ffmpeg -v error -y -i "$src" -map 0:a:0 -c:a "$target_codec" "$out1" 2>"$err"; then
+    set_last_err_file "$err"
+    log_err "FAILED remux_pcm pass1 ($target_codec): $src"
+    [[ -s "$err" ]] && { log_err "  ffmpeg stderr:"; sed 's/^/  | /' "$err" >&2; }
+    rm -rf -- "$tmpdir"
+    return 1
+  fi
+  if ! ffmpeg -v error -y -i "$src" -map 0:a:0 -c:a "$target_codec" "$out2" 2>"$err"; then
+    set_last_err_file "$err"
+    log_err "FAILED remux_pcm pass2 ($target_codec): $src"
+    [[ -s "$err" ]] && { log_err "  ffmpeg stderr:"; sed 's/^/  | /' "$err" >&2; }
+    rm -rf -- "$tmpdir"
+    return 1
+  fi
+
+  md5_src=$(audio_md5 "$src")
+  md5_1=$(audio_md5 "$out1")
+  md5_2=$(audio_md5 "$out2")
+  if [[ -z "$md5_src" || -z "$md5_1" || -z "$md5_2" ]]; then
+    AUDIO_UTILS_LAST_ERR="empty audio md5 src=$md5_src out1=$md5_1 out2=$md5_2"
+    export AUDIO_UTILS_LAST_ERR
+    log_err "VERIFY FAIL (remux_pcm empty audio MD5): $src"
+    rm -rf -- "$tmpdir"
+    return 1
+  fi
+  if [[ "$md5_1" != "$md5_2" ]]; then
+    AUDIO_UTILS_LAST_ERR="pass1_md5=$md5_1 pass2_md5=$md5_2"
+    export AUDIO_UTILS_LAST_ERR
+    log_err "VERIFY FAIL (remux_pcm dual audio MD5 mismatch): $src"
+    rm -rf -- "$tmpdir"
+    return 1
+  fi
+  if [[ "$md5_src" != "$md5_1" ]]; then
+    AUDIO_UTILS_LAST_ERR="src_md5=$md5_src dest_md5=$md5_1 codec=$target_codec"
+    export AUDIO_UTILS_LAST_ERR
+    log_err "VERIFY FAIL (remux_pcm audio MD5 != source): $src"
+    rm -rf -- "$tmpdir"
+    return 1
+  fi
+
+  mv -f -- "$out1" "$dest"
+  rm -rf -- "$tmpdir"
+  log_verbose "verified remux_pcm: $target_codec audio_md5=$md5_1 → $dest"
+}
+
 # Dual-encode FLAC from prep PCM; verify SHA + round-trip + e2e MD5.
 # Sets globals via echoing nothing; returns 0 and leaves flac1 verified untagged
 # in tmpdir/pass1.flac. Caller tags and moves.

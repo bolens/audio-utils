@@ -25,3 +25,13 @@ source "${_AUDIO_UTILS_LIB_DIR}/disk.sh"
 source "${_AUDIO_UTILS_LIB_DIR}/util.sh"
 # shellcheck source=pcm_flac.sh
 source "${_AUDIO_UTILS_LIB_DIR}/pcm_flac.sh"
+# shellcheck source=cue.sh
+source "${_AUDIO_UTILS_LIB_DIR}/cue.sh"
+# shellcheck source=lossy.sh
+source "${_AUDIO_UTILS_LIB_DIR}/lossy.sh"
+# shellcheck source=tak.sh
+source "${_AUDIO_UTILS_LIB_DIR}/tak.sh"
+# shellcheck source=dvd.sh
+source "${_AUDIO_UTILS_LIB_DIR}/dvd.sh"
+# shellcheck source=cdda.sh
+source "${_AUDIO_UTILS_LIB_DIR}/cdda.sh"
