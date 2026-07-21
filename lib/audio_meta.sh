@@ -8,13 +8,13 @@ AU_AUDIO_EXTS_DEFAULT="flac mp3 opus m4a ogg oga wma mpc aac"
 # Get a metadata tag via ffprobe (format tags). Empty if missing.
 audio_meta_get() {
   local file=$1 key=$2 val
-  val=$(ffprobe -v error -show_entries "format_tag=${key}" -of default=nw=1:nk=1 -- "$file" 2>/dev/null | head -n1)
+  val=$(ffprobe -v error -show_entries "format_tags=${key}" -of default=nw=1:nk=1 -- "$file" 2>/dev/null | head -n1)
   # Try common case variants
   if [[ -z "$val" ]]; then
-    val=$(ffprobe -v error -show_entries "format_tag=${key,,}" -of default=nw=1:nk=1 -- "$file" 2>/dev/null | head -n1)
+    val=$(ffprobe -v error -show_entries "format_tags=${key,,}" -of default=nw=1:nk=1 -- "$file" 2>/dev/null | head -n1)
   fi
   if [[ -z "$val" ]]; then
-    val=$(ffprobe -v error -show_entries "format_tag=${key^^}" -of default=nw=1:nk=1 -- "$file" 2>/dev/null | head -n1)
+    val=$(ffprobe -v error -show_entries "format_tags=${key^^}" -of default=nw=1:nk=1 -- "$file" 2>/dev/null | head -n1)
   fi
   # FLAC: prefer metaflac for vorbis comments
   if [[ -z "$val" && "${file,,}" == *.flac ]] && command -v metaflac >/dev/null 2>&1; then
