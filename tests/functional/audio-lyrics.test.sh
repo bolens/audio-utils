@@ -9,7 +9,7 @@ source "$(dirname "${BASH_SOURCE[0]}")/../fixtures.sh"
 
 _TOOL="util/audio/audio-lyrics/audio-lyrics.sh"
 
-_mk_flac() { # dest
+_lyrics_flac() { # dest
   local src
   src=$(fixture flac_tagged)
   cp "$src/track.flac" "$1"
@@ -18,7 +18,7 @@ _mk_flac() { # dest
 test_report_fails_without_lyrics_anywhere() {
   require_cmd flac metaflac ffmpeg ffprobe flock
   mkdir -p "$T/album"
-  _mk_flac "$T/album/bare.flac"
+  _lyrics_flac "$T/album/bare.flac"
 
   run_tool "$_TOOL" -j 1 -L "$T/fails.log" "$T/album"
   assert_eq "$(tool_rc)" 1 "no lyrics must fail ($(tool_out | tail -3))"
@@ -29,9 +29,9 @@ test_report_fails_without_lyrics_anywhere() {
 test_report_passes_with_tag_or_sidecar() {
   require_cmd flac metaflac ffmpeg ffprobe flock
   mkdir -p "$T/album"
-  _mk_flac "$T/album/tagged.flac"
+  _lyrics_flac "$T/album/tagged.flac"
   metaflac --set-tag="LYRICS=la la la" "$T/album/tagged.flac"
-  _mk_flac "$T/album/sidecar.flac"
+  _lyrics_flac "$T/album/sidecar.flac"
   printf '[00:01.00] side lyrics\n' >"$T/album/sidecar.lrc"
 
   run_tool "$_TOOL" -j 1 -S "$T/s.csv" "$T/album"
@@ -43,7 +43,7 @@ test_report_passes_with_tag_or_sidecar() {
 test_import_writes_sidecar_into_tag() {
   require_cmd flac metaflac ffmpeg ffprobe flock
   mkdir -p "$T/album"
-  _mk_flac "$T/album/track.flac"
+  _lyrics_flac "$T/album/track.flac"
   printf '[00:01.00] imported line\n' >"$T/album/track.lrc"
 
   run_tool "$_TOOL" --import -j 1 "$T/album"
@@ -55,7 +55,7 @@ test_import_writes_sidecar_into_tag() {
 test_import_respects_existing_tag_without_overwrite() {
   require_cmd flac metaflac ffmpeg ffprobe flock
   mkdir -p "$T/album"
-  _mk_flac "$T/album/track.flac"
+  _lyrics_flac "$T/album/track.flac"
   metaflac --set-tag="LYRICS=original words" "$T/album/track.flac"
   printf 'replacement words\n' >"$T/album/track.txt"
 
@@ -69,7 +69,7 @@ test_import_respects_existing_tag_without_overwrite() {
 test_export_writes_lrc_from_tag() {
   require_cmd flac metaflac ffmpeg ffprobe flock
   mkdir -p "$T/album"
-  _mk_flac "$T/album/track.flac"
+  _lyrics_flac "$T/album/track.flac"
   metaflac --set-tag="LYRICS=exported words" "$T/album/track.flac"
 
   run_tool "$_TOOL" --export -j 1 "$T/album"
@@ -81,7 +81,7 @@ test_export_writes_lrc_from_tag() {
 test_import_then_export_roundtrip() {
   require_cmd flac metaflac ffmpeg ffprobe flock
   mkdir -p "$T/album"
-  _mk_flac "$T/album/track.flac"
+  _lyrics_flac "$T/album/track.flac"
   printf '[00:05.00] round trip\n' >"$T/album/track.txt"
 
   run_tool "$_TOOL" --import -j 1 "$T/album"
@@ -95,7 +95,7 @@ test_import_then_export_roundtrip() {
 test_dry_run_touches_nothing() {
   require_cmd flac metaflac ffmpeg ffprobe flock
   mkdir -p "$T/album"
-  _mk_flac "$T/album/track.flac"
+  _lyrics_flac "$T/album/track.flac"
   printf 'words\n' >"$T/album/track.txt"
 
   run_tool "$_TOOL" --import -n "$T/album"

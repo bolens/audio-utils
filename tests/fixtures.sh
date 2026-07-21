@@ -29,13 +29,24 @@ fixture() {
   if [[ ! -e "$dir/.done" ]]; then
     require_cmd ffmpeg flac metaflac flock
     mkdir -p -- "$AU_FIXTURE_CACHE"
+    # Cycle guard: a builder re-entering its own fixture (classic cause: a
+    # test file redefining a fixtures.sh helper) would self-deadlock on the
+    # lock below. Fail loudly instead.
+    case ":${_AU_FIXTURE_STACK:-}:" in
+      *":$name:"*)
+        echo "fixture: recursive build of '$name'" \
+          "(stack: ${_AU_FIXTURE_STACK}) — helper name collision?" >&2
+        return 1
+        ;;
+    esac
     # Per-fixture lock: builders may call fixture() recursively for their
     # dependencies (acyclic), so a single global lock would self-deadlock.
     (
-      flock 9
+      flock -w 300 9 || { echo "fixture: lock timeout: $name" >&2; exit 1; }
       if [[ ! -e "$dir/.done" ]]; then
         rm -rf -- "$dir" "$dir.tmp"
         mkdir -p -- "$dir.tmp"
+        export _AU_FIXTURE_STACK="${_AU_FIXTURE_STACK:-}:$name"
         if "$builder" "$dir.tmp" >&2; then
           : >"$dir.tmp/.done"
           mv -T -- "$dir.tmp" "$dir"
