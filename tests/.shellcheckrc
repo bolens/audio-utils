@@ -8,3 +8,8 @@ shell=bash
 # The harness intentionally sets T inside the per-test subshell; tests
 # reading $T afterwards are the design, not a lost-modification bug.
 disable=SC2030,SC2031
+
+# Tests define stub globals/functions consumed by sourced lib files or
+# invoked indirectly (run_parallel callbacks), which look unused to
+# shellcheck's static view.
+disable=SC2034,SC2329
