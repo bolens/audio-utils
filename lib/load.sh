@@ -66,6 +66,8 @@ source "${_AUDIO_UTILS_LIB_DIR}/media/playlist.sh"
 source "${_AUDIO_UTILS_LIB_DIR}/pipeline/lossy.sh"
 # shellcheck source=pipeline/tak.sh
 source "${_AUDIO_UTILS_LIB_DIR}/pipeline/tak.sh"
+# shellcheck source=pipeline/ape.sh
+source "${_AUDIO_UTILS_LIB_DIR}/pipeline/ape.sh"
 # shellcheck source=pipeline/dvd.sh
 source "${_AUDIO_UTILS_LIB_DIR}/pipeline/dvd.sh"
 # shellcheck source=pipeline/cdda.sh

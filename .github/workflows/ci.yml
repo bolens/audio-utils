@@ -275,7 +275,14 @@ jobs:
       - name: Install dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y ffmpeg flac vorbis-tools opus-tools lame wavpack bpm-tools musepack-tools
+          sudo apt-get install -y ffmpeg flac vorbis-tools opus-tools lame wavpack bpm-tools musepack-tools cmake g++ unzip zip
+
+      # Best effort: enables the gated flac-to-ape tests (they skip without
+      # mac). The installer itself is tested offline in ape-codec.test.sh, so
+      # an unreachable monkeysaudio.com must not fail CI.
+      - name: Install APE codec (best effort)
+        continue-on-error: true
+        run: bash scripts/ape-codec.sh install --prefix "$HOME/.local"
 
       - name: Run functional shard
         env:

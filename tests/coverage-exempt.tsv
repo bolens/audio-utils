@@ -16,4 +16,3 @@ lib/pipeline/cdda.sh	CD ripping pipeline; see conversion/cdda-to-flac
 # flac-to-tak has shim-based orchestration tests (tests/functional/flac-to-tak
 # .test.sh); real codec fidelity still needs the proprietary Windows takc.
 conversion/tak-to-flac	needs a real .tak fixture, which only the proprietary takc can produce
-conversion/flac-to-ape	encodes via ffmpeg's ape encoder, which no ffmpeg build ships
