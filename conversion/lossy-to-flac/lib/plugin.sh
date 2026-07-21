@@ -3,7 +3,7 @@
 
 AU_TOOL_NAME="${AU_TOOL_NAME:-lossy-to-flac}"
 AU_SOURCE_EXT=mp3
-AU_SOURCE_EXTS="mp3 m4a aac opus ogg wma mpc"
+AU_SOURCE_EXTS="mp3 m4a aac opus ogg wma mpc spx"
 AU_DEST_EXT=flac
 AU_DISK_FACTOR=2
 AU_WORKDIR_PREFIX=lossy2flac
@@ -22,7 +22,7 @@ plugin_accept_source() {
   local codec
   codec=$(audio_codec "$1" 2>/dev/null || true)
   case "$codec" in
-    mp3|aac|opus|vorbis|wmav1|wmav2|wmapro|wmalossless|mpc7|mpc8|musepack7|musepack8)
+    mp3|aac|opus|vorbis|speex|wmav1|wmav2|wmapro|wmalossless|mpc7|mpc8|musepack7|musepack8)
       return 0
       ;;
     alac|"")
