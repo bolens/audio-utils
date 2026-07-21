@@ -126,6 +126,19 @@ make new-util CATEGORY=flac NAME=flac-frob    # scaffold a new util
 make new-converter NAME=flac-to-xyz           # scaffold a new converter
 ```
 
+Codecs without official Linux builds:
+
+```bash
+make ape-install                 # build + install Monkey's Audio (mac) → ~/.local/bin
+make ape-status                  # installed version, integrity, latest release
+make ape-update                  # upgrade when a new SDK is released
+make ape-uninstall               # manifest-driven removal
+make ape-install APE_FLAGS="--version 13.19 --force"   # extra flags pass through
+```
+
+(These wrap `scripts/ape-codec.sh`; call it directly for `--sha256`,
+`--prefix`, and the full option set.)
+
 ## Layout
 
 ```

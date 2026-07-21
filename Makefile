@@ -20,8 +20,9 @@ TEST_SCRIPTS := tests/run.sh tests/harness.sh tests/fixtures.sh \
 	$(sort $(wildcard scripts/*.sh))
 
 .PHONY: help check check-lib check-conversion check-util check-tools \
-	check-tests test test-functional test-all coverage new-util \
-	new-converter $(addsuffix -%,$(TOOLS))
+	check-tests test test-functional test-all clean-tests coverage new-util \
+	new-converter ape-install ape-update ape-status ape-uninstall \
+	$(addsuffix -%,$(TOOLS))
 
 help:
 	@echo "audio-utils"
@@ -35,10 +36,16 @@ help:
 	@echo "  make test                  run unit + smoke tests"
 	@echo "  make test-functional       run functional tests (needs ffmpeg/flac)"
 	@echo "  make test-all              run every test tier"
+	@echo "  make test K=PATTERN        narrow any test target to matching files"
+	@echo "  make clean-tests           remove fixture cache + stray test sandboxes"
 	@echo "  make coverage              audit test coverage vs the 90% goal"
 	@echo "  make -C TOOLDIR test       run smoke + matching tests for one tool"
 	@echo "  make new-util CATEGORY=x NAME=y      scaffold util/x/y"
 	@echo "  make new-converter NAME=x-to-y       scaffold conversion/x-to-y"
+	@echo "  make ape-install           build + install Monkey's Audio codec (mac)"
+	@echo "  make ape-update            update the codec to the latest release"
+	@echo "  make ape-status            installed codec version + integrity"
+	@echo "  make ape-uninstall         remove the codec (manifest-driven)"
 	@echo "  make -C conversion/TOOL help"
 	@echo "  make -C util/CATEGORY/TOOL help"
 	@echo "  make TOOL-check            short alias (e.g. wav-to-flac-check)"
@@ -60,17 +67,36 @@ check-lib:
 check-tests:
 	$(SHELLCHECK) $(TEST_SCRIPTS)
 
+# Optional K=PATTERN narrows to matching test files (tests/run.sh -k).
 test:
-	bash tests/run.sh -j $(JOBS) unit smoke
+	bash tests/run.sh -j $(JOBS) $(if $(K),-k $(K)) unit smoke
 
 test-functional:
-	bash tests/run.sh -j $(JOBS) functional
+	bash tests/run.sh -j $(JOBS) $(if $(K),-k $(K)) functional
 
 test-all:
-	bash tests/run.sh -j $(JOBS)
+	bash tests/run.sh -j $(JOBS) $(if $(K),-k $(K))
+
+clean-tests:
+	rm -rf tests/.cache .tmp-auth-test .tmp-util-test.* .tmp-codec-*
+	@echo "removed test fixture cache and stray test sandboxes"
 
 coverage:
 	bash scripts/coverage-audit.sh
+
+# Monkey's Audio (APE) codec management — no official Linux build exists.
+# Extra flags (e.g. --version, --sha256, --force): APE_FLAGS="..."
+ape-install:
+	bash scripts/ape-codec.sh install $(APE_FLAGS)
+
+ape-update:
+	bash scripts/ape-codec.sh update $(APE_FLAGS)
+
+ape-status:
+	bash scripts/ape-codec.sh status
+
+ape-uninstall:
+	bash scripts/ape-codec.sh uninstall $(APE_FLAGS)
 
 new-util:
 	@[ -n "$(CATEGORY)" ] && [ -n "$(NAME)" ] \
