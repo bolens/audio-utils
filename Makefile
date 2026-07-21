@@ -45,7 +45,7 @@ LIB_SCRIPTS = \
 	lib/pcm_to_flac.sh lib/lossless.sh lib/plugin_init.sh lib/cli.sh \
 	lib/find-audio-dirs.sh lib/driver.sh lib/worker.sh lib/pcm_flac.sh \
 	lib/cue.sh lib/playlist.sh lib/tags.sh lib/audio_meta.sh lib/lossy.sh lib/tak.sh lib/dvd.sh lib/cdda.sh \
-	lib/bluray.sh lib/run_parallel.sh
+	lib/bluray.sh lib/run_parallel.sh lib/lossy_hooks.sh lib/pcm_to_flac_hooks.sh
 
 RUN_PARALLEL = $(CURDIR)/lib/run_parallel.sh
 
@@ -67,7 +67,7 @@ help:
 	@echo "Conversion: $(notdir $(CONVERSION))"
 	@echo "Util:       $(notdir $(UTIL))"
 	@echo ""
-	@echo "Docs:  docs/  (requirements, formats, cue, discs, streaming, tak, lossy, playlists, utils)"
+	@echo "Docs:  docs/  (requirements, formats, cue, discs, streaming, tak, lossy, playlists)"
 	@echo "Set library roots:"
 	@echo "  export AUDIO_UTILS_ROOTS=\"\$$HOME/Music \$$HOME/Downloads\""
 	@echo ""
