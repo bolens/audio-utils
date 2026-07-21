@@ -109,7 +109,7 @@ plugin_banner_extra() {
 }
 
 plugin_require_deps() {
-  require_cmds flac ffmpeg ffprobe flock mpcenc || return 1
+  require_cmds flac metaflac ffmpeg ffprobe flock mpcenc || return 1
 }
 
 plugin_export_env() {

@@ -16,8 +16,9 @@ OPUS_RATES="8000 12000 16000 24000 48000"
 VORBIS_RATES="8000 11025 12000 16000 22050 24000 32000 44100 48000 88200 96000"
 WMA_RATES="8000 11025 12000 16000 22050 24000 32000 44100 48000"
 SPEEX_RATES="8000 16000 32000"
+MPC_RATES="32000 37800 44100 48000"
 
-# True if RATE is in FAMILY allowlist (mp3|aac|opus|vorbis|wma|speex).
+# True if RATE is in FAMILY allowlist (mp3|aac|opus|vorbis|wma|speex|mpc).
 lossy_rate_ok() {
   local family="${1,,}" rate="$2" list
   case "$family" in
@@ -27,6 +28,7 @@ lossy_rate_ok() {
     vorbis) list=$VORBIS_RATES ;;
     wma) list=$WMA_RATES ;;
     speex) list=$SPEEX_RATES ;;
+    mpc) list=$MPC_RATES ;;
     *)
       log_err "Error: unknown lossy family '$family'"
       return 1

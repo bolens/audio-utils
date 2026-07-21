@@ -1,6 +1,27 @@
 #!/usr/bin/env bash
 # FLAC → Musepack via mpcenc; verify duration ±50ms + probe.
 
+# Emit mpcenc --tag args (APEv2) from FLAC Vorbis comments, one per line:
+#   --tag
+#   Key=value
+# Read back with mapfile so keys/values keep embedded spaces.
+mpc_tag_lines() {
+  local flac="$1" vc ape val
+  local -a map=(
+    'TITLE:Title' 'ARTIST:Artist' 'ALBUM:Album' 'ALBUMARTIST:Album Artist'
+    'DATE:Year' 'TRACKNUMBER:Track' 'DISCNUMBER:Disc' 'GENRE:Genre'
+    'COMMENT:Comment' 'COMPOSER:Composer'
+  )
+  local pair
+  for pair in "${map[@]}"; do
+    vc=${pair%%:*}
+    ape=${pair#*:}
+    val=$(flac_tag_get "$flac" "$vc")
+    [[ -n "$val" ]] || continue
+    printf -- '--tag\n%s=%s\n' "$ape" "$val"
+  done
+}
+
 convert_one() {
   local flac="$1"
   local mpc="${flac%.*}.mpc"
@@ -40,8 +61,8 @@ convert_one() {
 
   log_progress "convert: $flac (quality=$qname)"
 
-  # mpcenc wants WAV; prepare rate/channels like other lossy tools (stereo, 44.1/48k).
-  if ! lossy_prepare_source "$flac" "$tmpdir" wma >"${tmpdir}/prep.path"; then
+  # mpcenc wants WAV; prepare rate/channels for the Musepack SV8 allowlist.
+  if ! lossy_prepare_source "$flac" "$tmpdir" mpc >"${tmpdir}/prep.path"; then
     log_fail "$flac" "lossy prepare failed"
     cleanup
     return 1
@@ -56,7 +77,13 @@ convert_one() {
     return 1
   fi
 
-  if ! mpcenc --silent --quality "$quality" "$wav" "$out" 2>"${tmpdir}/mpc.err"; then
+  # Carry tags over — mpcenc reads none from WAV input.
+  local -a tag_args=()
+  mapfile -t tag_args < <(mpc_tag_lines "$flac")
+
+  # ${arr[@]+...} guards empty-array expansion under set -u on bash 4.3.
+  if ! mpcenc --silent --quality "$quality" ${tag_args[@]+"${tag_args[@]}"} \
+    "$wav" "$out" 2>"${tmpdir}/mpc.err"; then
     set_last_err_file "${tmpdir}/mpc.err"
     log_fail "$flac" "mpcenc encode failed" "quality=$qname"
     cleanup
