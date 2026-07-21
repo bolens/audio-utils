@@ -36,7 +36,7 @@ test_help_exits_zero() {
   local entry rc bad=0
   while IFS= read -r entry; do
     rc=0
-    "$entry" --help >/dev/null 2>&1 <&- || rc=$?
+    "$entry" --help >/dev/null 2>&1 </dev/null || rc=$?
     if [[ "$rc" -ne 0 ]]; then
       echo "--help rc=$rc: ${entry#"$AU_REPO_ROOT"/}" >&2
       ((++bad))
@@ -48,7 +48,7 @@ test_help_exits_zero() {
 test_help_prints_usage() {
   local entry out bad=0
   while IFS= read -r entry; do
-    out=$("$entry" --help 2>&1 <&- || true)
+    out=$("$entry" --help 2>&1 </dev/null || true)
     if [[ -z "$out" ]]; then
       echo "--help produced no output: ${entry#"$AU_REPO_ROOT"/}" >&2
       ((++bad))
@@ -61,7 +61,7 @@ test_bad_flag_exits_two() {
   local entry rc bad=0
   while IFS= read -r entry; do
     rc=0
-    "$entry" -% >/dev/null 2>&1 <&- || rc=$?
+    "$entry" -% >/dev/null 2>&1 </dev/null || rc=$?
     if [[ "$rc" -ne 2 ]]; then
       echo "bad flag rc=$rc (want 2): ${entry#"$AU_REPO_ROOT"/}" >&2
       ((++bad))
@@ -97,9 +97,12 @@ test_dry_run_empty_dir_is_clean() {
     esac
     rc=0
     # shellcheck disable=SC2086  # extra_args values are single flags
-    out=$("$entry" -n ${extra_args[$name]:-} "$empty" 2>&1 <&-) || rc=$?
+    out=$("$entry" -n ${extra_args[$name]:-} "$empty" 2>&1 </dev/null) || rc=$?
+    # rc=2 + a missing-dependency message = tool unusable here, not broken.
+    # Tools phrase it differently (need X in PATH, X not found, requires X).
     if [[ "$rc" -eq 2 ]] && grep -Eq \
-      'missing required command|lacks encoder|AUDIO_UTILS_TAKC' <<<"$out"; then
+      'missing required command|lacks encoder|AUDIO_UTILS_TAKC|not found|Error: need|requires' \
+      <<<"$out"; then
       ((++skipped))
       continue
     fi
