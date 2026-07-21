@@ -15,16 +15,28 @@ LIB_SCRIPTS := $(sort $(wildcard lib/*.sh lib/*/*.sh))
 
 RUN_PARALLEL = $(CURDIR)/lib/cli/run_parallel.sh
 
-.PHONY: help check check-lib check-conversion check-util check-tools $(addsuffix -%,$(TOOLS))
+TEST_SCRIPTS := tests/run.sh tests/harness.sh tests/fixtures.sh \
+	$(sort $(wildcard tests/*/*.test.sh))
+
+.PHONY: help check check-lib check-conversion check-util check-tools \
+	check-tests test test-functional test-all new-util new-converter \
+	$(addsuffix -%,$(TOOLS))
 
 help:
 	@echo "audio-utils"
 	@echo ""
-	@echo "  make check                 shellcheck shared lib + all tools (parallel)"
+	@echo "  make check                 shellcheck shared lib + tests + all tools (parallel)"
 	@echo "  make check-lib             shellcheck shared lib only"
 	@echo "  make check-tools           shellcheck all tools (bash job pool)"
 	@echo "  make check-conversion      shellcheck conversion/ tools (parallel)"
 	@echo "  make check-util            shellcheck util/ tools (parallel)"
+	@echo "  make check-tests           shellcheck the test suite"
+	@echo "  make test                  run unit + smoke tests"
+	@echo "  make test-functional       run functional tests (needs ffmpeg/flac)"
+	@echo "  make test-all              run every test tier"
+	@echo "  make -C TOOLDIR test       run smoke + matching tests for one tool"
+	@echo "  make new-util CATEGORY=x NAME=y      scaffold util/x/y"
+	@echo "  make new-converter NAME=x-to-y       scaffold conversion/x-to-y"
 	@echo "  make -C conversion/TOOL help"
 	@echo "  make -C util/CATEGORY/TOOL help"
 	@echo "  make TOOL-check            short alias (e.g. wav-to-flac-check)"
@@ -43,6 +55,27 @@ help:
 check-lib:
 	$(SHELLCHECK) $(LIB_SCRIPTS)
 
+check-tests:
+	$(SHELLCHECK) $(TEST_SCRIPTS)
+
+test:
+	bash tests/run.sh -j $(JOBS) unit smoke
+
+test-functional:
+	bash tests/run.sh -j $(JOBS) functional
+
+test-all:
+	bash tests/run.sh -j $(JOBS)
+
+new-util:
+	@[ -n "$(CATEGORY)" ] && [ -n "$(NAME)" ] \
+		|| { echo "usage: make new-util CATEGORY=x NAME=y [EXT=flac]"; exit 2; }
+	bash scripts/new-tool.sh util "$(CATEGORY)" "$(NAME)" $(EXT)
+
+new-converter:
+	@[ -n "$(NAME)" ] || { echo "usage: make new-converter NAME=x-to-y"; exit 2; }
+	bash scripts/new-tool.sh converter "$(NAME)"
+
 # Single job pool over all tools (avoids oversubscribe from nested -j pools).
 check-tools:
 	@JOBS=$(JOBS) $(RUN_PARALLEL) -j $(JOBS) $(TOOLS)
@@ -53,8 +86,8 @@ check-conversion:
 check-util:
 	@JOBS=$(JOBS) $(RUN_PARALLEL) -j $(JOBS) $(UTIL)
 
-# Lib first (fast), then one parallel pool across every tool.
-check: check-lib check-tools
+# Lib + tests first (fast), then one parallel pool across every tool.
+check: check-lib check-tests check-tools
 
 # Forward make -C PATH TARGET via e.g. `make conversion/cue-to-flac-check`
 define TOOL_FORWARD

@@ -20,12 +20,12 @@ ARGS ?=
 ROOTS ?= $(AUDIO_UTILS_ROOTS)
 DELETE_TARGET ?= delete-sources
 
-.PHONY: help check dry-run convert convert-quiet convert-delete \
+.PHONY: help check test dry-run convert convert-quiet convert-delete \
 	$(DELETE_TARGET) $(DELETE_TARGET)-dry clean clean-tmp \
 	$(EXTRA_PHONY)
 
 help:
-	@echo "$(TOOL): make check | convert | convert-quiet | convert-delete | $(DELETE_TARGET)"
+	@echo "$(TOOL): make check | test | convert | convert-quiet | convert-delete | $(DELETE_TARGET)"
 	@echo "  make dry-run / clean / clean-tmp"
 ifneq ($(FIND_SCRIPT),)
 	@echo "  make find-dirs   (needs AUDIO_UTILS_ROOTS or ROOTS=)"
@@ -36,6 +36,11 @@ endif
 
 check:
 	$(SHELLCHECK) $(SCRIPTS)
+
+# Repo test suite narrowed to this tool: smoke checks plus any unit or
+# functional file whose name mentions the tool.
+test:
+	bash "$(AU_ROOT)/tests/run.sh" --tool "$(TOOL)"
 
 ifneq ($(FIND_SCRIPT),)
 .PHONY: find-dirs

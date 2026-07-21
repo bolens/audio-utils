@@ -23,6 +23,8 @@ jobs:
       lib: ${{ steps.filter.outputs.lib }}
       conversion: ${{ steps.filter.outputs.conversion }}
       util: ${{ steps.filter.outputs.util }}
+      tests: ${{ steps.filter.outputs.tests }}
+      code: ${{ steps.filter.outputs.code }}
       conversion_tools: ${{ steps.plan.outputs.conversion_tools }}
       util_tools: ${{ steps.plan.outputs.util_tools }}
       conversion_matrix: ${{ steps.plan.outputs.conversion_matrix }}
@@ -46,6 +48,15 @@ jobs:
               - 'conversion/**'
             util:
               - 'util/**'
+            tests:
+              - 'tests/**'
+            code:
+              - 'lib/**'
+              - 'conversion/**'
+              - 'util/**'
+              - 'tests/**'
+              - 'Makefile'
+              - '.github/workflows/ci.yml'
 
       - name: Plan shellcheck matrices
         id: plan
@@ -220,6 +231,68 @@ jobs:
       - name: shellcheck lib + all tools
         run: make check
 
+  # Unit + smoke tests: cheap, run on any code change.
+  test-unit-smoke:
+    name: tests (unit + smoke)
+    needs: changes
+    if: needs.changes.outputs.code == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Install dependencies
+        run: sudo apt-get update && sudo apt-get install -y ffmpeg flac shellcheck
+
+      - name: shellcheck test suite
+        run: make check-tests
+
+      - name: Run unit + smoke tests
+        run: make test
+
+  # Functional tests: heavier fixtures/codecs, sharded across runners.
+  # Encoders missing from the runner's ffmpeg exercise the SKIP path.
+  test-functional:
+    name: tests (functional ${{ matrix.shard }}/2)
+    needs: changes
+    if: needs.changes.outputs.code == 'true'
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { shard: 0, shards: 2 }
+          - { shard: 1, shards: 2 }
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ffmpeg flac vorbis-tools opus-tools lame wavpack
+
+      - name: Run functional shard
+        env:
+          SHARD: ${{ matrix.shard }}
+          SHARDS: ${{ matrix.shards }}
+        run: |
+          set -euo pipefail
+          mapfile -t files < <(bash tests/run.sh --list functional)
+          declare -a mine=()
+          for i in "${!files[@]}"; do
+            if (( i % SHARDS == SHARD )); then
+              mine+=("${files[$i]}")
+            fi
+          done
+          if ((${#mine[@]} == 0)); then
+            echo "No files for this shard"
+            exit 0
+          fi
+          printf 'Shard %s/%s:\n' "$SHARD" "$SHARDS"
+          printf '  %s\n' "${mine[@]}"
+          bash tests/run.sh "${mine[@]}"
+
   # Single required status for branch protection when path filters skip jobs.
   ci:
     name: CI
@@ -229,6 +302,8 @@ jobs:
       - shellcheck-conversion
       - shellcheck-util
       - shellcheck-fedora
+      - test-unit-smoke
+      - test-functional
     if: always()
     runs-on: ubuntu-latest
     steps:
@@ -241,6 +316,8 @@ jobs:
             "${{ needs.shellcheck-conversion.result }}"
             "${{ needs.shellcheck-util.result }}"
             "${{ needs.shellcheck-fedora.result }}"
+            "${{ needs.test-unit-smoke.result }}"
+            "${{ needs.test-functional.result }}"
           )
           for r in "${results[@]}"; do
             case "$r" in
@@ -251,4 +328,4 @@ jobs:
                 ;;
             esac
           done
-          echo "All shellcheck jobs passed or were skipped by path filters."
+          echo "All required jobs passed or were skipped by path filters."
