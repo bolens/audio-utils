@@ -13,15 +13,7 @@ lib/pipeline/dvd.sh	VIDEO_TS pipeline; see conversion/dvd-to-flac
 lib/pipeline/cdda.sh	CD ripping pipeline; see conversion/cdda-to-flac
 #
 # --- proprietary / unavailable encoders (cannot build fixtures) ---------------
-conversion/flac-to-tak	proprietary takc binary (TAK, via wine); AUDIO_UTILS_TAKC
-conversion/tak-to-flac	needs a .tak fixture, which only takc can produce
-lib/pipeline/tak.sh	TAK pipeline; see conversion/flac-to-tak
-conversion/flac-to-mpc	needs mpcenc (musepack-tools), rarely packaged
-conversion/flac-to-ape	needs mac (Monkey's Audio) encoder
-conversion/ape-to-flac	needs a .ape fixture, which only mac can produce
-conversion/shn-to-flac	no shorten encoder exists to produce fixtures
-conversion/dsf-to-flac	ffmpeg decodes DSF but cannot encode it; no fixture source
-#
-# --- network services ----------------------------------------------------------
-util/audio/tags-lookup	queries the MusicBrainz web service; offline mocking would test nothing real
-util/audio/audio-lyrics	queries lyrics web APIs
+# flac-to-tak has shim-based orchestration tests (tests/functional/flac-to-tak
+# .test.sh); real codec fidelity still needs the proprietary Windows takc.
+conversion/tak-to-flac	needs a real .tak fixture, which only the proprietary takc can produce
+conversion/flac-to-ape	encodes via ffmpeg's ape encoder, which no ffmpeg build ships

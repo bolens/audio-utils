@@ -275,7 +275,7 @@ jobs:
       - name: Install dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y ffmpeg flac vorbis-tools opus-tools lame wavpack bpm-tools
+          sudo apt-get install -y ffmpeg flac vorbis-tools opus-tools lame wavpack bpm-tools musepack-tools
 
       - name: Run functional shard
         env:
