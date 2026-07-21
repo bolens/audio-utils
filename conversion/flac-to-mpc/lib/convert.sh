@@ -96,10 +96,19 @@ convert_one() {
     return 1
   fi
 
-  if ! durations_match "$wav" "$out" 0.05; then
+  # ffprobe misreports SV8 stream duration (declares less than the real sample
+  # count), so verify by an actual mpcdec decode instead of the declared value.
+  local verify="${tmpdir}/verify.wav"
+  if ! mpcdec "$out" "$verify" >/dev/null 2>"${tmpdir}/dec.err"; then
+    set_last_err_file "${tmpdir}/dec.err"
+    log_fail "$flac" "mpcdec verify decode failed"
+    cleanup
+    return 1
+  fi
+  if ! durations_match "$wav" "$verify" 0.05; then
     d1=$(audio_duration_sec "$wav" || echo "?")
-    d2=$(audio_duration_sec "$out" || echo "?")
-    log_fail "$flac" "duration mismatch (>50ms)" "src=${d1}s out=${d2}s"
+    d2=$(audio_duration_sec "$verify" || echo "?")
+    log_fail "$flac" "duration mismatch after decode (>50ms)" "src=${d1}s decoded=${d2}s"
     cleanup
     return 1
   fi
