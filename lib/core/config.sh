@@ -42,7 +42,8 @@ _audio_utils_expand_value() {
   # shellcheck disable=SC2088
   case "$v" in
     "~") v="${HOME-}" ;;
-    "~/"*) v="${HOME-}/${v#~/}" ;;
+    # Quoted pattern: unquoted ${v#~/} would tilde-expand the pattern itself.
+    "~/"*) v="${HOME-}/${v#"~/"}" ;;
   esac
   # Also expand ~/ after spaces (multi-root lines)
   v=${v// \~\// ${HOME-}/}

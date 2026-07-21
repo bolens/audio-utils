@@ -63,12 +63,16 @@ plugin_after_flags() {
 
 plugin_require_deps() {
   require_cmds flock
-  [[ "${DIFF_HASH:-0}" -eq 1 ]] && require_cmds sha256sum
+  if [[ "${DIFF_HASH:-0}" -eq 1 ]]; then
+    require_cmds sha256sum
+  fi
 }
 
 plugin_banner_extra() {
   log_always "against:   ${DIFF_AGAINST}"
-  [[ "${DIFF_HASH:-0}" -eq 1 ]] && log_always "compare:   sha256"
+  if [[ "${DIFF_HASH:-0}" -eq 1 ]]; then
+    log_always "compare:   sha256"
+  fi
 }
 
 plugin_export_env() {
