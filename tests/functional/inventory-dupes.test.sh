@@ -35,6 +35,18 @@ test_dupes_flags_content_duplicates() {
   assert_grep "duplicate" "$T/failures.log"
 }
 
+test_dupes_fingerprint_mode_flags_duplicates() {
+  require_cmd flac metaflac ffmpeg ffprobe flock
+  command -v fpcalc >/dev/null 2>&1 || skip "missing dependency: fpcalc"
+  local src
+  src=$(fixture dupe_pair)
+  mkdir -p "$T/album"
+  cp "$src/"*.flac "$T/album/"
+
+  run_tool util/flac/flac-dupes/flac-dupes.sh -j 1 --fingerprint "$T/album"
+  assert_eq "$(tool_rc)" 1 "fingerprint dupes rc ($(tool_out | tail -3))"
+}
+
 test_dupes_passes_distinct_files() {
   require_cmd flac metaflac ffmpeg ffprobe flock
   local src
