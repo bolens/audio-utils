@@ -5,6 +5,10 @@ rebuilt on demand. Everything generatable at test time lives in
 `tests/fixtures.sh` instead — vendor an asset here only as a last resort,
 keep it tiny, and document exactly how it was produced.
 
+Both files are original sine tones generated for this project (MIT, like the
+rest of the repo). The encoders used to produce them are not distributed
+here — see [docs/third-party.md](../../docs/third-party.md) for notices.
+
 ## tone.shn (Shorten)
 
 0.5 s stereo 16-bit 44.1 kHz sine (440 Hz), losslessly compressed with

@@ -175,4 +175,4 @@ Plugin contract: [docs/adding-a-converter.md](docs/adding-a-converter.md). Util 
 
 ## License
 
-[MIT](LICENSE)
+[MIT](LICENSE). Third-party software notices (Monkey's Audio SDK, Shorten, Takc, external tools): [docs/third-party.md](docs/third-party.md).

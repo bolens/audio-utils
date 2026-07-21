@@ -28,6 +28,9 @@
 # escapes, and installed files get explicit 0755/0644 modes. Uninstall only
 # removes files whose hashes still match the install manifest.
 #
+# License: the SDK is (c) Matthew T. Ashland, 3-clause BSD (License.txt in
+# the zip; see docs/third-party.md). Nothing from it is bundled in this repo.
+#
 # Exit codes: 0 ok, 1 failure, 2 usage
 set -euo pipefail
 umask 022
@@ -53,7 +56,7 @@ FORCE=0
 PURGE=0
 
 usage() {
-  sed -n '2,31p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'
+  sed -n '2,34p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'
   exit "${1:-2}"
 }
 
