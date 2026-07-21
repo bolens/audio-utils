@@ -26,6 +26,11 @@
 set -euo pipefail
 AU_USAGE_START=2
 AU_USAGE_END=23
-# shellcheck source=../../lib/cli.sh
-source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/../../lib/cli.sh"
+AU_ROOT=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
+while [[ ! -f "$AU_ROOT/lib/plugin_init.sh" ]]; do
+  [[ "$AU_ROOT" != / ]] || { echo "audio-utils: shared lib/ not found" >&2; exit 2; }
+  AU_ROOT=$(dirname "$AU_ROOT")
+done
+# shellcheck source=../../lib/cli/cli.sh
+source "$AU_ROOT/lib/cli/cli.sh"
 audio_utils_cli_run "$@"

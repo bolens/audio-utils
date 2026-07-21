@@ -9,4 +9,5 @@ HAS_CONVERT_CLEAN = 1
 HAS_RETAG = 1
 HELP_EXTRA =   Extra: convert-verbose / convert-clean / retag
 CLEAN_EXTRA = rm -f wav-to-flac-failures.log wav-to-flac-success.csv wav-to-flac-success.jsonl;
-include ../../lib/tool.mk
+AU_ROOT := $(shell d="$(CURDIR)"; while [ ! -f "$$d/lib/tool.mk" ] && [ "$$d" != / ]; do d=$$(dirname "$$d"); done; echo "$$d")
+include $(AU_ROOT)/lib/tool.mk

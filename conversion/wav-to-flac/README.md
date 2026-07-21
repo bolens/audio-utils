@@ -178,21 +178,15 @@ make clean-tmp ROOTS="$HOME/Music $HOME/Downloads"
 ```
 wav-to-flac.sh       CLI + directory driver
 convert-all.sh       Discover + convert wrapper
-find-wav-dirs.sh     WAV discovery (wraps ../../lib/find-audio-dirs.sh)
+find-wav-dirs.sh     WAV discovery (wraps the shared lib/find-audio-dirs.sh)
 Makefile
 README.md
 .shellcheckrc
-lib/                 Tool-specific pipeline
-  load.sh            Shared ../../lib + local modules
-  success_log.sh     CSV/JSONL success schema
-  prepare.sh         Clean remux / float→int prep
-  encode.sh          flac encode + tag/cover
-  convert.sh         Per-file pipeline + retag
-  cleanup.sh         -D delete-existing mode
-  worker.sh          Parallel worker (status files + OK/FAIL)
+lib/
+  plugin.sh          Tool plugin (AU_* contract + shared pipeline wiring)
 ```
 
-Shared infra lives in [`../../lib/`](../../lib/) (logging, progress, tmpdirs, probes, disk, roots, find-audio-dirs).
+Shared infra lives in the repo-root [`lib/`](../../lib/) (logging, progress, tmpdirs, probes, disk, roots, find-audio-dirs).
 
 ## Notes
 

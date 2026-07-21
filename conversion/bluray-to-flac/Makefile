@@ -5,4 +5,5 @@ FIND_SCRIPT = find-bdmv-dirs.sh
 WORKDIR_GLOB = .bluray2flac.*
 DELETE_TARGET = delete-sources
 HELP_EXTRA =   Note: BDMV / decrypted media only
-include ../../lib/tool.mk
+AU_ROOT := $(shell d="$(CURDIR)"; while [ ! -f "$$d/lib/tool.mk" ] && [ "$$d" != / ]; do d=$$(dirname "$$d"); done; echo "$$d")
+include $(AU_ROOT)/lib/tool.mk

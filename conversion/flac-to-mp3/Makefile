@@ -6,4 +6,5 @@ WORKDIR_GLOB = .flac2mp3.*
 DELETE_TARGET = delete-flacs
 HAS_CONVERT_VERBOSE = 1
 HELP_EXTRA =   Quality: make convert ARGS='-Q v0'
-include ../../lib/tool.mk
+AU_ROOT := $(shell d="$(CURDIR)"; while [ ! -f "$$d/lib/tool.mk" ] && [ "$$d" != / ]; do d=$$(dirname "$$d"); done; echo "$$d")
+include $(AU_ROOT)/lib/tool.mk

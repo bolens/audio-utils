@@ -15,9 +15,15 @@ LOSSY_DEFAULT_QUALITY=q6
 LOSSY_QUALITY_ENV=AUDIO_UTILS_VORBIS_QUALITY
 LOSSY_QUALITY_ENV_ALT=FLAC2VORBIS_QUALITY
 
+_AU_ROOT=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
+while [[ ! -f "$_AU_ROOT/lib/plugin_init.sh" ]]; do
+  # shellcheck disable=SC2317  # exit only reached when executed, not sourced
+  [[ "$_AU_ROOT" != / ]] || { echo "audio-utils: shared lib/ not found" >&2; return 1 2>/dev/null || exit 2; }
+  _AU_ROOT=$(dirname "$_AU_ROOT")
+done
 # shellcheck source=../../../lib/plugin_init.sh
-source "$(cd "$(dirname "${BASH_SOURCE[0]}")/../../.." && pwd)/lib/plugin_init.sh"
+source "$_AU_ROOT/lib/plugin_init.sh"
 
 lossy_plugin_wire
-# shellcheck source=../../../lib/lossy_hooks.sh
-source "$(cd "$(dirname "${BASH_SOURCE[0]}")/../../.." && pwd)/lib/lossy_hooks.sh"
+# shellcheck source=../../../lib/pipeline/lossy_hooks.sh
+source "$_AU_ROOT/lib/pipeline/lossy_hooks.sh"

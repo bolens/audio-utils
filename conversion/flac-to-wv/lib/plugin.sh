@@ -10,8 +10,14 @@ AU_SUCCESS_COLUMNS='timestamp,flac,wv,audio_md5,wv_sha256,codec,bytes,samples,no
 AU_GETOPT_EXTRA=""
 AU_LOSSLESS_CODEC=wavpack
 
+_AU_ROOT=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
+while [[ ! -f "$_AU_ROOT/lib/plugin_init.sh" ]]; do
+  # shellcheck disable=SC2317  # exit only reached when executed, not sourced
+  [[ "$_AU_ROOT" != / ]] || { echo "audio-utils: shared lib/ not found" >&2; return 1 2>/dev/null || exit 2; }
+  _AU_ROOT=$(dirname "$_AU_ROOT")
+done
 # shellcheck source=../../../lib/plugin_init.sh
-source "$(cd "$(dirname "${BASH_SOURCE[0]}")/../../.." && pwd)/lib/plugin_init.sh"
+source "$_AU_ROOT/lib/plugin_init.sh"
 
 plugin_sibling_ok() { is_wavpack_pure "$2" && sibling_matches_source "$1" "$2"; }
 plugin_post_encode_ok() { is_wavpack_pure "$1"; }

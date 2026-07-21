@@ -36,7 +36,7 @@ AUDIO_UTILS_ROOTS="$HOME/Music $HOME/Downloads"
 # --- Environment-only settings (NOT read from this file; export in your shell) ---
 # Tool-specific quality aliases:      export FLAC2MP3_QUALITY=v0
 # Fail instead of resample/downmix:   export LOSSY_NO_RESAMPLE=1
-# Enrichment (util/tags-lookup; the only networked tool — see docs/enrichment.md):
+# Enrichment (util/audio/tags-lookup; the only networked tool — see docs/enrichment.md):
 #   export ACOUSTID_CLIENT_KEY=your-key
 #   export LOOKUP_DELAY=0.4
 # XDG overrides:

@@ -1,7 +1,7 @@
 # Online metadata enrichment
 
 Everything in audio-utils works offline — with one deliberate exception:
-[`util/tags-lookup`](../util/tags-lookup/). This page defines that boundary.
+[`util/audio/tags-lookup`](../util/audio/tags-lookup/). This page defines that boundary.
 
 ## The boundary
 
@@ -13,7 +13,7 @@ Everything in audio-utils works offline — with one deliberate exception:
 
 No other tool may open a network connection. Tools that *could* be enriched
 online (lyrics, cover art) deliberately stop at auditing local data —
-[`util/audio-lyrics`](../util/audio-lyrics/) checks tags and `.lrc` sidecars
+[`util/audio/audio-lyrics`](../util/audio/audio-lyrics/) checks tags and `.lrc` sidecars
 but does not fetch lyrics.
 
 ## tags-lookup
@@ -40,7 +40,7 @@ Register a free application key at
 
 ```bash
 export ACOUSTID_CLIENT_KEY=your-key
-make -C util/tags-lookup convert ARGS="-j 1"
+make -C util/audio/tags-lookup convert ARGS="-j 1"
 ```
 
 ### Rate limiting

@@ -11,7 +11,7 @@ AUDIO_UTILS_MP3_QUALITY=v0
 
 ## Opus / AAC / Vorbis
 
-Profiles live in shared `lib/lossy.sh` (`lossy_resolve_quality`).
+Profiles live in shared `lib/pipeline/lossy.sh` (`lossy_resolve_quality`).
 
 | Tool | Default `-Q` | Profiles |
 |------|----------------|----------|
@@ -68,4 +68,4 @@ Verification: duration within ~50ms; stream probe OK. Skip is probe-only (lossy 
 
 ## See also
 
-[docs index](README.md) · [formats.md](formats.md) · [requirements.md](requirements.md) · [adding-a-converter.md](adding-a-converter.md) · [`util/lossy-audit/`](../util/lossy-audit/) · [root README](../README.md)
+[docs index](README.md) · [formats.md](formats.md) · [requirements.md](requirements.md) · [adding-a-converter.md](adding-a-converter.md) · [`util/audit/lossy-audit/`](../util/audit/lossy-audit/) · [root README](../README.md)

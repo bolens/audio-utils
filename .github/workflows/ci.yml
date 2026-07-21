@@ -64,13 +64,27 @@ jobs:
             local files_json="$3"
             local -a tools=()
 
+            # A tool dir is any dir under the group holding a Makefile
+            # (conversion/<tool> or util/<category>/<tool>).
             if [[ "$LIB_CHANGED" == "true" ]]; then
-              mapfile -t tools < <(printf '%s\n' "${group}"/*/ | sed 's|/$||' | sort)
+              mapfile -t tools < <(
+                find "$group" -mindepth 2 -maxdepth 3 -name Makefile -printf '%h\n' | sort
+              )
             elif [[ "$group_changed" == "true" ]]; then
               mapfile -t tools < <(
-                jq -r '.[]' <<<"$files_json" \
-                  | awk -F/ -v g="$group" '$1 == g && NF >= 2 { print $1 "/" $2 }' \
-                  | sort -u
+                jq -r '.[]' <<<"$files_json" | while IFS= read -r f; do
+                  d=$(dirname "$f")
+                  # Nearest ancestor with a Makefile = the tool dir. Stops at
+                  # the group root, so deleted tools and category-level files
+                  # are skipped.
+                  while [[ "$d" == "$group"/* ]]; do
+                    if [[ -f "$d/Makefile" ]]; then
+                      printf '%s\n' "$d"
+                      break
+                    fi
+                    d=$(dirname "$d")
+                  done
+                done | sort -u
               )
             fi
 

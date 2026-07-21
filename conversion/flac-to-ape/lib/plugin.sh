@@ -10,8 +10,14 @@ AU_SUCCESS_COLUMNS='timestamp,flac,ape,audio_md5,ape_sha256,codec,bytes,samples,
 AU_GETOPT_EXTRA=""
 AU_LOSSLESS_CODEC=ape
 
+_AU_ROOT=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
+while [[ ! -f "$_AU_ROOT/lib/plugin_init.sh" ]]; do
+  # shellcheck disable=SC2317  # exit only reached when executed, not sourced
+  [[ "$_AU_ROOT" != / ]] || { echo "audio-utils: shared lib/ not found" >&2; return 1 2>/dev/null || exit 2; }
+  _AU_ROOT=$(dirname "$_AU_ROOT")
+done
 # shellcheck source=../../../lib/plugin_init.sh
-source "$(cd "$(dirname "${BASH_SOURCE[0]}")/../../.." && pwd)/lib/plugin_init.sh"
+source "$_AU_ROOT/lib/plugin_init.sh"
 
 plugin_sibling_ok() { is_ape "$2" && sibling_matches_source "$1" "$2"; }
 

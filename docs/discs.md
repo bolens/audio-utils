@@ -79,4 +79,4 @@ Streaming DRM (Widevine / FairPlay / …) is documented in [streaming.md](stream
 
 ## See also
 
-[docs index](README.md) · [requirements.md](requirements.md) · [streaming.md](streaming.md) · [formats.md](formats.md) · [`util/disc-inventory/`](../util/disc-inventory/) · [root README](../README.md)
+[docs index](README.md) · [requirements.md](requirements.md) · [streaming.md](streaming.md) · [formats.md](formats.md) · [`util/audit/disc-inventory/`](../util/audit/disc-inventory/) · [root README](../README.md)

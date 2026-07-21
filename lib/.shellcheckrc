@@ -1,5 +1,8 @@
-# Shared audio-utils library
+# Shared audio-utils library.
+# SCRIPTDIR/.. lets lib/<group>/*.sh follow directives written relative to
+# the lib/ root (e.g. core/log.sh in load.sh).
 source-path=SCRIPTDIR
+source-path=SCRIPTDIR/..
 external-sources=true
 shell=bash
 disable=SC1093

@@ -5,4 +5,5 @@ FIND_SCRIPT = find-flac-dirs.sh
 WORKDIR_GLOB = .flac2wma.*
 DELETE_TARGET = delete-sources
 HELP_EXTRA =   Quality: make convert ARGS='-Q 192'
-include ../../lib/tool.mk
+AU_ROOT := $(shell d="$(CURDIR)"; while [ ! -f "$$d/lib/tool.mk" ] && [ "$$d" != / ]; do d=$$(dirname "$$d"); done; echo "$$d")
+include $(AU_ROOT)/lib/tool.mk
