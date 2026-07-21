@@ -134,12 +134,14 @@ assert_audio_md5_eq() { # file_a file_b
 
 # Run a tool entry script, capturing stdout+stderr to $T/out and rc to $T/rc.
 # Usage: run_tool <path-relative-to-repo-root> [args...]
-# Closes stdin so the driver does not read DIRs from a non-tty stdin.
+# stdin is /dev/null so the driver does not read DIRs from a non-tty stdin.
+# (Not <&-: with fd 0 closed, the next open() lands on fd 0 and ffmpeg 6.1's
+# console handler reads it, silently truncating decodes.)
 run_tool() {
   local tool="$AU_REPO_ROOT/$1"
   shift
   local rc=0
-  "$tool" "$@" >"$T/out" 2>&1 <&- || rc=$?
+  "$tool" "$@" >"$T/out" 2>&1 </dev/null || rc=$?
   echo "$rc" >"$T/rc"
   return 0
 }
