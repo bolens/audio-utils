@@ -82,6 +82,8 @@ On Fedora, enable [RPM Fusion](https://rpmfusion.org/) before installing `ffmpeg
 | flac-inventory | `metaflac`, `ffmpeg`/`ffprobe` |
 | audio-replaygain | **rsgain** or **loudgain**, `ffmpeg`/`ffprobe` |
 | audio-tags | `ffmpeg`/`ffprobe`; `metaflac` for FLAC |
+| audio-bpm | **bpm** (bpm-tools, preferred) or **aubio**; `ffmpeg`/`ffprobe`; `metaflac` for FLAC |
+| audio-key | **keyfinder-cli**; `ffmpeg`/`ffprobe`; `metaflac` for FLAC |
 | audio-dupes | **fpcalc** (default); `-M` needs `ffmpeg` |
 | audio-artwork | `ffmpeg`/`ffprobe`; `metaflac` optional for FLAC |
 | library-sync | `flac` |

@@ -48,6 +48,8 @@ Docs: **[docs/](docs/)** — [requirements](docs/requirements.md) · [formats](d
 | [`util/flac-inventory/`](util/flac-inventory/) | Library inventory report (rate/depth/RG/art/size) |
 | [`util/audio-replaygain/`](util/audio-replaygain/) | ReplayGain for FLAC + lossy (rsgain/loudgain) |
 | [`util/audio-tags/`](util/audio-tags/) | Normalize tags across FLAC + lossy |
+| [`util/audio-bpm/`](util/audio-bpm/) | Detect + tag tempo (BPM via bpm-tools or aubio) |
+| [`util/audio-key/`](util/audio-key/) | Detect + tag musical key (INITIALKEY via keyfinder-cli) |
 | [`util/audio-dupes/`](util/audio-dupes/) | Cross-format duplicates (chromaprint / MD5) |
 | [`util/audio-artwork/`](util/audio-artwork/) | Embed / extract covers (multi-format) |
 | [`util/library-sync/`](util/library-sync/) | FLAC ↔ portable sibling presence check |
