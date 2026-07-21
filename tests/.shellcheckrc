@@ -1,0 +1,10 @@
+# Test suite. SCRIPTDIR/.. lets tests/<tier>/*.test.sh resolve the
+# "# shellcheck source=../harness.sh" directives regardless of cwd.
+source-path=SCRIPTDIR
+source-path=SCRIPTDIR/..
+external-sources=true
+shell=bash
+
+# The harness intentionally sets T inside the per-test subshell; tests
+# reading $T afterwards are the design, not a lost-modification bug.
+disable=SC2030,SC2031

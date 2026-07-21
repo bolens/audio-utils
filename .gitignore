@@ -17,3 +17,6 @@
 .tmp-auth-test/
 .tmp-util-test.*/
 .tmp-codec-*/
+
+# Test fixture cache (rebuilt on demand by tests/fixtures.sh)
+tests/.cache/
