@@ -13,6 +13,7 @@ Index of topic docs. **Tool lists** (every converter/util path) live only in the
 | [dsd.md](dsd.md) | DSF/DFF → FLAC rates and sox fallback |
 | [lossy.md](lossy.md) | MP3 / Opus / AAC / Vorbis / WMA / Speex / MPC + resample |
 | [playlists.md](playlists.md) | M3U / PLS / XSPF audit, normalize, generate, dedupe |
+| [enrichment.md](enrichment.md) | Online metadata lookups (AcoustID / MusicBrainz) — opt-in network boundary |
 | [adding-a-converter.md](adding-a-converter.md) | Converter plugin contract |
 | [adding-a-util.md](adding-a-util.md) | Non-conversion util contract |
 

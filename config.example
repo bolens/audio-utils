@@ -22,6 +22,10 @@ AUDIO_UTILS_ROOTS="$HOME/Music $HOME/Downloads"
 # AUDIO_UTILS_TAKC=/path/to/Takc.exe
 # AUDIO_UTILS_TAK_PRESET=p2
 
+# --- Enrichment (util/tags-lookup; the only networked tool — see docs/enrichment.md) ---
+# ACOUSTID_CLIENT_KEY=your-key
+# LOOKUP_DELAY=0.4
+
 # --- Optical ---
 # AUDIO_UTILS_DVD_DEVICE=/dev/sr0
 # AUDIO_UTILS_CD_DEVICE=/dev/sr0
