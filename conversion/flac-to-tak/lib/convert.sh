@@ -76,6 +76,11 @@ convert_one() {
   sha=$(file_sha256 "$tak")
   notes="converted;preset=$preset"
   ((force_reconvert)) && notes="reconverted;preset=$preset"
+  # Takc writes no tags; surface the loss instead of hiding it (see README).
+  if flac_tag_export "$flac" | grep -q .; then
+    notes="${notes};tags=dropped"
+    log_note "note: TAK output carries no tags (Takc limitation): $tak"
+  fi
   if [[ "${DELETE_SOURCE:-${DELETE_FLAC:-0}}" -eq 1 ]]; then
     rm -f -- "$flac"
     notes="${notes};deleted-flac"
