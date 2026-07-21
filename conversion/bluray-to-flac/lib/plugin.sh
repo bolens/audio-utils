@@ -14,6 +14,10 @@ AU_CLEANUP_SKIP=1
 # shellcheck source=../../../lib/plugin_init.sh
 source "$(cd "$(dirname "${BASH_SOURCE[0]}")/../../.." && pwd)/lib/plugin_init.sh"
 
+# libbluray/libaacs/MakeMKV are optional (hybrid) — checked per-input in lib/bluray.sh.
+plugin_require_deps() {
+  require_cmds flac ffmpeg ffprobe
+}
 
 plugin_export_env() {
   export DELETE_SOURCE
