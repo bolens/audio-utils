@@ -25,6 +25,3 @@ conversion/dsf-to-flac	ffmpeg decodes DSF but cannot encode it; no fixture sourc
 # --- network services ----------------------------------------------------------
 util/audio/tags-lookup	queries the MusicBrainz web service; offline mocking would test nothing real
 util/audio/audio-lyrics	queries lyrics web APIs
-#
-# --- optional analysis binaries (no gated test yet) ----------------------------
-util/audio/audio-bpm	needs bpm-tools or aubio; add a gated test if a runner gains them

@@ -72,7 +72,7 @@ cd "$ROOT"
 
 declare -A EXEMPT_REASON=()
 if [[ -f "$EXEMPT_FILE" ]]; then
-  while IFS=$'\t' read -r path reason; do
+  while IFS=$'\t' read -r path reason || [[ -n "$path" ]]; do
     [[ -z "$path" || "$path" == \#* ]] && continue
     EXEMPT_REASON["$path"]=${reason:-"(no reason given)"}
   done <"$EXEMPT_FILE"
