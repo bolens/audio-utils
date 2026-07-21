@@ -63,6 +63,52 @@ _mk_flac() {
 
 # --- builders (each receives its target dir) ---------------------------------
 
+# Little-endian integer as raw bytes on stdout. _le VALUE NBYTES
+_le() {
+  local v=$1 n=$2 i b oct
+  for ((i = 0; i < n; i++)); do
+    b=$(((v >> (8 * i)) & 0xff))
+    printf -v oct '%03o' "$b"
+    # shellcheck disable=SC2059  # octal escape is built, not user input
+    printf "\\${oct}"
+  done
+}
+
+# Hand-crafted stereo DSD64 DSF file (no encoder exists in ffmpeg; the format
+# is a simple documented container, so we write the chunks directly).
+# _mk_dsf OUT [BLOCKS_PER_CHANNEL]  (4096-byte blocks; 22 ≈ 0.26 s)
+_mk_dsf() {
+  local out=$1 blocks=${2:-22}
+  local ch=2 block=4096
+  local data_per_ch=$((blocks * block))
+  local samples=$((data_per_ch * 8)) # 1 bit per sample
+  local data_bytes=$((data_per_ch * ch))
+  local data_chunk=$((12 + data_bytes))
+  local total=$((28 + 52 + data_chunk))
+  {
+    printf 'DSD '; _le 28 8; _le "$total" 8; _le 0 8
+    printf 'fmt '; _le 52 8
+    _le 1 4        # format version
+    _le 0 4        # format id: raw DSD
+    _le 2 4        # channel type: stereo
+    _le "$ch" 4
+    _le 2822400 4  # DSD64 sampling frequency
+    _le 1 4        # bits per sample, LSB-first
+    _le "$samples" 8
+    _le "$block" 4
+    _le 0 4        # reserved
+    printf 'data'; _le "$data_chunk" 8
+  } >"$out"
+  # DSD "silence": alternating 01101001 bit pattern (0x69).
+  head -c "$data_bytes" /dev/zero | tr '\0' '\151' >>"$out"
+}
+
+# Stereo DSD64 DSF (hand-crafted; decodes via ffmpeg dsd_lsbf_planar).
+_fixture_build_dsf() {
+  local d=$1
+  _mk_dsf "$d/tone.dsf"
+}
+
 # 2s stereo 16-bit 44.1 kHz sine + white noise WAVs.
 _fixture_build_wav_sine() {
   local d=$1
