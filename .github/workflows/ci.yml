@@ -4,6 +4,10 @@ on:
   push:
     branches: [main, master]
   pull_request:
+  # Weekly full run: runner-image drift (ffmpeg, shellcheck, codecs) breaks
+  # things without any push. Path filters are bypassed on schedule.
+  schedule:
+    - cron: '17 11 * * 1'
 
 concurrency:
   group: ci-${{ github.workflow }}-${{ github.ref }}
@@ -16,15 +20,17 @@ jobs:
   changes:
     name: Detect changes
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     permissions:
       contents: read
       pull-requests: read
+    # Scheduled runs treat everything as changed (no diff to filter against).
     outputs:
-      lib: ${{ steps.filter.outputs.lib }}
-      conversion: ${{ steps.filter.outputs.conversion }}
-      util: ${{ steps.filter.outputs.util }}
-      tests: ${{ steps.filter.outputs.tests }}
-      code: ${{ steps.filter.outputs.code }}
+      lib: ${{ github.event_name == 'schedule' && 'true' || steps.filter.outputs.lib }}
+      conversion: ${{ github.event_name == 'schedule' && 'true' || steps.filter.outputs.conversion }}
+      util: ${{ github.event_name == 'schedule' && 'true' || steps.filter.outputs.util }}
+      tests: ${{ github.event_name == 'schedule' && 'true' || steps.filter.outputs.tests }}
+      code: ${{ github.event_name == 'schedule' && 'true' || steps.filter.outputs.code }}
       conversion_tools: ${{ steps.plan.outputs.conversion_tools }}
       util_tools: ${{ steps.plan.outputs.util_tools }}
       conversion_matrix: ${{ steps.plan.outputs.conversion_matrix }}
@@ -35,6 +41,7 @@ jobs:
         uses: actions/checkout@v7
 
       - name: Path filter
+        if: github.event_name != 'schedule'
         uses: dorny/paths-filter@v4
         id: filter
         with:
@@ -61,7 +68,7 @@ jobs:
       - name: Plan shellcheck matrices
         id: plan
         env:
-          LIB_CHANGED: ${{ steps.filter.outputs.lib }}
+          LIB_CHANGED: ${{ github.event_name == 'schedule' && 'true' || steps.filter.outputs.lib }}
           CONVERSION_CHANGED: ${{ steps.filter.outputs.conversion }}
           UTIL_CHANGED: ${{ steps.filter.outputs.util }}
           CONVERSION_FILES: ${{ steps.filter.outputs.conversion_files }}
@@ -132,6 +139,7 @@ jobs:
     needs: changes
     if: needs.changes.outputs.lib == 'true'
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - name: Checkout
         uses: actions/checkout@v7
@@ -149,6 +157,7 @@ jobs:
       needs.changes.outputs.conversion == 'true' ||
       needs.changes.outputs.lib == 'true'
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     strategy:
       fail-fast: false
       matrix:
@@ -185,6 +194,7 @@ jobs:
       needs.changes.outputs.util == 'true' ||
       needs.changes.outputs.lib == 'true'
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     strategy:
       fail-fast: false
       matrix:
@@ -220,6 +230,7 @@ jobs:
     needs: changes
     if: needs.changes.outputs.lib == 'true'
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     container: fedora:latest
     steps:
       - name: Checkout
@@ -237,6 +248,7 @@ jobs:
     needs: changes
     if: needs.changes.outputs.code == 'true'
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - name: Checkout
         uses: actions/checkout@v7
@@ -258,19 +270,23 @@ jobs:
       - name: Coverage audit
         run: make coverage
 
-  # Functional tests: heavier fixtures/codecs, sharded across runners.
+  # Functional tests: heavier fixtures/codecs, sharded across runners and
+  # run against both ffmpeg ends we support: the distro's (oldest we care
+  # about) and the current upstream release (matches dev machines). Version
+  # skew here has produced real bugs (ffmpeg 6.1 truncating decodes when
+  # fd 0 was closed) that only one end of the range could catch.
   # Encoders missing from the runner's ffmpeg exercise the SKIP path.
   test-functional:
-    name: tests (functional ${{ matrix.shard }}/2)
+    name: tests (functional ${{ matrix.shard }}/2, ffmpeg ${{ matrix.ffmpeg }})
     needs: changes
     if: needs.changes.outputs.code == 'true'
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     strategy:
       fail-fast: false
       matrix:
-        include:
-          - { shard: 0, shards: 2 }
-          - { shard: 1, shards: 2 }
+        shard: [0, 1]
+        ffmpeg: [apt, latest]
     steps:
       - name: Checkout
         uses: actions/checkout@v7
@@ -278,7 +294,19 @@ jobs:
       - name: Install dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y ffmpeg flac vorbis-tools opus-tools lame wavpack bpm-tools musepack-tools cmake g++ unzip zip
+          sudo apt-get install -y ffmpeg flac vorbis-tools opus-tools lame wavpack bpm-tools musepack-tools libchromaprint-tools cmake g++ unzip zip
+
+      # BtbN static build of the latest upstream release; shadows apt's
+      # ffmpeg/ffprobe via /usr/local/bin PATH precedence.
+      - name: Install latest ffmpeg (static build)
+        if: matrix.ffmpeg == 'latest'
+        run: |
+          set -euo pipefail
+          curl -fsSL --retry 3 -o /tmp/ffmpeg.tar.xz \
+            "https://github.com/BtbN/FFmpeg-Builds/releases/download/latest/ffmpeg-master-latest-linux64-gpl.tar.xz"
+          tar -xJf /tmp/ffmpeg.tar.xz -C /tmp
+          sudo install -m 0755 /tmp/ffmpeg-master-latest-linux64-gpl/bin/{ffmpeg,ffprobe} /usr/local/bin/
+          ffmpeg -version | head -1
 
       # Best effort: enables the gated flac-to-ape tests (they skip without
       # mac). The installer itself is tested offline in ape-codec.test.sh, so
@@ -287,10 +315,21 @@ jobs:
         continue-on-error: true
         run: bash scripts/ape-codec.sh install --prefix "$HOME/.local"
 
+      # Fixtures are deterministic per (generator script, ffmpeg build).
+      - name: Fixture cache key
+        id: ffver
+        run: echo "ffmpeg=$(ffmpeg -version | head -1 | awk '{print $3}')" >>"$GITHUB_OUTPUT"
+
+      - name: Cache test fixtures
+        uses: actions/cache@v4
+        with:
+          path: tests/.cache
+          key: fixtures-${{ hashFiles('tests/fixtures.sh') }}-ffmpeg-${{ steps.ffver.outputs.ffmpeg }}
+
       - name: Run functional shard
         env:
           SHARD: ${{ matrix.shard }}
-          SHARDS: ${{ matrix.shards }}
+          SHARDS: 2
         run: |
           set -euo pipefail
           mapfile -t files < <(bash tests/run.sh --list functional)
@@ -306,11 +345,32 @@ jobs:
           fi
           printf 'Shard %s/%s:\n' "$SHARD" "$SHARDS"
           printf '  %s\n' "${mine[@]}"
-          bash tests/run.sh "${mine[@]}"
+          bash tests/run.sh "${mine[@]}" 2>&1 | tee test-output.log
+
+      # Skips are how coverage erodes silently (a dependency vanishes from
+      # the image and its tests stop running). Surface them on the run page
+      # and fail if they grow past the expected baseline.
+      - name: Skip report
+        if: always()
+        env:
+          MAX_SKIPS: 10
+        run: |
+          set -euo pipefail
+          [[ -f test-output.log ]] || exit 0
+          skips=$(grep -c '# SKIP' test-output.log || true)
+          {
+            echo "### Skipped tests: ${skips} (shard ${{ matrix.shard }}, ffmpeg ${{ matrix.ffmpeg }})"
+            grep '# SKIP' test-output.log | sed 's/^ *//; s/^/- /' || true
+          } >>"$GITHUB_STEP_SUMMARY"
+          if ((skips > MAX_SKIPS)); then
+            echo "::error::$skips skipped tests exceeds MAX_SKIPS=$MAX_SKIPS — missing dependency on the runner?"
+            exit 1
+          fi
 
   # Single required status for branch protection when path filters skip jobs.
   ci:
     name: CI
+    timeout-minutes: 5
     needs:
       - changes
       - shellcheck-lib

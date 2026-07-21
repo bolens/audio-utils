@@ -39,6 +39,8 @@ test_state_dir_creates_directory() {
 }
 
 test_state_dir_falls_back_to_cache_when_unwritable() {
+  # chmod cannot revoke root's write access (e.g. plain docker runs).
+  [[ "$EUID" -ne 0 ]] || skip "running as root; unwritable dirs impossible"
   _load_lib
   export XDG_STATE_HOME="$T/state" XDG_CACHE_HOME="$T/cache"
   mkdir -p "$XDG_STATE_HOME"

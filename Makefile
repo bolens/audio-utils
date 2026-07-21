@@ -20,7 +20,7 @@ TEST_SCRIPTS := tests/run.sh tests/harness.sh tests/fixtures.sh \
 	$(sort $(wildcard scripts/*.sh))
 
 .PHONY: help check check-lib check-conversion check-util check-tools \
-	check-tests test test-functional test-all clean-tests coverage new-util \
+	check-tests test test-functional test-all test-ci clean-tests coverage new-util \
 	new-converter ape-install ape-update ape-status ape-uninstall \
 	$(addsuffix -%,$(TOOLS))
 
@@ -36,6 +36,7 @@ help:
 	@echo "  make test                  run unit + smoke tests"
 	@echo "  make test-functional       run functional tests (needs ffmpeg/flac)"
 	@echo "  make test-all              run every test tier"
+	@echo "  make test-ci               run the suite in a CI-like container (docker/podman)"
 	@echo "  make test K=PATTERN        narrow any test target to matching files"
 	@echo "  make clean-tests           remove fixture cache + stray test sandboxes"
 	@echo "  make coverage              audit test coverage vs the 90% goal"
@@ -76,6 +77,11 @@ test-functional:
 
 test-all:
 	bash tests/run.sh -j $(JOBS) $(if $(K),-k $(K))
+
+# CI parity: full suite in an ubuntu:24.04 container (the runner's distro,
+# with its older ffmpeg). FFMPEG=latest exercises the upstream-ffmpeg leg.
+test-ci:
+	bash scripts/test-ci.sh $(if $(FFMPEG),--ffmpeg $(FFMPEG)) $(if $(K),-k $(K))
 
 clean-tests:
 	rm -rf tests/.cache .tmp-auth-test .tmp-util-test.* .tmp-codec-*
