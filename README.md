@@ -114,6 +114,17 @@ make -C util/flac/flac-verify convert-quiet
 make flac-verify-convert-quiet   # short alias for any tool
 ```
 
+Development:
+
+```bash
+make test                        # unit + smoke tests
+make test-functional             # end-to-end pipeline tests (needs ffmpeg/flac)
+make test-all                    # everything
+make -C util/flac/flac-verify test   # one tool's smoke + matching tests
+make new-util CATEGORY=flac NAME=flac-frob    # scaffold a new util
+make new-converter NAME=flac-to-xyz           # scaffold a new converter
+```
+
 ## Layout
 
 ```
