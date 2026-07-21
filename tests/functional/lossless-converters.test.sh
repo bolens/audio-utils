@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # Functional: aiff/alac lossless round-trips, flac-to-aac, lossy-to-flac
 # rescue decode, and the -d / -D source-deletion contract.
+# covers: lib/media/lossless.sh lib/core/delete.sh
 set -euo pipefail
 # shellcheck source=../harness.sh
 source "$(dirname "${BASH_SOURCE[0]}")/../harness.sh"

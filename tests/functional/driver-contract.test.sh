@@ -2,6 +2,8 @@
 # Functional: shared driver CLI contract, exercised through flac-verify
 # (read-only, logs one success row per file). Covers -f lists, stdin dirs,
 # CSV vs JSONL success logs, -L, bad -j, and default XDG state-dir logs.
+# covers: lib/cli/driver.sh lib/cli/worker.sh lib/core/success_log.sh
+# covers: lib/core/progress.sh lib/core/version.sh
 set -euo pipefail
 # shellcheck source=../harness.sh
 source "$(dirname "${BASH_SOURCE[0]}")/../harness.sh"

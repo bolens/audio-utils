@@ -1,0 +1,30 @@
+# Tools/lib modules exempt from the functional-coverage goal, one per line:
+#   <repo-relative path> <TAB> <reason>
+# Keep this list under review: scripts/coverage-audit.sh flags entries that
+# are stale (path gone) or shadowed (a functional test now covers them).
+# Everything here still gets smoke coverage (CLI contract + dep-skip paths).
+#
+# --- physical hardware / real media rips -------------------------------------
+conversion/cdda-to-flac	needs a physical CD drive and audio disc (cdparanoia)
+conversion/dvd-to-flac	needs a real VIDEO_TS rip; synthetic IFO/VOB mocking is impractical
+conversion/bluray-to-flac	needs a real BDMV rip and makemkvcon
+lib/pipeline/bluray.sh	BDMV pipeline; see conversion/bluray-to-flac
+lib/pipeline/dvd.sh	VIDEO_TS pipeline; see conversion/dvd-to-flac
+lib/pipeline/cdda.sh	CD ripping pipeline; see conversion/cdda-to-flac
+#
+# --- proprietary / unavailable encoders (cannot build fixtures) ---------------
+conversion/flac-to-tak	proprietary takc binary (TAK, via wine); AUDIO_UTILS_TAKC
+conversion/tak-to-flac	needs a .tak fixture, which only takc can produce
+lib/pipeline/tak.sh	TAK pipeline; see conversion/flac-to-tak
+conversion/flac-to-mpc	needs mpcenc (musepack-tools), rarely packaged
+conversion/flac-to-ape	needs mac (Monkey's Audio) encoder
+conversion/ape-to-flac	needs a .ape fixture, which only mac can produce
+conversion/shn-to-flac	no shorten encoder exists to produce fixtures
+conversion/dsf-to-flac	ffmpeg decodes DSF but cannot encode it; no fixture source
+#
+# --- network services ----------------------------------------------------------
+util/audio/tags-lookup	queries the MusicBrainz web service; offline mocking would test nothing real
+util/audio/audio-lyrics	queries lyrics web APIs
+#
+# --- optional analysis binaries (no gated test yet) ----------------------------
+util/audio/audio-bpm	needs bpm-tools or aubio; add a gated test if a runner gains them

@@ -2,6 +2,7 @@
 # Smoke tests over every tool: --help exits 0, a bad flag exits 2, and a
 # dry run over an empty directory succeeds without writing state.
 # Data-driven: tools are discovered the same way the root Makefile does.
+# covers: lib/load.sh lib/plugin_init.sh lib/cli/cli.sh lib/cli/convert_all.sh
 set -euo pipefail
 # shellcheck source=../harness.sh
 source "$(dirname "${BASH_SOURCE[0]}")/../harness.sh"

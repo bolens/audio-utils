@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 # Functional: wav-to-flac / flac-to-wav round-trip preserves audio bit-for-bit.
+# covers: lib/media/pcm_flac.sh lib/pipeline/pcm_to_flac.sh
+# covers: lib/pipeline/pcm_to_flac_hooks.sh lib/pipeline/pcm_remux.sh
 set -euo pipefail
 # shellcheck source=../harness.sh
 source "$(dirname "${BASH_SOURCE[0]}")/../harness.sh"

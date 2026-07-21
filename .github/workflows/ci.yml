@@ -250,6 +250,11 @@ jobs:
       - name: Run unit + smoke tests
         run: make test
 
+      # Fails when a tool lacks functional coverage (and is not exempted in
+      # tests/coverage-exempt.tsv) or when exempt entries go stale.
+      - name: Coverage audit
+        run: make coverage
+
   # Functional tests: heavier fixtures/codecs, sharded across runners.
   # Encoders missing from the runner's ffmpeg exercise the SKIP path.
   test-functional:

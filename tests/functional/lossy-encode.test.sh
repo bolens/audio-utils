@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 # Functional: flac-to-mp3 / opus / vorbis produce valid, tagged output.
+# covers: lib/pipeline/lossy.sh lib/pipeline/lossy_hooks.sh
 set -euo pipefail
 # shellcheck source=../harness.sh
 source "$(dirname "${BASH_SOURCE[0]}")/../harness.sh"

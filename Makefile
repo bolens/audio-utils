@@ -16,11 +16,12 @@ LIB_SCRIPTS := $(sort $(wildcard lib/*.sh lib/*/*.sh))
 RUN_PARALLEL = $(CURDIR)/lib/cli/run_parallel.sh
 
 TEST_SCRIPTS := tests/run.sh tests/harness.sh tests/fixtures.sh \
-	$(sort $(wildcard tests/*/*.test.sh))
+	$(sort $(wildcard tests/*/*.test.sh)) \
+	$(sort $(wildcard scripts/*.sh))
 
 .PHONY: help check check-lib check-conversion check-util check-tools \
-	check-tests test test-functional test-all new-util new-converter \
-	$(addsuffix -%,$(TOOLS))
+	check-tests test test-functional test-all coverage new-util \
+	new-converter $(addsuffix -%,$(TOOLS))
 
 help:
 	@echo "audio-utils"
@@ -34,6 +35,7 @@ help:
 	@echo "  make test                  run unit + smoke tests"
 	@echo "  make test-functional       run functional tests (needs ffmpeg/flac)"
 	@echo "  make test-all              run every test tier"
+	@echo "  make coverage              audit test coverage vs the 90% goal"
 	@echo "  make -C TOOLDIR test       run smoke + matching tests for one tool"
 	@echo "  make new-util CATEGORY=x NAME=y      scaffold util/x/y"
 	@echo "  make new-converter NAME=x-to-y       scaffold conversion/x-to-y"
@@ -66,6 +68,9 @@ test-functional:
 
 test-all:
 	bash tests/run.sh -j $(JOBS)
+
+coverage:
+	bash scripts/coverage-audit.sh
 
 new-util:
 	@[ -n "$(CATEGORY)" ] && [ -n "$(NAME)" ] \
