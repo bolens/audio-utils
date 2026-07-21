@@ -16,3 +16,4 @@
 # Local auth experiment fixtures
 .tmp-auth-test/
 .tmp-util-test.*/
+.tmp-codec-*/
