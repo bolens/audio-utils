@@ -41,12 +41,13 @@ convert_one() {
   fi
 
   if [[ "${CLIP_FAIL:-1}" -eq 1 ]]; then
-    # Peak at full scale
-    if printf '%s\n' "$report" | grep -E 'Peak level dB:[[:space:]]*0\.0' >/dev/null 2>&1; then
-      clipped=1
-    fi
-    # Also check Peak count from astats
-    if printf '%s\n' "$report" | awk '/Peak count:/ { if ($NF+0 > 0) found=1 } END { exit found?0:1 }'; then
+    # Clipping: peak at (or within 0.05 dB of) full scale AND repeated hits
+    # of that peak. Peak count alone is meaningless — every file has at
+    # least one sample at its own peak level.
+    if printf '%s\n' "$report" | awk '
+      /Peak level dB:/ { if ($NF + 0 >= -0.05) peaked = 1 }
+      /Peak count:/    { if ($NF + 0 >= 2) hits = 1 }
+      END { exit (peaked && hits) ? 0 : 1 }'; then
       clipped=1
     fi
   fi
