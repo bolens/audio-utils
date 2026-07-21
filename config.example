@@ -5,6 +5,9 @@
 #   cp config.example "${XDG_CONFIG_HOME:-$HOME/.config}/audio-utils/config"
 #
 # Environment variables already set in the shell take precedence over this file.
+#
+# Only AUDIO_UTILS_* keys and WAV2FLAC_ROOTS are read from this file;
+# anything else is ignored with a warning (see lib/config.sh).
 
 AUDIO_UTILS_ROOTS="$HOME/Music $HOME/Downloads"
 
@@ -12,19 +15,16 @@ AUDIO_UTILS_ROOTS="$HOME/Music $HOME/Downloads"
 
 # --- Lossy quality (MP3 default stays v0) ---
 # AUDIO_UTILS_MP3_QUALITY=v0
-# FLAC2MP3_QUALITY=v0
 # AUDIO_UTILS_OPUS_QUALITY=128
 # AUDIO_UTILS_AAC_QUALITY=192
 # AUDIO_UTILS_VORBIS_QUALITY=q6
-# LOSSY_NO_RESAMPLE=1
+# AUDIO_UTILS_WMA_QUALITY=192
+# AUDIO_UTILS_SPEEX_QUALITY=q6
+# AUDIO_UTILS_MPC_QUALITY=standard
 
 # --- TAK (see docs/tak.md) ---
 # AUDIO_UTILS_TAKC=/path/to/Takc.exe
 # AUDIO_UTILS_TAK_PRESET=p2
-
-# --- Enrichment (util/tags-lookup; the only networked tool — see docs/enrichment.md) ---
-# ACOUSTID_CLIENT_KEY=your-key
-# LOOKUP_DELAY=0.4
 
 # --- Optical ---
 # AUDIO_UTILS_DVD_DEVICE=/dev/sr0
@@ -33,7 +33,13 @@ AUDIO_UTILS_ROOTS="$HOME/Music $HOME/Downloads"
 # AUDIO_UTILS_MAKEMKV=/usr/bin/makemkvcon
 # AACS KEYDB.cfg is operator-supplied at $XDG_CONFIG_HOME/aacs/KEYDB.cfg (never vendored)
 
-# XDG overrides (optional):
-# XDG_CONFIG_HOME="$HOME/.config"
-# XDG_STATE_HOME="$HOME/.local/state"
-# XDG_CACHE_HOME="$HOME/.cache"
+# --- Environment-only settings (NOT read from this file; export in your shell) ---
+# Tool-specific quality aliases:      export FLAC2MP3_QUALITY=v0
+# Fail instead of resample/downmix:   export LOSSY_NO_RESAMPLE=1
+# Enrichment (util/tags-lookup; the only networked tool — see docs/enrichment.md):
+#   export ACOUSTID_CLIENT_KEY=your-key
+#   export LOOKUP_DELAY=0.4
+# XDG overrides:
+#   export XDG_CONFIG_HOME="$HOME/.config"
+#   export XDG_STATE_HOME="$HOME/.local/state"
+#   export XDG_CACHE_HOME="$HOME/.cache"
