@@ -7,7 +7,7 @@
 #
 # Options:
 #   -o DIR      Output directory (default: ./cdda-rip)
-#   -d DEVICE   CD device (default: /dev/sr0 or first arg)
+#   -d DEVICE   CD device (default: AUDIO_UTILS_CD_DEVICE, CDDA_DEVICE, or /dev/sr0)
 #   -L FILE  -S FILE  -n  -y  -q  -v  -h  --version
 #
 # Exit codes: 0 ok, 1 failures, 2 usage/deps
@@ -19,7 +19,7 @@ source "${SCRIPT_DIR}/lib/plugin.sh"
 
 audio_utils_load_config
 
-DEVICE="${CDDA_DEVICE:-/dev/sr0}"
+DEVICE="${AUDIO_UTILS_CD_DEVICE:-${CDDA_DEVICE:-/dev/sr0}}"
 OUTDIR="${CDDA_OUTDIR:-./cdda-rip}"
 DRY_RUN=0
 OVERWRITE=0

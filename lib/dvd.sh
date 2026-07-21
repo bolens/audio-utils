@@ -19,11 +19,16 @@ dvd_require_css() {
   return 1
 }
 
+# Default DVD device (config: AUDIO_UTILS_DVD_DEVICE).
+dvd_default_device() {
+  printf '%s\n' "${AUDIO_UTILS_DVD_DEVICE:-/dev/sr0}"
+}
+
 # Backup one DVD title to OUTDIR.
 # Prefers dvdbackup when available; otherwise fails with an ffmpeg hint.
-# Args: DEVICE_OR_PATH TITLE OUTDIR
+# Args: DEVICE_OR_PATH TITLE OUTDIR (device defaults to AUDIO_UTILS_DVD_DEVICE)
 dvd_backup_title() {
-  local device="$1" title="$2" outdir="$3"
+  local device="${1:-$(dvd_default_device)}" title="$2" outdir="$3"
   local err
 
   [[ -n "$device" && -n "$title" && -n "$outdir" ]] || {

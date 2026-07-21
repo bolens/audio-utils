@@ -56,7 +56,7 @@ BD+ titles may need **libbdplus** + operator VM/cache dumps, or MakeMKV. Fail cl
 
 - Requires **cdparanoia**.
 - MusicBrainz / AccurateRip workflows (e.g. whipper) are **external** — not wired into this tool.
-- Device: `AUDIO_UTILS_CD_DEVICE` or `-D /dev/sr0` (default `/dev/sr0`).
+- Device: `AUDIO_UTILS_CD_DEVICE` or `-d /dev/sr0` (default `/dev/sr0`).
 - Output directory defaults under the working tree (`./cdda-rip/` unless configured).
 
 ```bash
