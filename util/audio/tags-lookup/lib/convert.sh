@@ -47,7 +47,9 @@ convert_one() {
   fi
 
   sleep "${LOOKUP_DELAY:-0.4}"
-  resp=$(curl -fsS --max-time 30 --get 'https://api.acoustid.org/v2/lookup' \
+  # ACOUSTID_API_URL override exists for tests (local mock server).
+  resp=$(curl -fsS --max-time 30 --get \
+    "${ACOUSTID_API_URL:-https://api.acoustid.org/v2/lookup}" \
     --data-urlencode "client=${ACOUSTID_CLIENT_KEY:?}" \
     --data-urlencode "duration=${dur}" \
     --data-urlencode "meta=recordingids" \

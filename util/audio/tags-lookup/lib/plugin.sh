@@ -85,4 +85,5 @@ plugin_banner_extra() {
 
 plugin_export_env() {
   export ACOUSTID_CLIENT_KEY LOOKUP_DELAY AU_CLEANUP_SKIP AU_SOURCE_EXTS
+  [[ -z "${ACOUSTID_API_URL:-}" ]] || export ACOUSTID_API_URL
 }
