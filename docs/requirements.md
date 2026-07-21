@@ -95,6 +95,17 @@ On Fedora, enable [RPM Fusion](https://rpmfusion.org/) before installing `ffmpeg
 | playlist-audit | `lib/playlist.sh`; optional `iconv` (UTF-8); `--by title` uses `ffprobe`/`metaflac` when present |
 | playlist-normalize / playlist-dedupe | `lib/playlist.sh` only (`flock`); `--by title` / `--dedupe --by title` use tags when `ffprobe`/`metaflac` available |
 | playlist-generate | `lib/playlist.sh`; `#EXTINF` from `ffprobe`/`metaflac` when present (still works without — paths only) |
+| playlist-export | `lib/playlist.sh`, coreutils (`cp`) |
+| album-audit | `ffprobe`; `metaflac` used for FLAC tags when present |
+| path-audit | coreutils; optional `iconv` (UTF-8 name check) |
+| junk-cleanup | coreutils only |
+| perms-normalize | coreutils (`stat`, `chmod`) |
+| dynamics-report | `ffmpeg`/`ffprobe` (`ebur128` filter), `awk` |
+| spectrogram-export | `ffmpeg` (`showspectrumpic`); **sox** preferred for FLAC/WAV/AIFF |
+| gapless-audit | `ffprobe`, `od`, GNU `dd`, `grep` |
+| tags-lookup | **fpcalc** (chromaprint) + **curl**; optional `jq`; AcoustID client key ([enrichment.md](enrichment.md)) |
+| audio-lyrics | `ffprobe`; `metaflac` for `--import` |
+| library-prune | coreutils only |
 
 ## Arch / CachyOS
 

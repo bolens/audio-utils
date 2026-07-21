@@ -30,7 +30,10 @@ UTIL = \
 	util/library-sync util/tree-diff util/hash-verify util/pcm-cleanup \
   util/cue-audit util/silence-detect util/disc-inventory util/lossy-audit \
 	util/playlist-audit util/playlist-normalize util/playlist-generate \
-	util/playlist-dedupe
+	util/playlist-dedupe \
+	util/path-audit util/junk-cleanup util/perms-normalize util/album-audit \
+	util/dynamics-report util/spectrogram-export util/gapless-audit \
+	util/tags-lookup util/audio-lyrics util/playlist-export util/library-prune
 
 TOOLS = $(CONVERSION) $(UTIL)
 

@@ -4,7 +4,7 @@
 
 Verified **audio conversion utilities** for Linux libraries (GNU userland; bash 4.3+). **FLAC** is the archive hub. Not macOS, BSD, BusyBox, or Alpine — see [requirements](docs/requirements.md).
 
-Docs: **[docs/](docs/)** — [requirements](docs/requirements.md) · [formats](docs/formats.md) · [cue](docs/cue.md) · [discs](docs/discs.md) · [streaming](docs/streaming.md) · [tak](docs/tak.md) · [dsd](docs/dsd.md) · [lossy](docs/lossy.md) · [playlists](docs/playlists.md) · [adding a converter](docs/adding-a-converter.md) · [adding a util](docs/adding-a-util.md)
+Docs: **[docs/](docs/)** — [requirements](docs/requirements.md) · [formats](docs/formats.md) · [cue](docs/cue.md) · [discs](docs/discs.md) · [streaming](docs/streaming.md) · [tak](docs/tak.md) · [dsd](docs/dsd.md) · [lossy](docs/lossy.md) · [playlists](docs/playlists.md) · [enrichment](docs/enrichment.md) · [adding a converter](docs/adding-a-converter.md) · [adding a util](docs/adding-a-util.md)
 
 ### Conversion
 
@@ -62,6 +62,17 @@ Docs: **[docs/](docs/)** — [requirements](docs/requirements.md) · [formats](d
 | [`util/playlist-normalize/`](util/playlist-normalize/) | Rewrite format / relative↔absolute paths |
 | [`util/playlist-generate/`](util/playlist-generate/) | Build `.m3u` per audio directory |
 | [`util/playlist-dedupe/`](util/playlist-dedupe/) | Drop duplicate songs from playlists |
+| [`util/playlist-export/`](util/playlist-export/) | Copy playlist contents + rewritten `.m3u` to a device |
+| [`util/album-audit/`](util/album-audit/) | Album-level audit (track gaps, mixed tags/rate/depth) |
+| [`util/path-audit/`](util/path-audit/) | Filename portability audit (FAT/NTFS chars, length, UTF-8) |
+| [`util/junk-cleanup/`](util/junk-cleanup/) | Thumbs.db / .DS_Store / AppleDouble / zero-byte files |
+| [`util/perms-normalize/`](util/perms-normalize/) | Permission modes report / `--apply` (644 / 755) |
+| [`util/dynamics-report/`](util/dynamics-report/) | EBU R128 loudness / LRA / true-peak survey |
+| [`util/spectrogram-export/`](util/spectrogram-export/) | Batch spectrogram PNGs (sox / ffmpeg) |
+| [`util/gapless-audit/`](util/gapless-audit/) | Gapless metadata (MP3 LAME header, M4A `iTunSMPB`) |
+| [`util/audio-lyrics/`](util/audio-lyrics/) | Lyrics audit; sidecar `.lrc` import / export |
+| [`util/tags-lookup/`](util/tags-lookup/) | AcoustID → MusicBrainz MBID report ([opt-in network](docs/enrichment.md)) |
+| [`util/library-prune/`](util/library-prune/) | Orphaned portable files without a FLAC master |
 
 ## Quick start
 
