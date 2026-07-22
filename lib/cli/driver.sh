@@ -140,6 +140,10 @@ audio_utils_run() {
           shift "$AU_CONSUMED"
           continue
         fi
+        if [[ "$1" == --* ]]; then
+          echo "Error: unknown option: $1" >&2
+          exit 2
+        fi
         args+=("$1")
         shift
         ;;

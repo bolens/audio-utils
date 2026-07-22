@@ -83,8 +83,8 @@ test_multi_disc_layout_report_and_apply() {
 
   run_tool util/library/multi-disc-layout/multi-disc-layout.sh -j 1 \
     --layout report-only "$T/album"
-  assert_eq "$(tool_rc)" 2 "invalid --layout rc ($(tool_out | tail -3))"
-  tool_out | grep -q "invalid --layout" || fail "expected invalid --layout error"
+  assert_eq "$(tool_rc)" 2 "unknown --layout rc ($(tool_out | tail -3))"
+  tool_out | grep -q "unknown option" || fail "expected unknown option error"
 
   run_tool util/library/multi-disc-layout/multi-disc-layout.sh -j 1 "$T/album"
   assert_eq "$(tool_rc)" 1 "candidate rc ($(tool_out | tail -3))"

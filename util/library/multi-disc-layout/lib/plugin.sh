@@ -19,20 +19,11 @@ done
 # shellcheck source=../../../../lib/plugin_init.sh
 source "$_AU_ROOT/lib/plugin_init.sh"
 
-# disc-subdir: Album/Disc N/track.flac (single-disc albums stay flat)
-MULTIDISC_LAYOUT="${MULTIDISC_LAYOUT:-disc-subdir}"
 MULTIDISC_APPLY="${MULTIDISC_APPLY:-0}"
 MULTIDISC_PREFIX="${MULTIDISC_PREFIX:-Disc}"
 
 plugin_consume_arg() {
   case "${1:-}" in
-    --layout=*)
-      MULTIDISC_LAYOUT="${1#--layout=}"; AU_CONSUMED=1
-      export AU_CONSUMED MULTIDISC_LAYOUT; return 0 ;;
-    --layout)
-      [[ -n "${2:-}" ]] || { echo "Error: --layout needs disc-subdir" >&2; return 1; }
-      MULTIDISC_LAYOUT=$2; AU_CONSUMED=2
-      export AU_CONSUMED MULTIDISC_LAYOUT; return 0 ;;
     --apply)
       MULTIDISC_APPLY=1; AU_CONSUMED=1
       export AU_CONSUMED MULTIDISC_APPLY; return 0 ;;
@@ -56,14 +47,7 @@ plugin_after_flags() {
     echo "Error: multi-disc-layout does not support -y (use --apply)" >&2
     return 1
   fi
-  case "${MULTIDISC_LAYOUT}" in
-    disc-subdir) ;;
-    *)
-      echo "Error: invalid --layout '${MULTIDISC_LAYOUT}' (disc-subdir)" >&2
-      return 1
-      ;;
-  esac
-  export MULTIDISC_LAYOUT MULTIDISC_APPLY MULTIDISC_PREFIX
+  export MULTIDISC_APPLY MULTIDISC_PREFIX
   return 0
 }
 
@@ -73,9 +57,9 @@ plugin_require_deps() {
 
 plugin_banner_extra() {
   if [[ "${MULTIDISC_APPLY:-0}" -eq 1 ]]; then
-    log_always "mode:      apply ${MULTIDISC_LAYOUT} (prefix=${MULTIDISC_PREFIX})"
+    log_always "mode:      apply disc-subdir (prefix=${MULTIDISC_PREFIX})"
   else
-    log_always "mode:      report ${MULTIDISC_LAYOUT} (use --apply; prefix=${MULTIDISC_PREFIX})"
+    log_always "mode:      report disc-subdir (use --apply; prefix=${MULTIDISC_PREFIX})"
   fi
 }
 
@@ -84,6 +68,6 @@ plugin_export_env() {
     AU_MULTIDISC_STATE=$(audio_utils_mktemp_d "multidisc.XXXXXX")
     register_tmpdir "$AU_MULTIDISC_STATE"
   fi
-  export AU_MULTIDISC_STATE MULTIDISC_LAYOUT MULTIDISC_APPLY MULTIDISC_PREFIX \
+  export AU_MULTIDISC_STATE MULTIDISC_APPLY MULTIDISC_PREFIX \
     AU_CLEANUP_SKIP
 }
