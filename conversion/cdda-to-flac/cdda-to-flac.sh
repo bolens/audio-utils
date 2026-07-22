@@ -9,6 +9,7 @@
 #   -o DIR      Output directory (default: ./cdda-rip)
 #   -d DEVICE   CD device (default: AUDIO_UTILS_CD_DEVICE, CDDA_DEVICE, or /dev/sr0)
 #   -L FILE  -S FILE  -n  -y  -q  -v  -h  --version
+#   -j N        Accepted for CLI parity; CDDA rip is serial (ignored)
 #
 # Exit codes: 0 ok, 1 failures, 2 usage/deps
 
@@ -29,7 +30,7 @@ FAIL_LOG=""
 SUCCESS_LOG=""
 
 usage() {
-  sed -n '2,14p' "$0" | sed 's/^# \?//'
+  sed -n '2,15p' "$0" | sed 's/^# \?//'
   exit "${1:-0}"
 }
 
@@ -41,6 +42,7 @@ while (($# > 0)); do
     -S) SUCCESS_LOG=$2; shift 2 ;;
     -n) DRY_RUN=1; shift ;;
     -y) OVERWRITE=1; shift ;;
+    -j) shift 2 ;; # accepted for CLI parity; CDDA rip is serial
     -q) QUIET=1; shift ;;
     -v) VERBOSE=1; shift ;;
     -h|--help) usage 0 ;;

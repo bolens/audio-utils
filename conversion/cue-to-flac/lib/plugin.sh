@@ -9,6 +9,7 @@ AU_WORKDIR_PREFIX=cue2flac
 AU_SUCCESS_COLUMNS='timestamp,cue,flac,audio_md5,flac_sha256,codec,bytes,samples,notes'
 AU_GETOPT_EXTRA=""
 
+# CUE sheet is kept; splitting does not delete the .cue (-d/-D are no-ops via AU_CLEANUP_SKIP).
 AU_CLEANUP_SKIP=1
 
 _AU_ROOT=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
@@ -20,8 +21,6 @@ done
 # shellcheck source=../../../lib/plugin_init.sh
 source "$_AU_ROOT/lib/plugin_init.sh"
 
-
 plugin_export_env() {
-  export DELETE_SOURCE
   export AU_CLEANUP_SKIP
 }
