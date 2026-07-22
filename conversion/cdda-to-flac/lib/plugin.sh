@@ -26,6 +26,5 @@ plugin_require_deps() {
 }
 
 plugin_export_env() {
-  export DELETE_SOURCE
   export AU_CLEANUP_SKIP
 }

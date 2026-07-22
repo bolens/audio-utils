@@ -26,7 +26,7 @@ plugin_require_deps() {
 }
 
 plugin_export_env() {
-  export DELETE_SOURCE
+  # Note: bluray -D is the BD device path (getopt), not delete-existing.
   export AUDIO_UTILS_BD_DEVICE AUDIO_UTILS_MAKEMKV
   export AU_CLEANUP_SKIP
 }
