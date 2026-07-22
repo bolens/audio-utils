@@ -3,7 +3,7 @@
 
 AU_TOOL_NAME="${AU_TOOL_NAME:-audio-compare}"
 AU_SOURCE_EXT=flac
-AU_SOURCE_EXTS="flac wav aiff aif mp3 opus m4a ogg oga wma mpc aac wv ape tak tta"
+AU_SOURCE_EXTS="flac wav aiff aif mp3 opus m4a ogg oga wma mpc spx aac wv ape tak tta"
 AU_DEST_EXT=flac
 AU_DISK_FACTOR=0
 AU_WORKDIR_PREFIX=audiocmp

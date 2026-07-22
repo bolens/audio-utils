@@ -3,7 +3,7 @@
 
 AU_TOOL_NAME="${AU_TOOL_NAME:-lossy-audit}"
 AU_SOURCE_EXT=mp3
-AU_SOURCE_EXTS="mp3 opus m4a ogg oga wma mpc aac"
+AU_SOURCE_EXTS="mp3 opus m4a ogg oga wma mpc spx aac"
 AU_DEST_EXT=mp3
 AU_DISK_FACTOR=0
 AU_WORKDIR_PREFIX=lossyaudit

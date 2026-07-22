@@ -3,7 +3,7 @@
 
 AU_TOOL_NAME="${AU_TOOL_NAME:-playlist-generate}"
 AU_SOURCE_EXT=flac
-AU_SOURCE_EXTS="flac mp3 opus m4a ogg oga wma mpc aac wav aiff aif caf wv ape tak tta"
+AU_SOURCE_EXTS="flac mp3 opus m4a ogg oga wma mpc spx aac wav aiff aif caf wv ape tak tta"
 AU_DEST_EXT=m3u
 AU_DISK_FACTOR=1
 AU_WORKDIR_PREFIX=plgen

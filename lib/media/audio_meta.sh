@@ -3,7 +3,7 @@
 
 # Space-separated extensions for portable + archive audio (documentation / reuse).
 # shellcheck disable=SC2034
-AU_AUDIO_EXTS_DEFAULT="flac mp3 opus m4a ogg oga wma mpc aac"
+AU_AUDIO_EXTS_DEFAULT="flac mp3 opus m4a ogg oga wma mpc spx aac"
 
 # Get a metadata tag via ffprobe (format tags). Empty if missing.
 audio_meta_get() {

@@ -9,7 +9,7 @@
 
 # Extensions treated as library audio when generating playlists.
 playlist_audio_exts() {
-  printf '%s\n' flac mp3 opus m4a ogg oga wma mpc aac wav aiff aif caf wv ape tak tta
+  printf '%s\n' flac mp3 opus m4a ogg oga wma mpc spx aac wav aiff aif caf wv ape tak tta
 }
 
 # Detect format from extension (preferred) or light content sniff.

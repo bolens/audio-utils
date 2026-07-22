@@ -3,7 +3,7 @@
 
 AU_TOOL_NAME="${AU_TOOL_NAME:-perms-normalize}"
 AU_SOURCE_EXT=flac
-AU_SOURCE_EXTS="flac mp3 opus m4a ogg oga wma mpc aac wav aiff aif caf wv ape tak tta cue m3u m3u8 pls xspf jpg jpeg png log"
+AU_SOURCE_EXTS="flac mp3 opus m4a ogg oga wma mpc spx aac wav aiff aif caf wv ape tak tta cue m3u m3u8 pls xspf jpg jpeg png log"
 AU_DEST_EXT=flac
 AU_DISK_FACTOR=0
 AU_WORKDIR_PREFIX=permnorm

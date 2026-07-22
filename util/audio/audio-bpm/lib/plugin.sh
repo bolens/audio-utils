@@ -3,7 +3,7 @@
 
 AU_TOOL_NAME="${AU_TOOL_NAME:-audio-bpm}"
 AU_SOURCE_EXT=flac
-AU_SOURCE_EXTS="flac mp3 opus m4a ogg oga wma mpc aac"
+AU_SOURCE_EXTS="flac mp3 opus m4a ogg oga wma mpc spx aac"
 AU_DEST_EXT=flac
 AU_DISK_FACTOR=1
 AU_WORKDIR_PREFIX=audiobpm

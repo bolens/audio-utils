@@ -51,6 +51,18 @@ test_generate_dry_run_writes_nothing() {
   assert_no_file "$T/Great Album/Great Album.m3u"
 }
 
+test_generate_includes_speex() {
+  require_cmd flac metaflac ffmpeg ffprobe flock
+  require_ffmpeg_encoder libspeex
+  _setup_album
+  ffmpeg -v error -y -i "$T/Great Album/01 - Track One.flac" \
+    -c:a libspeex -q:a 6 "$T/Great Album/track.spx"
+  run_tool util/playlist/playlist-generate/playlist-generate.sh -j 1 -y \
+    "$T/Great Album"
+  assert_eq "$(tool_rc)" 0 "rc ($(tool_out | tail -3))"
+  assert_grep "track.spx" "$T/Great Album/Great Album.m3u"
+}
+
 test_export_copies_entries_and_rewrites_playlist() {
   require_cmd flac metaflac ffmpeg flock
   local src
