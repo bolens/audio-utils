@@ -52,7 +52,7 @@ plugin_require_deps() {
 
 plugin_banner_extra() {
   if [[ "${ART_EXTRACT:-0}" -eq 1 ]]; then
-    log_always "mode:      extract → cover.jpg"
+    log_always "mode:      extract -> cover.jpg"
   else
     log_always "mode:      embed from folder cover"
   fi

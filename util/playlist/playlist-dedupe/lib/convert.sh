@@ -59,6 +59,6 @@ convert_one() {
     return 1
   fi
 
-  log_progress "deduped: $pl ($before → $after, dropped $dropped)"
+  log_progress "deduped: $pl ($before -> $after, dropped $dropped)"
   log_success "$pl" "deduped" "" "$(file_sha256 "$pl")" "dropped=${dropped}"
 }

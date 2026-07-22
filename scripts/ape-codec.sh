@@ -19,9 +19,9 @@
 #   --prefix DIR  install prefix (default: ~/.local; binary goes in DIR/bin)
 #
 # Layout (XDG):
-#   binary    → PREFIX/bin/mac                    (default ~/.local/bin/mac)
-#   manifest  → $XDG_DATA_HOME/audio-utils/ape-codec/manifest.tsv
-#   downloads → $XDG_CACHE_HOME/audio-utils/ape-codec/
+#   binary    -> PREFIX/bin/mac                    (default ~/.local/bin/mac)
+#   manifest  -> $XDG_DATA_HOME/audio-utils/ape-codec/manifest.tsv
+#   downloads -> $XDG_CACHE_HOME/audio-utils/ape-codec/
 #
 # Security: downloads are HTTPS-only, verified against a pinned SHA-256 (or an
 # explicit --sha256) before extraction, zip entries are checked for path
@@ -35,7 +35,7 @@
 set -euo pipefail
 umask 022
 
-# Known-good SDK zips: version → SHA-256. Extend when new releases are vetted.
+# Known-good SDK zips: version -> SHA-256. Extend when new releases are vetted.
 declare -A APE_PINNED_SHA256=(
   [1319]=88cfc81300ca33513cba48e894ecd89c2e997257da7b29f8411a73251e348340
 )
@@ -68,7 +68,7 @@ die() {
 info() { echo "ape-codec: $*"; }
 warn() { echo "ape-codec: warning: $*" >&2; }
 
-# "13.19" / "1319" → "1319"; "latest" passes through.
+# "13.19" / "1319" -> "1319"; "latest" passes through.
 ver_norm() {
   local v=${1//./}
   [[ "$1" == latest || "$v" =~ ^[0-9]{3,4}$ ]] \
@@ -76,7 +76,7 @@ ver_norm() {
   if [[ "$1" == latest ]]; then printf 'latest'; else printf '%s' "$v"; fi
 }
 
-# "1319" → "13.19" (for banner checks and display).
+# "1319" -> "13.19" (for banner checks and display).
 ver_display() {
   printf '%s.%s' "${1%??}" "${1: -2}"
 }
@@ -238,7 +238,7 @@ cmd_install() {
   [[ "$bindir_mode" =~ ^[0-7]?[0-7][0-7][0145]$ ]] \
     || warn "$PREFIX/bin is group/world-writable (mode $bindir_mode)"
 
-  info "installed Monkey's Audio $disp → $bin"
+  info "installed Monkey's Audio $disp -> $bin"
   case ":$PATH:" in
     *":$PREFIX/bin:"*) ;;
     *) warn "$PREFIX/bin is not in PATH" ;;
@@ -282,7 +282,7 @@ cmd_update() {
     info "up to date (installed $(ver_display "$installed"), latest $(ver_display "$latest"))"
     return 0
   else
-    info "updating $(ver_display "$installed") → $(ver_display "$latest")"
+    info "updating $(ver_display "$installed") -> $(ver_display "$latest")"
   fi
   disp=$(ver_display "$latest")
   VERSION=$latest
@@ -307,7 +307,7 @@ cmd_status() {
         echo "file:      $path (MISSING)"
         rc=1
       elif [[ "$(sha256_of "$path")" != "$hash" ]]; then
-        echo "file:      $path (MODIFIED — hash mismatch)"
+        echo "file:      $path (MODIFIED - hash mismatch)"
         rc=1
       else
         echo "file:      $path (ok, $(stat -c '%a' "$path"))"

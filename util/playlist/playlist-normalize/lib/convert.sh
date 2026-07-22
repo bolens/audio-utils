@@ -43,7 +43,7 @@ convert_one() {
   fi
 
   if [[ "${DRY_RUN:-0}" -eq 1 ]]; then
-    log_progress "would normalize: $pl → $out_path (${out_fmt}, ${PLAYLIST_PATH_MODE})"
+    log_progress "would normalize: $pl -> $out_path (${out_fmt}, ${PLAYLIST_PATH_MODE})"
     return 0
   fi
 

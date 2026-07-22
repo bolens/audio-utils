@@ -4,7 +4,7 @@
 
 Verified **audio conversion utilities** for Linux libraries (GNU userland; bash 4.3+). **FLAC** is the archive hub. Not macOS, BSD, BusyBox, or Alpine — see [requirements](docs/requirements.md).
 
-Docs: **[docs/](docs/)** — [requirements](docs/requirements.md) · [formats](docs/formats.md) · [cue](docs/cue.md) · [discs](docs/discs.md) · [streaming](docs/streaming.md) · [tak](docs/tak.md) · [dsd](docs/dsd.md) · [lossy](docs/lossy.md) · [playlists](docs/playlists.md) · [enrichment](docs/enrichment.md) · [adding a converter](docs/adding-a-converter.md) · [adding a util](docs/adding-a-util.md)
+Docs: **[docs/](docs/)** — [requirements](docs/requirements.md) · [formats](docs/formats.md) · [cue](docs/cue.md) · [discs](docs/discs.md) · [streaming](docs/streaming.md) · [tak](docs/tak.md) · [dsd](docs/dsd.md) · [lossy](docs/lossy.md) · [playlists](docs/playlists.md) · [enrichment](docs/enrichment.md) · [accessibility](docs/accessibility.md) · [adding a converter](docs/adding-a-converter.md) · [adding a util](docs/adding-a-util.md)
 
 ### Conversion
 
@@ -184,6 +184,14 @@ Plugin contract: [docs/adding-a-converter.md](docs/adding-a-converter.md). Util 
 | 0 | Success |
 | 1 | Conversion/preflight failures |
 | 2 | Usage / deps / bad arguments |
+
+### Accessibility (CLI)
+
+Output is **plain text**: no ANSI colors, spinners, or emoji status. Failures use a labeled `FAIL` block; progress is full lines on stderr (`[n/total …]`). Machine-readable trails: `-L` (failures) and `-S` (success).
+
+- **Help:** `-h` / `--help` prints full usage on stdout. Bad args print a short stderr hint (`Try '… -h' for usage.`) instead of dumping help.
+- **Parallel jobs:** prefer `-j 1` when following live output with a screen reader; under `-j N` stderr lines are flock-serialized so multi-line FAIL blocks stay intact.
+- **Quiet:** `-q` hides informational notes but still shows progress, failures, and the Done summary.
 
 ## License
 

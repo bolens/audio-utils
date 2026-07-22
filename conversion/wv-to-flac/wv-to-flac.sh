@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Convert pure WavPack (.wv) → FLAC. Hybrid (.wvc) rejected.
+# Convert pure WavPack (.wv) -> FLAC. Hybrid (.wvc) rejected.
 #
 # Usage:
 #   wv-to-flac.sh DIR [DIR ...]

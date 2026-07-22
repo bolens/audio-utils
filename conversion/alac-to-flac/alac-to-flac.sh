@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Convert ALAC (.m4a) → FLAC. Non-ALAC m4a files are skipped.
+# Convert ALAC (.m4a) -> FLAC. Non-ALAC m4a files are skipped.
 #
 # Usage:
 #   alac-to-flac.sh DIR [DIR ...]

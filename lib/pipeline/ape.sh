@@ -74,7 +74,7 @@ mac_encode() {
   err="$(dirname -- "$dest")/mac-encode.err"
   if ! "${MAC_CMD[@]}" "$wav" "$dest" "-c$num" >/dev/null 2>"$err"; then
     set_last_err_file "$err"
-    log_err "FAILED mac encode: $wav → $dest (level=$level)"
+    log_err "FAILED mac encode: $wav -> $dest (level=$level)"
     [[ -s "$err" ]] && { log_err "  mac stderr:"; sed 's/^/  | /' "$err" >&2; }
     return 1
   fi

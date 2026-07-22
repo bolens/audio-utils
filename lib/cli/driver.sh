@@ -34,18 +34,24 @@ _AUDIO_UTILS_DRIVER_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
 
 audio_utils_driver_usage() {
   local exit_code="${1:-0}"
+  # Usage errors: short stderr hint only (avoid dumping full help into stdout).
+  # Explicit -h/--help: full help on stdout.
+  if [[ "$exit_code" -ne 0 ]]; then
+    echo "Try '${AU_TOOL_NAME:-tool}.sh -h' for usage." >&2
+    exit "$exit_code"
+  fi
   if [[ -n "${AU_USAGE_FILE:-}" && -f "${AU_USAGE_FILE}" ]]; then
     local start="${AU_USAGE_START:-2}"
     local end="${AU_USAGE_END:-40}"
     sed -n "${start},${end}p" "$AU_USAGE_FILE" | sed 's/^# \?//'
   else
-    cat >&2 <<EOF
+    cat <<EOF
 Usage: ${AU_TOOL_NAME}.sh DIR [DIR ...]
        find-*-dirs.sh | ${AU_TOOL_NAME}.sh
 Options: -f -d -D -L -S -n -y -j -q -v -h --version
 EOF
   fi
-  exit "$exit_code"
+  exit 0
 }
 
 audio_utils_finalize_run_logs() {
@@ -389,6 +395,11 @@ audio_utils_run() {
     STATUS_DIR=$(audio_utils_mktemp_d "status.XXXXXX")
     register_tmpdir "$STATUS_DIR"
     export STATUS_DIR
+    # Serialize multi-line FAIL / progress lines across workers (screen readers,
+    # log grepping). Single-line writes are still ordered per flock hold.
+    AU_STDERR_LOCK="${STATUS_DIR}/.stderr.lock"
+    : >"$AU_STDERR_LOCK"
+    export AU_STDERR_LOCK
     idx=0
     args=()
     for src in "${ALL_SRCS[@]}"; do
@@ -399,6 +410,7 @@ audio_utils_run() {
       printf '%s\0' "${args[@]}" | xargs -0 -n 4 -P "$JOBS" \
         "${_AUDIO_UTILS_DRIVER_DIR}/worker.sh"
     )
+    unset AU_STDERR_LOCK
     ok=0
     fail=0
     for ((local_i = 1; local_i <= PROGRESS_TOTAL; local_i++)); do
@@ -428,7 +440,7 @@ audio_utils_run() {
 
   ((fail += pre_fail)) || true
   elapsed=$(( $(date +%s) - PROGRESS_START ))
-  echo
+  log_always ""
   if [[ "$DELETE_EXISTING" -eq 1 ]]; then
     log_always "Done. deleted/ok=$ok kept_no_${AU_DEST_EXT}=$kept failed=$fail elapsed=$(fmt_dur "$elapsed")"
   else

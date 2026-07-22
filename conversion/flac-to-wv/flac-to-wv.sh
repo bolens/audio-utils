@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Convert FLAC → WavPack (.wv) with PCM audio-MD5 verification.
+# Convert FLAC -> WavPack (.wv) with PCM audio-MD5 verification.
 #
 # Usage:
 #   flac-to-wv.sh DIR [DIR ...]

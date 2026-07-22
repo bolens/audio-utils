@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Convert FLAC → opus (libopus) with verification.
+# Convert FLAC -> opus (libopus) with verification.
 #
 # Usage:
 #   flac-to-opus.sh DIR [DIR ...]

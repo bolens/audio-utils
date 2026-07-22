@@ -98,7 +98,7 @@ _multidisc_process_album() {
       ((issues++)) || true
       continue
     fi
-    log_progress "moved: $f → $dest"
+    log_progress "moved: $f -> $dest"
   done
 
   ((issues == 0))

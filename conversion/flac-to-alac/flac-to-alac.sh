@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Convert FLAC → ALAC (.m4a) with PCM audio-MD5 verification.
+# Convert FLAC -> ALAC (.m4a) with PCM audio-MD5 verification.
 #
 # Usage:
 #   flac-to-alac.sh DIR [DIR ...]

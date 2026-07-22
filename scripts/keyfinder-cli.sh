@@ -50,7 +50,7 @@ smoke_keyfinder() {
   if "$bin" --help >/dev/null 2>&1 || "$bin" -h >/dev/null 2>&1; then
     return 0
   fi
-  # No args: typically exits 0 after printing usage, or 1 — accept either if binary runs.
+  # No args: typically exits 0 after printing usage, or 1 - accept either if binary runs.
   "$bin" >/dev/null 2>&1 || true
   [[ -x "$bin" ]]
 }
@@ -91,7 +91,7 @@ trap cleanup EXIT
 RPATH="${PREFIX}/lib:${PREFIX}/lib/x86_64-linux-gnu"
 CMAKE_RPATH=(-DCMAKE_INSTALL_RPATH="$RPATH" -DCMAKE_BUILD_WITH_INSTALL_RPATH=ON)
 
-echo "keyfinder-cli: building libkeyfinder → ${PREFIX}"
+echo "keyfinder-cli: building libkeyfinder -> ${PREFIX}"
 git clone --depth 1 https://github.com/mixxxdj/libkeyfinder.git \
   "$WORKDIR/libkeyfinder"
 cmake -DBUILD_TESTING=OFF -DCMAKE_INSTALL_PREFIX="$PREFIX" \
@@ -100,7 +100,7 @@ cmake -DBUILD_TESTING=OFF -DCMAKE_INSTALL_PREFIX="$PREFIX" \
 cmake --build "$WORKDIR/libkeyfinder/build" --parallel "$(nproc)"
 cmake --install "$WORKDIR/libkeyfinder/build"
 
-echo "keyfinder-cli: building keyfinder-cli → ${PREFIX}"
+echo "keyfinder-cli: building keyfinder-cli -> ${PREFIX}"
 git clone --depth 1 https://github.com/evanpurkhiser/keyfinder-cli.git \
   "$WORKDIR/keyfinder-cli"
 export PKG_CONFIG_PATH="${PREFIX}/lib/pkgconfig:${PREFIX}/lib/x86_64-linux-gnu/pkgconfig:${PKG_CONFIG_PATH:-}"

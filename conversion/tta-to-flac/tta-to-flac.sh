@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Convert TTA → FLAC with PCM audio-MD5 verification.
+# Convert TTA -> FLAC with PCM audio-MD5 verification.
 #
 # Usage:
 #   tta-to-flac.sh DIR [DIR ...]

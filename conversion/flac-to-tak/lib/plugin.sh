@@ -59,7 +59,7 @@ plugin_after_flags() {
   TAK_PRESET="${QUALITY_CLI:-${AUDIO_UTILS_TAK_PRESET:-p2}}"
   TAK_PRESET="${TAK_PRESET,,}"
   if ! takc_preset_ok "$TAK_PRESET"; then
-    log_err "Error: invalid TAK preset '$TAK_PRESET' (expected p0–p5 with optional e/m)"
+    log_err "Error: invalid TAK preset '$TAK_PRESET' (expected p0-p5 with optional e/m)"
     return 1
   fi
   export TAK_PRESET

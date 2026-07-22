@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Convert Apple CAF → FLAC with PCM audio-MD5 verification.
+# Convert Apple CAF -> FLAC with PCM audio-MD5 verification.
 #
 # Usage:
 #   caf-to-flac.sh DIR [DIR ...]

@@ -43,7 +43,7 @@ convert_one() {
   # Remux FLAC → WAV for Takc
   if ! ffmpeg -v error -y -i "$flac" -map 0:a:0 -c:a pcm_s24le "$wav" 2>"${tmpdir}/wav.err"; then
     set_last_err_file "${tmpdir}/wav.err"
-    log_fail "$flac" "flac→wav remux failed"
+    log_fail "$flac" "flac->wav remux failed"
     cleanup
     return 1
   fi

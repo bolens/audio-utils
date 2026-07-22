@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Rewrite playlists: format and/or relative↔absolute paths; optional dedupe.
+# Rewrite playlists: format and/or relative<->absolute paths; optional dedupe.
 #
 # Usage:
 #   playlist-normalize.sh DIR [DIR ...]

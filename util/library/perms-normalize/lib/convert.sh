@@ -26,7 +26,7 @@ convert_one() {
   if [[ "$mode" != "$want" ]]; then
     if [[ "${PERMS_APPLY:-0}" -eq 1 ]]; then
       if chmod "$want" -- "$f"; then
-        log_progress "chmod ${mode}→${want}: $f"
+        log_progress "chmod ${mode}->${want}: $f"
       else
         log_fail "$f" "chmod failed" "mode=$mode want=$want"
         return 1
@@ -47,7 +47,7 @@ convert_one() {
     if [[ -n "$dmode" && "$dmode" != "$dwant" ]]; then
       if [[ "${PERMS_APPLY:-0}" -eq 1 ]]; then
         if chmod "$dwant" -- "$dir"; then
-          log_progress "chmod ${dmode}→${dwant}: $dir"
+          log_progress "chmod ${dmode}->${dwant}: $dir"
         else
           issues+=("dir-chmod-failed:${dir}")
         fi

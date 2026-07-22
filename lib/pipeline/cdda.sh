@@ -20,7 +20,7 @@ cdda_rip_track() {
   # -d device, -w force WAV, track-track range of one track.
   if ! cdparanoia -d "$device" -w "${tracknum}-${tracknum}" "$out_wav" 2>"$err"; then
     set_last_err_file "$err"
-    log_err "FAILED cdparanoia rip: device=$device track=$tracknum → $out_wav"
+    log_err "FAILED cdparanoia rip: device=$device track=$tracknum -> $out_wav"
     [[ -s "$err" ]] && { log_err "  cdparanoia stderr:"; sed 's/^/  | /' "$err" >&2; }
     return 1
   fi

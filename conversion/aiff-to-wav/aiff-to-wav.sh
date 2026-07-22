@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Remux AIFF → WAV (PCM) with MD5 verification.
+# Remux AIFF -> WAV (PCM) with MD5 verification.
 #
 # Usage:
 #   aiff-to-wav.sh DIR [DIR ...]

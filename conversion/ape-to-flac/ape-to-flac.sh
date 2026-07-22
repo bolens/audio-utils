@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Convert APE → FLAC with PCM audio-MD5 verification.
+# Convert APE -> FLAC with PCM audio-MD5 verification.
 #
 # Usage:
 #   ape-to-flac.sh DIR [DIR ...]

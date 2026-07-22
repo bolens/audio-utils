@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Rip audio CD → FLAC via cdparanoia.
+# Rip audio CD -> FLAC via cdparanoia.
 #
 # Usage:
 #   cdda-to-flac.sh [DEVICE] [-o OUTDIR]

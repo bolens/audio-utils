@@ -1,28 +1,54 @@
 #!/usr/bin/env bash
 # Shared logging helpers (stderr). Relies on QUIET / VERBOSE / DRY_RUN / FAIL_LOG.
+# When AU_STDERR_LOCK is set (parallel -j), line/block writes hold flock so
+# multi-line FAIL reports and progress lines do not interleave mid-message.
+
+# Print one line to stderr (optional flock when AU_STDERR_LOCK is set).
+_au_stderr_line() {
+  if [[ -n "${AU_STDERR_LOCK:-}" ]]; then
+    (
+      flock 9
+      printf '%s\n' "$*"
+    ) 9>>"${AU_STDERR_LOCK}" >&2
+  else
+    printf '%s\n' "$*" >&2
+  fi
+}
+
+# Print stdin to stderr as one locked block (multi-line FAIL reports).
+_au_stderr_block() {
+  if [[ -n "${AU_STDERR_LOCK:-}" ]]; then
+    (
+      flock 9
+      cat
+    ) 9>>"${AU_STDERR_LOCK}" >&2
+  else
+    cat >&2
+  fi
+}
 
 log_info() {
   [[ "${QUIET:-0}" -eq 1 ]] && return 0
   # stderr: must not pollute command substitutions
-  printf '%s\n' "$*" >&2
+  _au_stderr_line "$*"
 }
 
 log_note() {
   [[ "${VERBOSE:-0}" -eq 1 ]] || return 0
-  printf '%s\n' "$*" >&2
+  _au_stderr_line "$*"
 }
 
 log_verbose() {
   [[ "${VERBOSE:-0}" -eq 1 ]] || return 0
-  printf '%s\n' "$*" >&2
+  _au_stderr_line "$*"
 }
 
 log_always() {
-  printf '%s\n' "$*" >&2
+  _au_stderr_line "$*"
 }
 
 log_err() {
-  printf '%s\n' "$*" >&2
+  _au_stderr_line "$*"
 }
 
 human_bytes() {
@@ -131,13 +157,17 @@ log_fail() {
     progress="-"
   fi
 
-  # Multi-line stderr block — always shown (even under -q).
-  printf 'FAIL [%s] %s\n' "$progress" "$path" >&2
-  printf '  reason:   %s\n' "$reason" >&2
-  [[ -n "$detail" ]] && printf '  detail:   %s\n' "$detail" >&2
-  printf '  probe:    codec=%s  size=%s (%s)  samples=%s\n' \
-    "${codec:-?}" "${bytes:-0}" "$human" "${samples:-?}" >&2
-  printf '  time:     %s\n' "$ts" >&2
+  # Multi-line stderr block - always shown (even under -q).
+  {
+    printf 'FAIL [%s] %s\n' "$progress" "$path"
+    printf '  reason:   %s\n' "$reason"
+    if [[ -n "$detail" ]]; then
+      printf '  detail:   %s\n' "$detail"
+    fi
+    printf '  probe:    codec=%s  size=%s (%s)  samples=%s\n' \
+      "${codec:-?}" "${bytes:-0}" "$human" "${samples:-?}"
+    printf '  time:     %s\n' "$ts"
+  } | _au_stderr_block
 
   if [[ "${DRY_RUN:-0}" -eq 0 && -n "${FAIL_LOG:-}" ]]; then
     case "${FAIL_LOG}" in

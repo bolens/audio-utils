@@ -51,6 +51,6 @@ convert_one() {
     return 1
   fi
 
-  log_progress "ok: $flac → $(basename -- "$found")"
+  log_progress "ok: $flac -> $(basename -- "$found")"
   log_success "$flac" "synced" "" "$(file_sha256 "$flac")" "sibling=$(basename -- "$found")"
 }

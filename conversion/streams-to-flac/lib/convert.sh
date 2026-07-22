@@ -20,7 +20,7 @@ convert_one() {
   if [[ "${DRY_RUN:-0}" -eq 1 ]]; then
     log_progress "would extract: $src ($n audio stream(s))"
     for ((i = 0; i < n; i++)); do
-      log_info "  → ${base}.a${i}.flac"
+      log_info "  -> ${base}.a${i}.flac"
     done
     return 0
   fi

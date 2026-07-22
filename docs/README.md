@@ -14,6 +14,7 @@ Index of topic docs. **Tool lists** (every converter/util path) live only in the
 | [lossy.md](lossy.md) | MP3 / Opus / AAC / Vorbis / WMA / Speex / MPC + resample |
 | [playlists.md](playlists.md) | M3U / PLS / XSPF audit, normalize, generate, dedupe |
 | [enrichment.md](enrichment.md) | Online metadata lookups (AcoustID / MusicBrainz) — opt-in network boundary |
+| [accessibility.md](accessibility.md) | Plain-text CLI posture (screen readers, no ANSI, logs) |
 | [third-party.md](third-party.md) | Third-party software notices and licenses (APE SDK, Shorten, Takc) |
 | [adding-a-converter.md](adding-a-converter.md) | Converter plugin contract |
 | [adding-a-util.md](adding-a-util.md) | Non-conversion util contract |

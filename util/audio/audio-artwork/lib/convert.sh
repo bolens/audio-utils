@@ -53,7 +53,7 @@ convert_one() {
     return 0
   fi
   if [[ "${DRY_RUN:-0}" -eq 1 ]]; then
-    log_progress "would embed: $cover → $src"; return 0
+    log_progress "would embed: $cover -> $src"; return 0
   fi
   if audio_has_cover "$src" && [[ "${OVERWRITE:-0}" -eq 0 ]]; then
     log_progress "skip (has cover): $src"
@@ -66,7 +66,7 @@ convert_one() {
     if ! metaflac --import-picture-from="$cover" -- "$src"; then
       log_fail "$src" "import picture failed"; return 1
     fi
-    log_progress "embedded: $cover → $src"
+    log_progress "embedded: $cover -> $src"
     log_success "$src" "$mode" "" "$(file_sha256 "$src")" "ok"
     return 0
   fi
@@ -88,6 +88,6 @@ convert_one() {
   fi
   mv -f -- "$tagged" "$src"
   unregister_tmpdir "$tmp"; rm -rf -- "$tmp"
-  log_progress "embedded: $cover → $src"
+  log_progress "embedded: $cover -> $src"
   log_success "$src" "$mode" "" "$(file_sha256 "$src")" "ok"
 }

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Find FLAC dirs and export image+CUE. Extra args → flac-cue-export.sh.
+# Find FLAC dirs and export image+CUE. Extra args -> flac-cue-export.sh.
 set -euo pipefail
 SCRIPT_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
 AU_ROOT=$SCRIPT_DIR

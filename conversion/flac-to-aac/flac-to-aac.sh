@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Convert FLAC → m4a (aac) with verification.
+# Convert FLAC -> m4a (aac) with verification.
 #
 # Usage:
 #   flac-to-aac.sh DIR [DIR ...]

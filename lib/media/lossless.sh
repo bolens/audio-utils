@@ -211,7 +211,7 @@ flac_to_pcm_convert_one() {
 
   if [[ "${DRY_RUN:-0}" -eq 1 ]]; then
     log_progress "would convert+verify: $flac -> $dest"
-    log_info "would decode:         flac → $target (dual + audio MD5)"
+    log_info "would decode:         flac -> $target (dual + audio MD5)"
     [[ "${DELETE_SOURCE:-${DELETE_FLAC:-0}}" -eq 1 ]] && log_info "would delete: $flac"
     return 0
   fi

@@ -9,7 +9,7 @@ convert_one() {
   out="${src}.waveform.png"
 
   if [[ "${DRY_RUN:-0}" -eq 1 ]]; then
-    log_progress "would waveform: $src → $(basename -- "$out")"
+    log_progress "would waveform: $src -> $(basename -- "$out")"
     return 0
   fi
 

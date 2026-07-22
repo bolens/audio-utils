@@ -43,7 +43,7 @@ convert_one() {
 
   if [[ "${DRY_RUN:-0}" -eq 1 ]]; then
     if dest=$(_rename_target "$flac"); then
-      log_progress "would rename: $flac → $dest"
+      log_progress "would rename: $flac -> $dest"
     else
       log_progress "would rename: $flac (target unresolved)"
     fi
@@ -93,6 +93,6 @@ convert_one() {
   fi
 
   sha=$(file_sha256 "$dest")
-  log_progress "renamed: $flac → $dest"
+  log_progress "renamed: $flac -> $dest"
   log_success "$flac" "$dest" "" "$sha" "ok"
 }

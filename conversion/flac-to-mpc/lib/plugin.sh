@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# flac-to-mpc plugin — Musepack via mpcenc (lossy duration verify).
+# flac-to-mpc plugin - Musepack via mpcenc (lossy duration verify).
 
 AU_TOOL_NAME="${AU_TOOL_NAME:-flac-to-mpc}"
 AU_SOURCE_EXT=flac
@@ -66,7 +66,7 @@ plugin_parse_opt() {
   esac
 }
 
-# Map -Q profile to mpcenc --quality float (0–10).
+# Map -Q profile to mpcenc --quality float (0-10).
 mpc_resolve_quality() {
   local profile="${1,,}"
   case "$profile" in
@@ -89,7 +89,7 @@ Profiles (default: standard):
   standard   (~180 kbps, --quality 5)  [default]
   extreme    (~210 kbps, --quality 6)
   insane     (~240 kbps, --quality 7)
-  Or numeric 0–10 (e.g. 5.5)
+  Or numeric 0-10 (e.g. 5.5)
 
 Set via: -Q PROFILE, --quality PROFILE,
          FLAC2MPC_QUALITY, or AUDIO_UTILS_MPC_QUALITY

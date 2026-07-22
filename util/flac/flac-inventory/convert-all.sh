@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Find FLAC dirs and inventory. Extra args → flac-inventory.sh.
+# Find FLAC dirs and inventory. Extra args -> flac-inventory.sh.
 set -euo pipefail
 SCRIPT_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
 AU_ROOT=$SCRIPT_DIR

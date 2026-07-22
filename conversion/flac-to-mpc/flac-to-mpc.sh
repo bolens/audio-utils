@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Convert FLAC → Musepack (.mpc) via mpcenc with duration verification.
+# Convert FLAC -> Musepack (.mpc) via mpcenc with duration verification.
 #
 # Usage:
 #   flac-to-mpc.sh DIR [DIR ...]
@@ -7,7 +7,7 @@
 #
 # Options:
 #   -f FILE  -d  -D  -L FILE  -S FILE  -n  -y  -j N  -q  -v  -h  --version
-#   -Q PROFILE / --quality PROFILE   telephone|radio|standard|extreme|insane|0–10
+#   -Q PROFILE / --quality PROFILE   telephone|radio|standard|extreme|insane|0-10
 #   -N / --no-resample
 #   Env: AUDIO_UTILS_MPC_QUALITY, FLAC2MPC_QUALITY
 #

@@ -94,7 +94,7 @@ plugin_banner_extra() {
     log_always "mode:      report candidates (${tgt}; use --apply)"
   fi
   if [[ "${RESAMPLE_ONLY_DOWN:-1}" -eq 1 ]]; then
-    log_always "policy:    down only (skip if already ≤ target)"
+    log_always "policy:    down only (skip if already <= target)"
   else
     log_always "policy:    allow upsample (--allow-upsample)"
   fi

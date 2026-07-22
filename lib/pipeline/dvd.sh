@@ -47,11 +47,11 @@ dvd_backup_title() {
     if ! dvdbackup -i "$device" -t "$title" -o "$outdir" -n "title${title}" \
       >"$err" 2>&1; then
       set_last_err_file "$err"
-      log_err "FAILED dvdbackup: device=$device title=$title → $outdir"
+      log_err "FAILED dvdbackup: device=$device title=$title -> $outdir"
       [[ -s "$err" ]] && { log_err "  dvdbackup stderr:"; sed 's/^/  | /' "$err" >&2; }
       return 1
     fi
-    log_note "note: dvdbackup completed title=$title → $outdir"
+    log_note "note: dvdbackup completed title=$title -> $outdir"
     return 0
   fi
 

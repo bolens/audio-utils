@@ -62,6 +62,6 @@ convert_one() {
 
   after=$(file_bytes "$flac")
   sha=$(file_sha256 "$flac")
-  log_progress "stripped: $flac ($before → $after)"
+  log_progress "stripped: $flac ($before -> $after)"
   log_success "$flac" "$mode" "" "$sha" "bytes:${before}->${after};${notes:-ok}"
 }

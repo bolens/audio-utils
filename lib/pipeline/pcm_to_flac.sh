@@ -133,8 +133,8 @@ pcm_to_flac_convert_one() {
   if [[ "${DRY_RUN:-0}" -eq 1 ]]; then
     codec=$(audio_codec "$src" || true)
     log_progress "would convert+verify: $src -> $flac"
-    log_info "would remux:          ${codec:-unknown} → clean PCM temp (dual + e2e MD5)"
-    log_info "would tag:            copy metadata/cover from source → FLAC"
+    log_info "would remux:          ${codec:-unknown} -> clean PCM temp (dual + e2e MD5)"
+    log_info "would tag:            copy metadata/cover from source -> FLAC"
     if [[ "${DELETE_SOURCE:-${DELETE_WAV:-0}}" -eq 1 ]]; then
       log_info "would delete:         $src"
     elif [[ "${CLEAN_WAV:-0}" -eq 1 ]]; then

@@ -61,8 +61,8 @@ plugin_require_deps() {
 plugin_banner_extra() {
   case "$LYRICS_MODE" in
     report) log_always "mode:      report files without lyrics (tag or sidecar)" ;;
-    import) log_always "mode:      import sidecar → LYRICS tag (FLAC only)" ;;
-    export) log_always "mode:      export LYRICS tag → <stem>.lrc sidecar" ;;
+    import) log_always "mode:      import sidecar -> LYRICS tag (FLAC only)" ;;
+    export) log_always "mode:      export LYRICS tag -> <stem>.lrc sidecar" ;;
   esac
 }
 

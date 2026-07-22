@@ -35,5 +35,10 @@ progress_prefix() {
 log_progress() {
   progress_prefix
   # Progress always prints (even in -q); quiet only hides notes/details.
-  printf '%s\n' "${PROGRESS_PREFIX}$*" >&2
+  # Prefer _au_stderr_line when log.sh is loaded (parallel-safe under -j).
+  if declare -F _au_stderr_line >/dev/null 2>&1; then
+    _au_stderr_line "${PROGRESS_PREFIX}$*"
+  else
+    printf '%s\n' "${PROGRESS_PREFIX}$*" >&2
+  fi
 }

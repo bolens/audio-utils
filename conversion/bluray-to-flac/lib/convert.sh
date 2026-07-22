@@ -78,7 +78,7 @@ convert_one() {
   esac
 
   if [[ "${DRY_RUN:-0}" -eq 1 ]]; then
-    log_progress "would extract Blu-ray audio: $path → $outdir/ (kind=$kind)"
+    log_progress "would extract Blu-ray audio: $path -> $outdir/ (kind=$kind)"
     return 0
   fi
 

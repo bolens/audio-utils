@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Convert TAK → FLAC with PCM audio-MD5 verification.
+# Convert TAK -> FLAC with PCM audio-MD5 verification.
 #
 # Usage:
 #   tak-to-flac.sh DIR [DIR ...]

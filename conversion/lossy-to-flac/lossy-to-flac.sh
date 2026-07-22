@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Decode lossy audio → FLAC for library normalization (does not restore quality).
+# Decode lossy audio -> FLAC for library normalization (does not restore quality).
 #
 # Usage:
 #   lossy-to-flac.sh DIR [DIR ...]

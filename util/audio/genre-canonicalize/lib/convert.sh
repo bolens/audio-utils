@@ -130,6 +130,6 @@ convert_one() {
     fi
   fi
 
-  log_progress "canonicalized: $src ($raw → $canon)"
-  log_success "$src" "updated" "" "$(file_sha256 "$src")" "$raw→$canon"
+  log_progress "canonicalized: $src ($raw -> $canon)"
+  log_success "$src" "updated" "" "$(file_sha256 "$src")" "$raw->$canon"
 }

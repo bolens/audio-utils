@@ -48,7 +48,7 @@ convert_one() {
       IFS='|' read -r idx title perf start_sec end_sec <<<"$line"
       safe=$(cue_sanitize_filename "${title:-track}")
       name=$(printf '%02d - %s.flac' "$((10#$idx))" "$safe")
-      log_info "  track $idx: $name  [${start_sec}s → ${end_sec:-eof}]  artist=${perf:-?}"
+      log_info "  track $idx: $name  [${start_sec}s -> ${end_sec:-eof}]  artist=${perf:-?}"
     done
     return 0
   fi
@@ -60,7 +60,7 @@ convert_one() {
     rm -rf -- "$tmpdir" 2>/dev/null || true
   }
 
-  log_progress "split: $cue → ${#tracks[@]} tracks"
+  log_progress "split: $cue -> ${#tracks[@]} tracks"
 
   for line in "${tracks[@]}"; do
     IFS='|' read -r idx title perf start_sec end_sec <<<"$line"

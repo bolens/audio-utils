@@ -137,11 +137,11 @@ lossy_prepare_source() {
   err="$tmpdir/lossy-prep.err"
 
   if ((need_ch)); then
-    log_note "note: $family downmix channels=${ch:-?} → stereo: $src"
+    log_note "note: $family downmix channels=${ch:-?} -> stereo: $src"
     ff_args+=(-ac 2)
   fi
   if ((need_rate)); then
-    log_note "note: $family resample ${rate:-?} → ${target_rate} Hz: $src"
+    log_note "note: $family resample ${rate:-?} -> ${target_rate} Hz: $src"
     ff_args+=(-ar "$target_rate")
   fi
 
@@ -177,8 +177,8 @@ lossy_resolve_quality() {
 Error: unknown MP3 quality profile.
 
 Profiles (suggested default: v0):
-  v0   VBR V0  — libmp3lame -q:a 0
-  v2   VBR V2  — libmp3lame -q:a 2
+  v0   VBR V0  - libmp3lame -q:a 0
+  v2   VBR V2  - libmp3lame -q:a 2
   320  CBR 320k
   192  CBR 192k
 
@@ -201,7 +201,7 @@ EOF
 Error: unknown aac quality profile.
 
 Profiles (default: 192):
-  128 160 192 256 320  — CBR kbps via aac
+  128 160 192 256 320  - CBR kbps via aac
 
 Set via: -Q PROFILE, --quality PROFILE,
          FLAC2AAC_QUALITY, or AUDIO_UTILS_AAC_QUALITY
@@ -223,7 +223,7 @@ EOF
 Error: unknown opus quality profile.
 
 Profiles (default: 128):
-  64 96 128 160 192 256  — CBR kbps via libopus
+  64 96 128 160 192 256  - CBR kbps via libopus
 
 Set via: -Q PROFILE, --quality PROFILE,
          FLAC2OPUS_QUALITY, or AUDIO_UTILS_OPUS_QUALITY
@@ -244,7 +244,7 @@ EOF
 Error: unknown vorbis quality profile.
 
 Profiles (default: q6):
-  q4 q5 q6 q7 q8  — libvorbis -q:a N
+  q4 q5 q6 q7 q8  - libvorbis -q:a N
 
 Set via: -Q PROFILE, --quality PROFILE,
          FLAC2VORBIS_QUALITY, or AUDIO_UTILS_VORBIS_QUALITY
@@ -264,7 +264,7 @@ EOF
 Error: unknown wma quality profile.
 
 Profiles (default: 192):
-  128 160 192 256  — CBR kbps via wmav2
+  128 160 192 256  - CBR kbps via wmav2
 
 Set via: -Q PROFILE, --quality PROFILE,
          FLAC2WMA_QUALITY, or AUDIO_UTILS_WMA_QUALITY
@@ -285,7 +285,7 @@ EOF
 Error: unknown speex quality profile.
 
 Profiles (default: q6):
-  q4 q5 q6 q7 q8  — libspeex -q:a N
+  q4 q5 q6 q7 q8  - libspeex -q:a N
 
 Set via: -Q PROFILE, --quality PROFILE,
          FLAC2SPEEX_QUALITY, or AUDIO_UTILS_SPEEX_QUALITY
@@ -347,7 +347,7 @@ lossy_encode() {
       "${extra[@]}" \
       "$dest" 2>"$err"; then
       set_last_err_file "$err"
-      log_err "FAILED encode ${family:-lossy}: $src → $dest"
+      log_err "FAILED encode ${family:-lossy}: $src -> $dest"
       [[ -s "$err" ]] && { log_err "  ffmpeg stderr:"; sed 's/^/  | /' "$err" >&2; }
       return 1
     fi

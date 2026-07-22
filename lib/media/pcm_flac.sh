@@ -79,7 +79,7 @@ prepare_float() {
   local wav="$1" tmpdir="$2" codec="$3"
   local peak gain prep rt_f prep_rt err hash1 hash3 peak_prep
 
-  log_note "note: $codec → pcm_s24le (FLAC requires integer PCM; 24-bit matches float precision)"
+  log_note "note: $codec -> pcm_s24le (FLAC requires integer PCM; 24-bit matches float precision)"
 
   if ! peak=$(float_abs_peak "$wav"); then
     AUDIO_UTILS_LAST_ERR="float_abs_peak failed (NaN/Inf or unreadable)"
@@ -90,12 +90,12 @@ prepare_float() {
 
   if awk -v p="$peak" 'BEGIN { exit !(p > 1.0) }'; then
     gain=$(awk -v p="$peak" 'BEGIN { printf "%.12f", 1.0 / p }')
-    log_note "note: float peak $peak > 1.0; scaling ×$gain to prevent clipping"
+    log_note "note: float peak $peak > 1.0; scaling x$gain to prevent clipping"
     if ! remux_verified "$wav" "$tmpdir" pcm_s24le -af "volume=${gain}" >"${tmpdir}/remux.path"; then
       return 1
     fi
   else
-    log_note "note: float peak $peak ≤ 1.0 (no scale needed)"
+    log_note "note: float peak $peak <= 1.0 (no scale needed)"
     if ! remux_verified "$wav" "$tmpdir" pcm_s24le >"${tmpdir}/remux.path"; then
       return 1
     fi
@@ -110,13 +110,13 @@ prepare_float() {
 
   if ! ffmpeg -v error -y -i "$prep" -c:a pcm_f32le "$rt_f" 2>"$err"; then
     set_last_err_file "$err"
-    log_err "FAILED float→int round-trip (s24→f32): $wav"
+    log_err "FAILED float->int round-trip (s24->f32): $wav"
     [[ -s "$err" ]] && { log_err "  ffmpeg stderr:"; sed 's/^/  | /' "$err" >&2; }
     return 1
   fi
   if ! ffmpeg -v error -y -i "$rt_f" -c:a pcm_s24le "$prep_rt" 2>"$err"; then
     set_last_err_file "$err"
-    log_err "FAILED float→int round-trip (f32→s24): $wav"
+    log_err "FAILED float->int round-trip (f32->s24): $wav"
     [[ -s "$err" ]] && { log_err "  ffmpeg stderr:"; sed 's/^/  | /' "$err" >&2; }
     return 1
   fi
@@ -124,7 +124,7 @@ prepare_float() {
   if [[ "$hash1" != "$hash3" ]]; then
     AUDIO_UTILS_LAST_ERR="prep_sha256=$hash1 roundtrip_sha256=$hash3"
     export AUDIO_UTILS_LAST_ERR
-    log_err "VERIFY FAIL (s24↔f32 round-trip SHA-256 mismatch): $wav"
+    log_err "VERIFY FAIL (s24<->f32 round-trip SHA-256 mismatch): $wav"
     log_err "  prep     =$hash1"
     log_err "  roundtrip=$hash3"
     return 1
@@ -223,7 +223,7 @@ prepare_source() {
         return 1
       fi
       if [[ "$target" != "$codec" ]]; then
-        log_note "note: $codec → $target (endian normalize + clean remux)"
+        log_note "note: $codec -> $target (endian normalize + clean remux)"
       else
         log_note "note: $codec clean remux (strip container junk)"
       fi
@@ -263,7 +263,7 @@ encode_flac() {
   err="$(dirname -- "$dest")/encode.err"
   if ! flac -f -8 --no-padding --silent -o "$dest" "$src" 2>"$err"; then
     set_last_err_file "$err"
-    log_err "FAILED encode: $src → $dest"
+    log_err "FAILED encode: $src -> $dest"
     [[ -s "$err" ]] && { log_err "  flac stderr:"; sed 's/^/  | /' "$err" >&2; }
     return 1
   fi
@@ -353,7 +353,7 @@ decode_flac_verified() {
   if [[ "$md5_src" != "$md5_1" ]]; then
     AUDIO_UTILS_LAST_ERR="flac_md5=$md5_src pcm_md5=$md5_1"
     export AUDIO_UTILS_LAST_ERR
-    log_err "VERIFY FAIL (FLAC→PCM audio MD5 mismatch): $flac"
+    log_err "VERIFY FAIL (FLAC->PCM audio MD5 mismatch): $flac"
     return 1
   fi
 
@@ -477,7 +477,7 @@ remux_pcm_container() {
 
   mv -f -- "$out1" "$dest"
   rm -rf -- "$tmpdir"
-  log_verbose "verified remux_pcm: $target_codec audio_md5=$md5_1 → $dest"
+  log_verbose "verified remux_pcm: $target_codec audio_md5=$md5_1 -> $dest"
 }
 
 # Dual-encode FLAC from prep PCM; verify SHA + round-trip + e2e MD5.
@@ -541,7 +541,7 @@ encode_flac_verified() {
   if [[ -z "$md5_src" || "$md5_src" != "$md5_flac" ]]; then
     AUDIO_UTILS_LAST_ERR="prep_md5=$md5_src flac_md5=$md5_flac"
     export AUDIO_UTILS_LAST_ERR
-    log_err "VERIFY FAIL (end-to-end prep→FLAC audio MD5 mismatch): $label"
+    log_err "VERIFY FAIL (end-to-end prep->FLAC audio MD5 mismatch): $label"
     return 1
   fi
   log_verbose "verified e2e: prep audio MD5 == FLAC audio MD5 ($md5_flac)"

@@ -12,7 +12,7 @@
 # themselves stay under review (stale or shadowed entries are flagged).
 #
 # Lib detection: a module counts as directly covered when its repo-relative
-# path appears anywhere in tests/ — either a real `source` line or a
+# path appears anywhere in tests/ - either a real `source` line or a
 # declarative marker in a test that exercises it through tools:
 #   # covers: lib/cli/driver.sh lib/core/success_log.sh
 #
@@ -99,7 +99,7 @@ for mk in conversion/*/Makefile util/*/*/Makefile; do
   if [[ -n "${EXEMPT_REASON[$dir]:-}" ]]; then
     SEEN_EXEMPT["$dir"]=1
     if _tool_covered "$name"; then
-      SHADOWED+=("$dir")   # exempt but a functional test names it — retire entry?
+      SHADOWED+=("$dir")   # exempt but a functional test names it - retire entry?
     fi
     EXEMPTED+=("$dir")
   elif _tool_covered "$name"; then
@@ -118,7 +118,7 @@ done
 # --- lib classification -----------------------------------------------------------
 
 # A lib module is directly covered when a test references its repo-relative
-# path — via a source line or a "# covers:" marker. Everything else is
+# path - via a source line or a "# covers:" marker. Everything else is
 # exercised only indirectly through tool entry points.
 declare -a LIB_DIRECT=() LIB_INDIRECT=() LIB_EXEMPT=()
 for f in lib/*.sh lib/*/*.sh; do
@@ -191,7 +191,7 @@ if [[ "$QUIET" -eq 0 ]]; then
 
   if ((${#EXEMPTED[@]} > 0 || ${#LIB_EXEMPT[@]} > 0)); then
     echo ""
-    echo "Exempt — hard to test without hardware / network / proprietary tools:"
+    echo "Exempt - hard to test without hardware / network / proprietary tools:"
     for path in "${EXEMPTED[@]}" "${LIB_EXEMPT[@]}"; do
       printf '  %-32s %s\n' "$path" "${EXEMPT_REASON[$path]}"
     done | sort

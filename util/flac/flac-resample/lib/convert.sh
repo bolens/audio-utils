@@ -41,7 +41,7 @@ convert_one() {
       notes+="skip-rate:${rate}<=${want_rate} "
     else
       need=1
-      notes+="rate:${rate}→${want_rate} "
+      notes+="rate:${rate}->${want_rate} "
     fi
   fi
 
@@ -56,7 +56,7 @@ convert_one() {
       notes+="skip-bits:${bits}<=${want_bits} "
     else
       need=1
-      notes+="bits:${bits}→${want_bits} "
+      notes+="bits:${bits}->${want_bits} "
     fi
   fi
 

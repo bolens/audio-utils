@@ -246,7 +246,7 @@ cue_extract_segment() {
     if ! ffmpeg -v error -y -i "$image" -ss "$start_sec" \
       -map 0:a:0 -c:a pcm_s16le "$out_wav" 2>"$err"; then
       set_last_err_file "$err"
-      log_err "FAILED cue extract: $image @${start_sec}s → $out_wav"
+      log_err "FAILED cue extract: $image @${start_sec}s -> $out_wav"
       [[ -s "$err" ]] && { log_err "  ffmpeg stderr:"; sed 's/^/  | /' "$err" >&2; }
       return 1
     fi
@@ -254,7 +254,7 @@ cue_extract_segment() {
     if ! ffmpeg -v error -y -i "$image" -ss "$start_sec" -to "$end_sec" \
       -map 0:a:0 -c:a pcm_s16le "$out_wav" 2>"$err"; then
       set_last_err_file "$err"
-      log_err "FAILED cue extract: $image @${start_sec}-${end_sec}s → $out_wav"
+      log_err "FAILED cue extract: $image @${start_sec}-${end_sec}s -> $out_wav"
       [[ -s "$err" ]] && { log_err "  ffmpeg stderr:"; sed 's/^/  | /' "$err" >&2; }
       return 1
     fi

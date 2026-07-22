@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Convert DSD (DSF/DFF) → FLAC via PCM downsample.
+# Convert DSD (DSF/DFF) -> FLAC via PCM downsample.
 #
 # Default PCM rate: 88200 Hz / 24-bit (override: AUDIO_UTILS_DSD_RATE).
 # DFF: ffmpeg first; sox fallback if demuxer missing.

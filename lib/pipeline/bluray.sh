@@ -25,7 +25,7 @@ bluray_require_libs() {
     log_err "  Arch/CachyOS: libbluray libaacs (libbdplus optional for BD+)"
     log_err "  Debian/Ubuntu: libbluray2 libaacs0 (libbdplus0 optional)"
     log_err "  Fedora: libbluray libaacs (RPM Fusion for some extras)"
-    log_err "  This project does not ship AACS keys or BD+ dumps — see docs/discs.md"
+    log_err "  This project does not ship AACS keys or BD+ dumps - see docs/discs.md"
     return 1
   fi
   if ! bluray_libbdplus_present; then
@@ -179,12 +179,12 @@ bluray_makemkv_backup() {
     # Some builds want disc:prefix
     if ! "$bin" mkv "disc:$src" all "$outdir" --minlength=0 >"$err" 2>&1; then
       set_last_err_file "$err"
-      log_err "FAILED makemkvcon: $src → $outdir"
+      log_err "FAILED makemkvcon: $src -> $outdir"
       [[ -s "$err" ]] && { log_err "  makemkv stderr:"; sed 's/^/  | /' "$err" | head -n 40 >&2; }
       return 1
     fi
   fi
-  log_note "note: MakeMKV backup completed → $outdir"
+  log_note "note: MakeMKV backup completed -> $outdir"
   return 0
 }
 
@@ -271,7 +271,7 @@ bluray_decrypt_or_copy() {
         log_err "Error: BDMV streams not readable and KEYDB.cfg missing"
         bluray_keydb_hint
         if bluray_makemkv_bin >/dev/null; then
-          log_note "note: MakeMKV found — attempting backup without KEYDB"
+          log_note "note: MakeMKV found - attempting backup without KEYDB"
         else
           log_err "  Or supply already-decrypted M2TS/MKV, or install MakeMKV (AUDIO_UTILS_MAKEMKV)"
           log_err "  BD+ titles often need MakeMKV or libbdplus + operator dumps (docs/discs.md)"

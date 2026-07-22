@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# empty-dirs — report or remove empty directories left after prune/cleanup.
+# empty-dirs - report or remove empty directories left after prune/cleanup.
 #
 # Usage:
 #   empty-dirs.sh DIR [DIR ...]

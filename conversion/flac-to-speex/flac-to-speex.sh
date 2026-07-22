@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Convert FLAC → Speex (.spx) with verification.
+# Convert FLAC -> Speex (.spx) with verification.
 #
 # Usage:
 #   flac-to-speex.sh DIR [DIR ...]

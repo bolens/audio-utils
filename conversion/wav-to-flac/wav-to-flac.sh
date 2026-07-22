@@ -2,17 +2,17 @@
 # Convert WAV files to FLAC in one or more directories, with verification.
 #
 # Verification (per file):
-#   0. Remux every WAV to a clean PCM temp (float→s24 with peak/scale checks;
-#      integer→same codec). Dual remux + sample-count checks. Always enforce
+#   0. Remux every WAV to a clean PCM temp (float->s24 with peak/scale checks;
+#      integer->same codec). Dual remux + sample-count checks. Always enforce
 #      prep audio MD5 == FLAC audio MD5 end-to-end.
-#   1. Encode prep→FLAC twice; SHA-256 of both FLACs must match
-#   2. Decode FLAC→WAV, re-encode→FLAC; SHA-256 must match
+#   1. Encode prep->FLAC twice; SHA-256 of both FLACs must match
+#   2. Decode FLAC->WAV, re-encode->FLAC; SHA-256 must match
 #   3. Compare ffmpeg audio MD5 of FLAC vs decoded WAV
 #   4. Run flac -t integrity test
 #   5. Copy tags/cover from source WAV onto FLAC (audio stream untouched)
 # Existing FLACs that pass flac -t are skipped; corrupt ones are reconverted.
 # Temps live next to the destination (atomic mv); cleaned on EXIT/INT/TERM.
-# Failures → failure log; successes → success CSV/JSONL log.
+# Failures -> failure log; successes -> success CSV/JSONL log.
 #
 # Layout: shared lib/cli + pcm_to_flac + driver; local lib/plugin.sh.
 #

@@ -50,7 +50,7 @@ FIND_SCRIPT="find-${SRC_EXT}-dirs.sh"
 mkdir -p "$REPO_ROOT/$TOOL_DIR/lib"
 cd "$REPO_ROOT/$TOOL_DIR"
 
-# subst FILE — replace __TOKEN__ placeholders in a freshly written template.
+# subst FILE - replace __TOKEN__ placeholders in a freshly written template.
 subst() {
   sed -i \
     -e "s|__NAME__|$NAME|g" \
@@ -66,7 +66,7 @@ subst() {
 
 cat >"$NAME.sh" <<'EOF'
 #!/usr/bin/env bash
-# __NAME__ — TODO: one-line description.
+# __NAME__ - TODO: one-line description.
 #
 # Usage:
 #   __NAME__.sh DIR [DIR ...]
@@ -133,7 +133,7 @@ subst convert-all.sh
 
 cat >lib/plugin.sh <<'EOF'
 #!/usr/bin/env bash
-# __NAME__ plugin — TODO: one-line description.
+# __NAME__ plugin - TODO: one-line description.
 
 AU_TOOL_NAME="${AU_TOOL_NAME:-__NAME__}"
 AU_SOURCE_EXT=__SRC_EXT__
@@ -170,7 +170,7 @@ subst lib/plugin.sh
 
 cat >lib/convert.sh <<'EOF'
 #!/usr/bin/env bash
-# __NAME__ — process one file. Runs in a worker; log_* and the shared
+# __NAME__ - process one file. Runs in a worker; log_* and the shared
 # helpers (audio_md5, file_sha256, make_workdir, …) are available.
 #
 # For a standard lossy/PCM pipeline, delete this file and wire the shared

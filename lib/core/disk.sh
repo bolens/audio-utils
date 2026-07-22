@@ -38,5 +38,5 @@ check_disk_space() {
     return 1
   fi
 
-  log_verbose "disk ok: $dir free=$(numfmt --to=iec --suffix=B "$free" 2>/dev/null || echo "$free") need~=$(numfmt --to=iec --suffix=B "$need" 2>/dev/null || echo "$need") (×${factor})"
+  log_verbose "disk ok: $dir free=$(numfmt --to=iec --suffix=B "$free" 2>/dev/null || echo "$free") need~=$(numfmt --to=iec --suffix=B "$need" 2>/dev/null || echo "$need") (x${factor})"
 }

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Convert FLAC → ogg (libvorbis) with verification.
+# Convert FLAC -> ogg (libvorbis) with verification.
 #
 # Usage:
 #   flac-to-vorbis.sh DIR [DIR ...]

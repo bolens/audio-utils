@@ -32,7 +32,7 @@ plugin_require_deps() {
 }
 
 plugin_banner_extra() {
-  log_always "mode:      album dir → image.flac + image.cue"
+  log_always "mode:      album dir -> image.flac + image.cue"
 }
 
 plugin_export_env() {

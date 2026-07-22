@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Convert FLAC → WMA (wmav2) with verification.
+# Convert FLAC -> WMA (wmav2) with verification.
 #
 # Usage:
 #   flac-to-wma.sh DIR [DIR ...]

@@ -84,7 +84,7 @@ convert_one() {
 
   after_bytes=$(file_bytes "$tagged")
   if [[ "$after_bytes" -ge "$before_bytes" && "${OVERWRITE:-0}" -eq 0 ]]; then
-    log_progress "skip (no size win): $flac ($before_bytes → $after_bytes)"
+    log_progress "skip (no size win): $flac ($before_bytes -> $after_bytes)"
     log_success "$flac" "skipped" "$md5_before" "$(file_sha256 "$flac")" \
       "no-shrink;${notes}"
     cleanup
@@ -99,7 +99,7 @@ convert_one() {
   cleanup
 
   sha=$(file_sha256 "$flac")
-  log_progress "optimized: $flac ($before_bytes → $after_bytes)"
+  log_progress "optimized: $flac ($before_bytes -> $after_bytes)"
   log_success "$flac" "flac-$OPT_LEVEL" "$md5_before" "$sha" \
     "bytes:${before_bytes}->${after_bytes};${notes}"
 }

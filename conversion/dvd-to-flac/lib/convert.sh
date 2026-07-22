@@ -49,7 +49,7 @@ convert_one() {
 
   outdir="$(dirname -- "$video_ts")/flac"
   if [[ "${DRY_RUN:-0}" -eq 1 ]]; then
-    log_progress "would extract DVD audio: $video_ts → $outdir/"
+    log_progress "would extract DVD audio: $video_ts -> $outdir/"
     while IFS= read -r -d '' vob; do
       log_info "  VOB: $(basename -- "$vob")"
     done < <(find "$video_ts" -maxdepth 1 -type f \( -iname 'VTS_*.VOB' -o -iname 'vts_*.vob' \) -print0 | sort -z)

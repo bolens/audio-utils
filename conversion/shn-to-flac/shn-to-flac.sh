@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Convert Shorten (.shn) → FLAC with PCM audio-MD5 verification.
+# Convert Shorten (.shn) -> FLAC with PCM audio-MD5 verification.
 #
 # Usage:
 #   shn-to-flac.sh DIR [DIR ...]

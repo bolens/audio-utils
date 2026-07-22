@@ -42,7 +42,7 @@ convert_one() {
   fi
 
   if [[ "${DRY_RUN:-0}" -eq 1 ]]; then
-    log_progress "would export: $pl (${#entries[@]} entries) → $destdir"
+    log_progress "would export: $pl (${#entries[@]} entries) -> $destdir"
     return 0
   fi
 
@@ -108,7 +108,7 @@ convert_one() {
     return 1
   fi
 
-  log_progress "exported: $pl → $destdir (copied=$copied skipped=$skipped)"
+  log_progress "exported: $pl -> $destdir (copied=$copied skipped=$skipped)"
   log_success "$pl" "exported" "" "$(file_sha256 "$out")" \
     "copied=${copied};skipped=${skipped}"
 }

@@ -58,7 +58,7 @@ takc_encode() {
   preset="${preset,,}"
 
   if ! takc_preset_ok "$preset"; then
-    log_err "Error: invalid TAK preset '$preset' (expected p0–p5 with optional e/m)"
+    log_err "Error: invalid TAK preset '$preset' (expected p0-p5 with optional e/m)"
     return 1
   fi
   if ((${#TAKC_CMD[@]} == 0)); then
@@ -68,7 +68,7 @@ takc_encode() {
   err="$(dirname -- "$dest")/takc-encode.err"
   if ! "${TAKC_CMD[@]}" -e -p"$preset" -md5 -v -overwrite "$wav" "$dest" 2>"$err"; then
     set_last_err_file "$err"
-    log_err "FAILED takc encode: $wav → $dest (preset=$preset)"
+    log_err "FAILED takc encode: $wav -> $dest (preset=$preset)"
     [[ -s "$err" ]] && { log_err "  takc stderr:"; sed 's/^/  | /' "$err" >&2; }
     return 1
   fi
@@ -86,7 +86,7 @@ takc_decode() {
   err="$(dirname -- "$dest_wav")/takc-decode.err"
   if ! "${TAKC_CMD[@]}" -d -overwrite "$tak" "$dest_wav" 2>"$err"; then
     set_last_err_file "$err"
-    log_err "FAILED takc decode: $tak → $dest_wav"
+    log_err "FAILED takc decode: $tak -> $dest_wav"
     [[ -s "$err" ]] && { log_err "  takc stderr:"; sed 's/^/  | /' "$err" >&2; }
     return 1
   fi

@@ -28,7 +28,7 @@ convert_one() {
   fi
 
   if [[ "${DRY_RUN:-0}" -eq 1 ]]; then
-    log_progress "would rip: device=$device track=$tracknum → $flac_out"
+    log_progress "would rip: device=$device track=$tracknum -> $flac_out"
     return 0
   fi
 

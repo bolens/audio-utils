@@ -90,7 +90,7 @@ convert_one() {
   fi
 
   if [[ "${DRY_RUN:-0}" -eq 1 ]]; then
-    log_progress "would embed: $cover → $flac"
+    log_progress "would embed: $cover -> $flac"
     return 0
   fi
 
@@ -113,6 +113,6 @@ convert_one() {
   fi
 
   sha=$(file_sha256 "$flac")
-  log_progress "embedded: $cover → $flac"
+  log_progress "embedded: $cover -> $flac"
   log_success "$flac" "$mode" "" "$sha" "ok"
 }
