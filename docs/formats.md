@@ -14,6 +14,8 @@ SHN / DSD / lossy (normalize) / CUE+image / streams / DVD / CDDA   →  FLAC
 | Lossless | probe OK **and** audio MD5 matches | same strong check |
 | Lossy | probe OK only | probe OK only |
 
+Exceptions: `cue-to-flac` rejects `-d`/`-D` (sheet kept); `streams-to-flac` supports `-d` only (container delete); DVD/Blu-ray/CDDA use custom CLIs (`bluray -D` is the BD device path, not cleanup).
+
 ## Workdirs
 
 Temps live beside media as `.${AUDIO_UTILS_WORKDIR_PREFIX}.*` and under XDG runtime for status dirs.

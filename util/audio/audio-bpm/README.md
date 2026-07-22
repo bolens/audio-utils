@@ -1,7 +1,8 @@
 # audio-bpm
 
-Detect tempo for FLAC and common portable formats (MP3 / Opus / M4A / Ogg /
-WMA / MPC) and save it as a tag: `BPM` (vorbis comment / freeform) or `TBPM`
+Detect tempo for FLAC and the portable cluster (`AU_AUDIO_EXTS_DEFAULT`:
+MP3 / Opus / M4A / Ogg / WMA / MPC / Speex / AAC) and save it as a tag: `BPM`
+(vorbis comment / freeform) or `TBPM`
 (MP3 ID3v2).
 
 Detection via **bpm-tools** (`bpm`, preferred) or **aubio**. Files that

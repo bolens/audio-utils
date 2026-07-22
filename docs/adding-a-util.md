@@ -13,7 +13,7 @@ pipelines (`pcm_to_flac`, `lossy`, `lossless`, …).
 |---|-----------|------|
 | Purpose | Format transform (usually to/from FLAC) | Integrity, tags, art, reports |
 | Plugin | Wire a shared pipeline or local `convert.sh` | Local `convert_one` = the operation |
-| Sibling / `-D` | Often deletes source after verified sibling | Prefer read-only; set `AU_CLEANUP_SKIP=1` |
+| Sibling / `-D` | Often deletes source after verified sibling | Prefer read-only: reject `-d`/`-D` in `plugin_after_flags` and set `HAS_DELETE=0` |
 | Disk factor | Space for temps / outputs | Often `0` (no write) |
 
 ## Scaffold
@@ -26,10 +26,10 @@ The manual steps below describe what the generator produces.
 2. Write `lib/plugin.sh`:
    - Set `AU_TOOL_NAME`, `AU_SOURCE_EXT`, `AU_DEST_EXT`, `AU_DISK_FACTOR`, `AU_WORKDIR_PREFIX`, `AU_SUCCESS_COLUMNS`
    - For in-place / no-output tools: `AU_DEST_EXT` may equal `AU_SOURCE_EXT` (driver still requires it)
-   - Set `AU_CLEANUP_SKIP=1` when `-D` must be a no-op
+   - Prefer reject `-d`/`-D` in `plugin_after_flags` when the tool is read-only; set `AU_CLEANUP_SKIP=1` only as belt-and-suspenders for cleanup paths that still run
    - Locate the repo root with the walk-up idiom and source `lib/plugin_init.sh` (see any peer plugin — tools work at any nesting depth)
    - For multi-format tools, prefer shared clusters from [`lib/media/audio_exts.sh`](../lib/media/audio_exts.sh) (`AU_AUDIO_EXTS_*` / `find-audio-dirs.sh --preset …`) instead of inventing another extension list
-   - When the tool rejects `-d`/`-D` (or sets `AU_CLEANUP_SKIP=1` with no delete semantics), set `HAS_DELETE = 0` in the tool `Makefile` so `make help` does not advertise delete targets
+   - When the tool rejects `-d`/`-D` (or has no delete semantics), set `HAS_DELETE = 0` in the tool `Makefile` so `make help` does not advertise delete targets (use `HAS_DELETE_EXISTING = 0` when only `-d` / `convert-delete` is valid)
    - Define `plugin_require_deps` and `convert_one` (or put `convert_one` in `lib/convert.sh` — auto-sourced)
    - Reject destructive flags in `plugin_after_flags` when the tool is read-only
 3. Thin CLI (same as converters):

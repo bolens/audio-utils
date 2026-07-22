@@ -1,7 +1,8 @@
 # audio-key
 
-Detect musical key for FLAC and common portable formats (MP3 / Opus / M4A /
-Ogg / WMA / MPC) and save it as a tag: `INITIALKEY` (vorbis comment /
+Detect musical key for FLAC and the portable cluster (`AU_AUDIO_EXTS_DEFAULT`:
+MP3 / Opus / M4A / Ogg / WMA / MPC / Speex / AAC) and save it as a tag:
+`INITIALKEY` (vorbis comment /
 freeform) or `TKEY` (MP3 ID3v2).
 
 Detection via **keyfinder-cli** (libkeyfinder). Files that already carry a

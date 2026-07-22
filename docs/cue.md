@@ -14,6 +14,7 @@ Album/
 - Album TITLE/PERFORMER apply unless overridden per TRACK.
 - Image resolved beside the CUE (exact name, then common extensions).
 - Tracks within one CUE run **serially**; multiple CUEs can run in parallel via `-j`.
+- `-d` / `-D` are unsupported (the CUE sheet is kept).
 
 ## Limits
 

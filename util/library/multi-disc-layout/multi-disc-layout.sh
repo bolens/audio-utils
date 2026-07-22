@@ -13,11 +13,12 @@
 # Multi-disc when any track has DISCNUMBER>1 or TOTALDISCS>1. Single-disc albums
 # are left flat. Prefer setting TOTALDISCS on all tracks.
 #
+# -d / -D rejected.
 # Exit codes: 0 ok, 1 candidates/failures, 2 usage/deps
 
 set -euo pipefail
 AU_USAGE_START=2
-AU_USAGE_END=15
+AU_USAGE_END=16
 AU_ROOT=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
 while [[ ! -f "$AU_ROOT/lib/plugin_init.sh" ]]; do
   [[ "$AU_ROOT" != / ]] || { echo "audio-utils: shared lib/ not found" >&2; exit 2; }

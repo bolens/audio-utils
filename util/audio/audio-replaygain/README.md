@@ -1,7 +1,7 @@
 # audio-replaygain
 
-ReplayGain 2.0 for FLAC and common portable formats (MP3 / Opus / M4A / Ogg /
-WMA / MPC) via **rsgain** or **loudgain**.
+ReplayGain 2.0 for FLAC and the portable cluster (`AU_AUDIO_EXTS_DEFAULT`:
+MP3 / Opus / M4A / Ogg / WMA / MPC / Speex / AAC) via **rsgain** or **loudgain**.
 
 Part of **[audio-utils](../../../)**. See [docs/adding-a-util.md](../../../docs/adding-a-util.md).
 
