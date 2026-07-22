@@ -22,6 +22,11 @@ audio_utils_convert_all() {
         audio_utils_print_version "convert-all"
         return 0
         ;;
+      -h|--help)
+        # Before find: avoid scanning AUDIO_UTILS_ROOTS just to print usage.
+        "$convert_script" --help
+        return $?
+        ;;
     esac
   done
 

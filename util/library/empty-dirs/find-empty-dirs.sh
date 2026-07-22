@@ -15,6 +15,8 @@ done
 # shellcheck source=../../../lib/load.sh
 source "${AU_ROOT}/lib/load.sh"
 audio_utils_load_config
+audio_utils_find_simple_meta "find-empty-dirs" \
+  "List empty directories (depth-first) under roots." "$@"
 
 ROOTS=("$@")
 if ((${#ROOTS[@]} == 0)); then

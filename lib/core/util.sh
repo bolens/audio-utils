@@ -53,6 +53,32 @@ audio_utils_resolve_roots() {
   return 0
 }
 
+# Meta flags for simple find-* scripts (roots only; no --ext).
+# Exits 0 on -h/--help/--version; exits 2 on unknown -*.
+# Usage: audio_utils_find_simple_meta NAME "one-line description" "$@"
+audio_utils_find_simple_meta() {
+  local name=$1 desc=$2 a
+  shift 2
+  for a in "$@"; do
+    case "$a" in
+      -h|--help)
+        printf 'Usage: %s [ROOT ...]\n' "$name"
+        printf '%s\n' "$desc"
+        printf 'Roots: args, else AUDIO_UTILS_ROOTS / config.\n'
+        exit 0
+        ;;
+      --version)
+        audio_utils_print_version "$name"
+        exit 0
+        ;;
+      -*)
+        echo "Error: unknown option: $a (pass roots only; try -h)" >&2
+        exit 2
+        ;;
+    esac
+  done
+}
+
 # List directories named NAME (case-insensitive) under roots.
 # Usage: find_named_dirs NAME ROOT [ROOT ...]
 find_named_dirs() {

@@ -10,6 +10,8 @@ done
 # shellcheck source=../../lib/load.sh
 source "${AU_ROOT}/lib/load.sh"
 audio_utils_load_config
+audio_utils_find_simple_meta "find-video_ts-dirs" \
+  "List VIDEO_TS directories under roots." "$@"
 ROOTS=()
 audio_utils_resolve_roots ROOTS "$@" || exit $?
 find_named_dirs VIDEO_TS "${ROOTS[@]}"

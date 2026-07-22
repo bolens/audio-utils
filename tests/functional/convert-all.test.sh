@@ -61,6 +61,13 @@ test_convert_all_version_flag() {
   assert_grep "convert-all" "$T/out"
 }
 
+test_convert_all_help_skips_find() {
+  # Must not require roots / must not scan before printing tool usage.
+  run_tool "$_CONVERT_ALL" --help
+  assert_eq "$(tool_rc)" 0
+  assert_grep "Usage:" "$T/out"
+}
+
 test_convert_all_fails_without_roots() {
   run_tool "$_CONVERT_ALL"
   assert_eq "$(tool_rc)" 2 "missing roots must exit 2"

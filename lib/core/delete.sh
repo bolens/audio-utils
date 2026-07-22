@@ -3,8 +3,9 @@
 #
 # Requires: AU_DEST_EXT
 # Optional:
-#   AU_CLEANUP_SKIP=1          — no-op for -D (cue / disc extractors; streams
-#                                still honors -d for container delete)
+#   AU_CLEANUP_SKIP=1          — no-op for -D (disc extractors; streams still
+#                                honors -d for container delete). Prefer reject
+#                                in plugin_after_flags when -D is unsupported.
 #   plugin_sibling_ok SRC DEST — verify sibling; default = dest has audio stream
 #
 # Tools may override delete_one_existing entirely if needed.
