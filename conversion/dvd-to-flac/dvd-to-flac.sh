@@ -29,7 +29,7 @@ SUCCESS_LOG=""
 DELETE_SOURCE=0
 
 usage() {
-  sed -n '2,12p' "$0" | sed 's/^# \?//'
+  sed -n '2,13p' "$0" | sed 's/^# \?//'
   exit "${1:-0}"
 }
 

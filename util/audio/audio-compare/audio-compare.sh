@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# audio-compare — bit-identical / PCM MD5 / peak-diff vs an against tree.
+# audio-compare - bit-identical / PCM MD5 / peak-diff vs an against tree.
 #
 # Usage:
 #   audio-compare.sh --against=DIR DIR [DIR ...]
@@ -17,7 +17,7 @@
 
 set -euo pipefail
 AU_USAGE_START=2
-AU_USAGE_END=15
+AU_USAGE_END=16
 AU_ROOT=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
 while [[ ! -f "$AU_ROOT/lib/plugin_init.sh" ]]; do
   [[ "$AU_ROOT" != / ]] || { echo "audio-utils: shared lib/ not found" >&2; exit 2; }

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# multi-disc-layout — put multi-disc albums into Disc N/ folders from tags.
+# multi-disc-layout - put multi-disc albums into Disc N/ folders from tags.
 #
 # Usage:
 #   multi-disc-layout.sh DIR [DIR ...]
@@ -7,7 +7,7 @@
 #
 # Options:
 #   --apply           Move files (default: report candidates as failures)
-#   --prefix=NAME     Folder prefix (default: Disc → "Disc 1")
+#   --prefix=NAME     Folder prefix (default: Disc -> "Disc 1")
 #   -f FILE  -L FILE  -S FILE  -n  -j N  -q  -v  -h  --version
 #
 # Multi-disc when any track has DISCNUMBER>1 or TOTALDISCS>1. Single-disc albums
@@ -18,7 +18,7 @@
 
 set -euo pipefail
 AU_USAGE_START=2
-AU_USAGE_END=16
+AU_USAGE_END=17
 AU_ROOT=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
 while [[ ! -f "$AU_ROOT/lib/plugin_init.sh" ]]; do
   [[ "$AU_ROOT" != / ]] || { echo "audio-utils: shared lib/ not found" >&2; exit 2; }

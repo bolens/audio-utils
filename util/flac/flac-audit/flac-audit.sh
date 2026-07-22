@@ -19,7 +19,7 @@
 
 set -euo pipefail
 AU_USAGE_START=2
-AU_USAGE_END=17
+AU_USAGE_END=18
 AU_ROOT=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
 while [[ ! -f "$AU_ROOT/lib/plugin_init.sh" ]]; do
   [[ "$AU_ROOT" != / ]] || { echo "audio-utils: shared lib/ not found" >&2; exit 2; }

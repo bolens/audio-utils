@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# waveform-export — batch waveform PNGs beside each audio file.
+# waveform-export - batch waveform PNGs beside each audio file.
 #
 # Usage:
 #   waveform-export.sh DIR [DIR ...]
@@ -15,7 +15,7 @@
 
 set -euo pipefail
 AU_USAGE_START=2
-AU_USAGE_END=13
+AU_USAGE_END=14
 AU_ROOT=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
 while [[ ! -f "$AU_ROOT/lib/plugin_init.sh" ]]; do
   [[ "$AU_ROOT" != / ]] || { echo "audio-utils: shared lib/ not found" >&2; exit 2; }

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Extract Blu-ray / BDMV / decrypted M2TS|MKV audio → FLAC.
+# Extract Blu-ray / BDMV / decrypted M2TS|MKV audio -> FLAC.
 #
 # Usage:
 #   bluray-to-flac.sh /path/to/BDMV [/path/to/disc ...]
@@ -35,7 +35,7 @@ DELETE_SOURCE=0
 BD_DEVICE=""
 
 usage() {
-  sed -n '2,16p' "$0" | sed 's/^# \?//'
+      sed -n '2,18p' "$0" | sed 's/^# \?//'
   exit "${1:-0}"
 }
 

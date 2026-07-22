@@ -60,7 +60,7 @@ help:
 	@echo "Conversion: $(notdir $(CONVERSION))"
 	@echo "Util:       $(notdir $(UTIL))"
 	@echo ""
-	@echo "Docs:  docs/  (requirements, formats, cue, discs, streaming, tak, lossy, playlists)"
+	@echo "Docs:  docs/  (requirements, formats, cue, discs, streaming, tak, dsd, lossy, playlists, enrichment, adding-a-*)"
 	@echo "Set library roots:"
 	@echo "  export AUDIO_UTILS_ROOTS=\"\$$HOME/Music \$$HOME/Downloads\""
 	@echo ""

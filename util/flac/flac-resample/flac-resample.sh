@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# flac-resample — intentional downsample / bit-depth change for archive FLACs.
+# flac-resample - intentional downsample / bit-depth change for archive FLACs.
 #
 # Usage:
 #   flac-resample.sh --rate=44100 [--bits=16] DIR [DIR ...]
@@ -18,7 +18,7 @@
 
 set -euo pipefail
 AU_USAGE_START=2
-AU_USAGE_END=16
+AU_USAGE_END=17
 AU_ROOT=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
 while [[ ! -f "$AU_ROOT/lib/plugin_init.sh" ]]; do
   [[ "$AU_ROOT" != / ]] || { echo "audio-utils: shared lib/ not found" >&2; exit 2; }
