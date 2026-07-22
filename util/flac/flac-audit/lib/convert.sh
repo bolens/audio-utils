@@ -32,7 +32,7 @@ _audit_leftover_pcm() {
   local flac=$1
   local base ext
   base=${flac%.*}
-  for ext in wav aiff aif WAV AIFF AIF; do
+  for ext in wav aiff aif caf WAV AIFF AIF CAF; do
     if [[ -f "${base}.${ext}" ]]; then
       printf '%s\n' "${base}.${ext}"
       return 0

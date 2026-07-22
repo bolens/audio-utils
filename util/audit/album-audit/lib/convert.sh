@@ -2,12 +2,20 @@
 # Audit one directory as an album unit; the first file claims the work.
 
 _aa_list_audio() {
-  local dir=$1
-  LC_ALL=C find -P "$dir" -maxdepth 1 -type f \
-    \( -iname '*.flac' -o -iname '*.mp3' -o -iname '*.opus' \
-    -o -iname '*.m4a' -o -iname '*.ogg' -o -iname '*.oga' \
-    -o -iname '*.wma' -o -iname '*.mpc' -o -iname '*.aac' \) \
-    | LC_ALL=C sort
+  local dir=$1 ext
+  local -a find_args=( -P "$dir" -maxdepth 1 -type f \( )
+  local first=1
+  # Prefer AU_SOURCE_EXTS (plugin); fall back to shared portable cluster.
+  # shellcheck disable=SC2086
+  for ext in ${AU_SOURCE_EXTS:-${AU_AUDIO_EXTS_DEFAULT}}; do
+    if [[ "$first" -eq 1 ]]; then
+      find_args+=( -iname "*.${ext}" ); first=0
+    else
+      find_args+=( -o -iname "*.${ext}" )
+    fi
+  done
+  find_args+=( \) )
+  LC_ALL=C find "${find_args[@]}" | LC_ALL=C sort
 }
 
 # Audit DIR; print semicolon-joined issues to stdout (empty line = clean).

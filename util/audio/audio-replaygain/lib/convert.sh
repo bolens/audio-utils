@@ -15,7 +15,8 @@ _rg_list_audio() {
   local dir=$1 ext
   local -a find_args=( -P "$dir" -maxdepth 1 -type f \( )
   local first=1
-  for ext in flac mp3 opus m4a ogg oga wma mpc aac; do
+  # shellcheck disable=SC2086
+  for ext in ${AU_SOURCE_EXTS:-${AU_AUDIO_EXTS_DEFAULT}}; do
     if [[ "$first" -eq 1 ]]; then
       find_args+=( -iname "*.${ext}" ); first=0
     else

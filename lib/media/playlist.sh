@@ -9,7 +9,16 @@
 
 # Extensions treated as library audio when generating playlists.
 playlist_audio_exts() {
-  printf '%s\n' flac mp3 opus m4a ogg oga wma mpc spx aac wav aiff aif caf wv ape tak tta
+  # Same cluster as find --preset portable-pcm-archive / playlist-generate.
+  # Defensive defaults if sourced without load.sh → audio_exts.sh.
+  : "${AU_AUDIO_EXTS_DEFAULT:=flac mp3 opus m4a ogg oga wma mpc spx aac}"
+  : "${AU_AUDIO_EXTS_PCM:=wav aiff aif caf}"
+  : "${AU_AUDIO_EXTS_ARCHIVE:=wv ape tak tta}"
+  local e
+  # shellcheck disable=SC2086
+  for e in $AU_AUDIO_EXTS_DEFAULT $AU_AUDIO_EXTS_PCM $AU_AUDIO_EXTS_ARCHIVE; do
+    printf '%s\n' "$e"
+  done
 }
 
 # Detect format from extension (preferred) or light content sniff.

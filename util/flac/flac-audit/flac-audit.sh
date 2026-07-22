@@ -12,7 +12,7 @@
 #   - flac -t fails
 #   - missing ARTIST / ALBUM / TITLE / TRACKNUMBER
 #   - no embedded picture and no folder cover
-#   - leftover sibling .wav / .aiff / .aif beside a FLAC
+#   - leftover sibling .wav / .aiff / .aif / .caf beside a FLAC
 #
 # Read-only: -d / -D / -y rejected.
 # Exit codes: 0 all clean, 1 issues found, 2 usage/deps
