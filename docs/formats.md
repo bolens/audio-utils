@@ -27,10 +27,11 @@ Shared clusters live in [`lib/media/audio_exts.sh`](../lib/media/audio_exts.sh).
 
 | Preset | Contents |
 |--------|----------|
-| `portable` | flac + common lossy (incl. speex) |
+| `portable` | flac + common lossy (incl. speex, m4b) |
 | `portable-pcm` | portable + wav/aiff/caf |
 | `pcm` | wav/aiff/caf only |
-| `lossy` | lossy only |
+| `lossy` | lossy only (incl. m4b) |
+| `audiobook` | m4b + m4a + mp3 + flac |
 | `portable-pcm-archive` | portable-pcm + wv/ape/tak/tta |
 | `library` | archive cluster + cue/m3u/cover sidecars |
 | `library-junk` | library + junk (`.db` / `.ini` / …) |
@@ -39,4 +40,4 @@ Shared clusters live in [`lib/media/audio_exts.sh`](../lib/media/audio_exts.sh).
 
 ## See also
 
-[docs index](README.md) · [requirements.md](requirements.md) · [lossy.md](lossy.md) · [cue.md](cue.md) · [discs.md](discs.md) · [dsd.md](dsd.md) · [tak.md](tak.md) · [streaming.md](streaming.md) · [playlists.md](playlists.md) · [adding-a-converter.md](adding-a-converter.md)
+[docs index](README.md) · [requirements.md](requirements.md) · [lossy.md](lossy.md) · [audiobooks.md](audiobooks.md) · [cue.md](cue.md) · [discs.md](discs.md) · [dsd.md](dsd.md) · [tak.md](tak.md) · [streaming.md](streaming.md) · [playlists.md](playlists.md) · [adding-a-converter.md](adding-a-converter.md)

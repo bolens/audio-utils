@@ -156,4 +156,15 @@ test_preset_sees_speex_and_caf() {
   assert_not_grep "Speex Only" "$out"
 }
 
+test_preset_audiobook() {
+  _mk_tree
+  mkdir -p "$T/lib/Book" "$T/lib/MusicOnly"
+  : >"$T/lib/Book/book.m4b"
+  : >"$T/lib/MusicOnly/track.ogg"
+  local out
+  out=$("$_FIND" --preset audiobook "$T/lib")
+  assert_grep "Book" "$out"
+  assert_not_grep "MusicOnly" "$out"
+}
+
 run_tests

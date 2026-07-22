@@ -62,6 +62,8 @@ source "${_AUDIO_UTILS_LIB_DIR}/pipeline/pcm_remux.sh"
 source "${_AUDIO_UTILS_LIB_DIR}/media/lossless.sh"
 # shellcheck source=media/cue.sh
 source "${_AUDIO_UTILS_LIB_DIR}/media/cue.sh"
+# shellcheck source=media/chapters.sh
+source "${_AUDIO_UTILS_LIB_DIR}/media/chapters.sh"
 # shellcheck source=media/playlist.sh
 source "${_AUDIO_UTILS_LIB_DIR}/media/playlist.sh"
 # shellcheck source=pipeline/lossy.sh

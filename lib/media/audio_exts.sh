@@ -4,11 +4,13 @@
 # Prefer these (or a documented subset) — do not invent another portable list.
 
 # Portable + common archive lossy/lossless tags targets (no PCM containers).
-AU_AUDIO_EXTS_DEFAULT="flac mp3 opus m4a ogg oga wma mpc spx aac"
+AU_AUDIO_EXTS_DEFAULT="flac mp3 opus m4a m4b ogg oga wma mpc spx aac"
 # PCM containers commonly paired with the portable set.
 AU_AUDIO_EXTS_PCM="wav aiff aif caf"
 # Lossy-only (library-prune / lossy-audit / lossy-to-flac).
-AU_AUDIO_EXTS_LOSSY="mp3 opus m4a ogg oga wma mpc spx aac"
+AU_AUDIO_EXTS_LOSSY="mp3 opus m4a m4b ogg oga wma mpc spx aac"
+# Audiobook chapter libraries + single-file books.
+AU_AUDIO_EXTS_AUDIOBOOK="m4b m4a mp3 flac"
 # Extra lossless archive containers (playlist-generate, audio-compare, library sweep).
 AU_AUDIO_EXTS_ARCHIVE="wv ape tak tta"
 # Sidecar / library metadata files (path-audit, perms, junk).
@@ -22,7 +24,7 @@ AU_AUDIO_EXTS_VIZ="flac wav aiff aif caf mp3 opus m4a ogg oga"
 
 # Print space-separated exts for a named preset, or return 1 if unknown.
 # Presets:
-#   portable | portable-pcm | pcm | lossy
+#   portable | portable-pcm | pcm | lossy | audiobook
 #   portable-pcm-archive | library | library-junk | viz | playlist
 au_audio_exts_for_preset() {
   case "${1:-}" in
@@ -30,6 +32,7 @@ au_audio_exts_for_preset() {
     portable-pcm) printf '%s %s' "$AU_AUDIO_EXTS_DEFAULT" "$AU_AUDIO_EXTS_PCM" ;;
     pcm) printf '%s' "$AU_AUDIO_EXTS_PCM" ;;
     lossy) printf '%s' "$AU_AUDIO_EXTS_LOSSY" ;;
+    audiobook) printf '%s' "$AU_AUDIO_EXTS_AUDIOBOOK" ;;
     portable-pcm-archive)
       printf '%s %s %s' "$AU_AUDIO_EXTS_DEFAULT" "$AU_AUDIO_EXTS_PCM" "$AU_AUDIO_EXTS_ARCHIVE"
       ;;
