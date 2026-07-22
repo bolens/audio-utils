@@ -2,10 +2,10 @@
 
 Library lifecycle tools live under [`util/`](../util/), grouped by category:
 `util/<category>/<tool>/` (`flac/`, `audio/`, `playlist/`, `audit/`,
-`library/`). They share the converter CLI stack but do **not** use the convert
+`library/`, `audiobook/`). They share the converter CLI stack but do **not** use the convert
 pipelines (`pcm_to_flac`, `lossy`, `lossless`, …).
 
-**Tool inventory** lives in the root [README](../README.md) util table — do not duplicate lists here. Topic notes: [playlists.md](playlists.md), [cue.md](cue.md), [discs.md](discs.md), [formats.md](formats.md). Deps: [requirements.md](requirements.md). Converters: [adding-a-converter.md](adding-a-converter.md).
+**Tool inventory** lives in the root [README](../README.md) util table — do not duplicate lists here. Topic notes: [playlists.md](playlists.md), [audiobooks.md](audiobooks.md), [cue.md](cue.md), [discs.md](discs.md), [formats.md](formats.md). Deps: [requirements.md](requirements.md). Converters: [adding-a-converter.md](adding-a-converter.md).
 
 ## When to use this vs a converter
 

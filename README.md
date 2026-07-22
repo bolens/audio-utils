@@ -4,7 +4,7 @@
 
 Verified **audio conversion utilities** for Linux libraries (GNU userland; bash 4.3+). **FLAC** is the archive hub. Not macOS, BSD, BusyBox, or Alpine — see [requirements](docs/requirements.md).
 
-Docs: **[docs/](docs/)** — [requirements](docs/requirements.md) · [formats](docs/formats.md) · [cue](docs/cue.md) · [discs](docs/discs.md) · [streaming](docs/streaming.md) · [tak](docs/tak.md) · [dsd](docs/dsd.md) · [lossy](docs/lossy.md) · [playlists](docs/playlists.md) · [enrichment](docs/enrichment.md) · [accessibility](docs/accessibility.md) · [adding a converter](docs/adding-a-converter.md) · [adding a util](docs/adding-a-util.md)
+Docs: **[docs/](docs/)** — [requirements](docs/requirements.md) · [formats](docs/formats.md) · [cue](docs/cue.md) · [discs](docs/discs.md) · [streaming](docs/streaming.md) · [tak](docs/tak.md) · [dsd](docs/dsd.md) · [lossy](docs/lossy.md) · [audiobooks](docs/audiobooks.md) · [playlists](docs/playlists.md) · [enrichment](docs/enrichment.md) · [accessibility](docs/accessibility.md) · [adding a converter](docs/adding-a-converter.md) · [adding a util](docs/adding-a-util.md)
 
 ### Conversion
 
@@ -29,6 +29,7 @@ Docs: **[docs/](docs/)** — [requirements](docs/requirements.md) · [formats](d
 | [`conversion/flac-to-opus/`](conversion/flac-to-opus/) / [`flac-to-aac/`](conversion/flac-to-aac/) / [`flac-to-vorbis/`](conversion/flac-to-vorbis/) | FLAC → Opus / AAC / Vorbis |
 | [`conversion/flac-to-wma/`](conversion/flac-to-wma/) / [`flac-to-speex/`](conversion/flac-to-speex/) / [`flac-to-mpc/`](conversion/flac-to-mpc/) | FLAC → WMA / Speex / Musepack |
 | [`conversion/lossy-to-flac/`](conversion/lossy-to-flac/) | Lossy → FLAC (normalize; does not restore quality) |
+| [`conversion/tracks-to-m4b/`](conversion/tracks-to-m4b/) / [`m4b-to-tracks/`](conversion/m4b-to-tracks/) | Chapter files ↔ `.m4b` ([audiobooks](docs/audiobooks.md)) |
 
 ### Util
 
@@ -113,6 +114,14 @@ Utils are grouped by category: `util/<category>/<tool>/`.
 | [`empty-dirs/`](util/library/empty-dirs/) | Empty album/artist dirs after prune (report / `-d`) |
 | [`multi-disc-layout/`](util/library/multi-disc-layout/) | Multi-disc albums → `Disc N/` from `DISCNUMBER` |
 | [`hardlink-dupes/`](util/library/hardlink-dupes/) | Hardlink content-identical FLACs (report / `--apply`) |
+
+#### `util/audiobook/` — audiobooks (M4B + chapter libraries)
+
+| Tool | Description |
+|------|-------------|
+| [`chapters/`](util/audiobook/chapters/) | List / extract / embed chapter markers (`.m4b` / `.m4a`) |
+| [`audiobook-tags/`](util/audiobook/audiobook-tags/) | Author / narrator / series normalize (report / `--apply`) |
+| [`audiobook-audit/`](util/audiobook/audiobook-audit/) | Cover, tags, chapters, series QC |
 
 ## Quick start
 

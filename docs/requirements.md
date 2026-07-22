@@ -72,6 +72,8 @@ On Fedora, enable [RPM Fusion](https://rpmfusion.org/) before installing `ffmpeg
 | bluray-to-flac | **libbluray** + **libaacs** (+ operator `KEYDB.cfg`); optional **libbdplus**, **MakeMKV** (`AUDIO_UTILS_MAKEMKV`); or already-decrypted M2TS/MKV |
 | cdda-to-flac | **cdparanoia** (AccurateRip / MusicBrainz workflows are external — not wired here) |
 | cue-to-flac / streams-to-flac | core set only |
+| tracks-to-m4b | ffmpeg (`aac` / `libopus` / `alac`); Opus-in-M4B needs `libopus` |
+| m4b-to-tracks / chapters / audiobook-tags / audiobook-audit | core `ffmpeg`/`ffprobe` |
 | wav-to-aiff / aiff-to-wav / flac-to-wav / flac-to-aiff / flac-to-caf | core set (PCM remux) |
 | flac-verify | core `flac` + `flock`; `-M` needs `ffmpeg`/`ffprobe`/`metaflac` |
 | flac-replaygain | `metaflac` + **rsgain** (preferred) or **loudgain** |
