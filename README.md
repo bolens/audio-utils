@@ -50,6 +50,7 @@ Utils are grouped by category: `util/<category>/<tool>/`.
 | [`flac-cue-export/`](util/flac/flac-cue-export/) | Album tracks → image FLAC + CUE |
 | [`flac-strip/`](util/flac/flac-strip/) | Strip padding / APPLICATION; optional core-tags-only |
 | [`flac-inventory/`](util/flac/flac-inventory/) | Library inventory report (rate/depth/RG/art/size) |
+| [`flac-resample/`](util/flac/flac-resample/) | Intentional rate/depth downsample (report / `--apply`) |
 
 #### `util/audio/` — multi-format tools
 
@@ -63,6 +64,8 @@ Utils are grouped by category: `util/<category>/<tool>/`.
 | [`audio-artwork/`](util/audio/audio-artwork/) | Embed / extract covers (multi-format) |
 | [`audio-lyrics/`](util/audio/audio-lyrics/) | Lyrics audit; sidecar `.lrc` import / export |
 | [`tags-lookup/`](util/audio/tags-lookup/) | AcoustID → MusicBrainz MBID report ([opt-in network](docs/enrichment.md)) |
+| [`audio-compare/`](util/audio/audio-compare/) | Compare vs `--against` tree (decode MD5 / STREAMINFO / peak) |
+| [`genre-canonicalize/`](util/audio/genre-canonicalize/) | Map freeform `GENRE` to a controlled vocabulary |
 
 #### `util/playlist/` — playlists
 
@@ -87,6 +90,7 @@ Utils are grouped by category: `util/<category>/<tool>/`.
 | [`silence-detect/`](util/audit/silence-detect/) | Leading/trailing silence + clipping QC |
 | [`dynamics-report/`](util/audit/dynamics-report/) | EBU R128 loudness / LRA / true-peak survey |
 | [`spectrogram-export/`](util/audit/spectrogram-export/) | Batch spectrogram PNGs (sox / ffmpeg) |
+| [`waveform-export/`](util/audit/waveform-export/) | Batch waveform PNGs (ffmpeg `showwavespic`) |
 
 #### `util/library/` — library and filesystem hygiene
 
@@ -99,6 +103,8 @@ Utils are grouped by category: `util/<category>/<tool>/`.
 | [`pcm-cleanup/`](util/library/pcm-cleanup/) | Leftover WAV/AIFF/CAF beside verified FLAC |
 | [`junk-cleanup/`](util/library/junk-cleanup/) | Thumbs.db / .DS_Store / AppleDouble / zero-byte files |
 | [`perms-normalize/`](util/library/perms-normalize/) | Permission modes report / `--apply` (644 / 755) |
+| [`empty-dirs/`](util/library/empty-dirs/) | Empty album/artist dirs after prune (report / `-d`) |
+| [`multi-disc-layout/`](util/library/multi-disc-layout/) | Multi-disc albums → `Disc N/` from `DISCNUMBER` |
 
 ## Quick start
 

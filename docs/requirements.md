@@ -80,6 +80,7 @@ On Fedora, enable [RPM Fusion](https://rpmfusion.org/) before installing `ffmpeg
 | flac-cue-export | `flac`, `metaflac`, `ffmpeg`/`ffprobe` |
 | flac-strip | `metaflac` |
 | flac-inventory | `metaflac`, `ffmpeg`/`ffprobe` |
+| flac-resample | `flac`, `metaflac`, `ffmpeg`/`ffprobe` |
 | audio-replaygain | **rsgain** or **loudgain**, `ffmpeg`/`ffprobe` |
 | audio-tags | `ffmpeg`/`ffprobe`; `metaflac` for FLAC |
 | audio-bpm | **bpm** (bpm-tools, preferred) or **aubio**; `ffmpeg`/`ffprobe`; `metaflac` for FLAC |
@@ -107,7 +108,12 @@ On Fedora, enable [RPM Fusion](https://rpmfusion.org/) before installing `ffmpeg
 | gapless-audit | `ffprobe`, `od`, GNU `dd`, `grep` |
 | tags-lookup | **fpcalc** (chromaprint) + **curl**; optional `jq`; AcoustID client key ([enrichment.md](enrichment.md)) |
 | audio-lyrics | `ffprobe`; `metaflac` for `--import` |
+| audio-compare | `ffmpeg`/`ffprobe`; `--mode=streaminfo` needs `metaflac` |
+| genre-canonicalize | `ffmpeg`/`ffprobe`; `metaflac` preferred for FLAC |
 | library-prune | coreutils only |
+| empty-dirs | coreutils (`find`, `rmdir`) |
+| multi-disc-layout | `flac`, `metaflac` |
+| waveform-export | `ffmpeg` (`showwavespic`) |
 
 ## Arch / CachyOS
 

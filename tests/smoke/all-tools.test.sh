@@ -85,6 +85,8 @@ test_dry_run_empty_dir_is_clean() {
     [library-prune]="--flac-root=$other"
     [library-sync]="--portable-root=$other"
     [tree-diff]="--against=$other"
+    [audio-compare]="--against=$other"
+    [flac-resample]="--rate=44100"
     [playlist-export]="--dest=$T/export-dest"
     [tags-lookup]="--client-key=testkey"
   )
