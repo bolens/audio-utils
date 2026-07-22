@@ -3,7 +3,7 @@
 
 AU_TOOL_NAME="${AU_TOOL_NAME:-lossy-to-flac}"
 AU_SOURCE_EXT=mp3
-AU_SOURCE_EXTS="mp3 m4a aac opus ogg wma mpc spx"
+AU_SOURCE_EXTS="mp3 m4a aac opus ogg oga wma mpc spx"
 AU_DEST_EXT=flac
 AU_DISK_FACTOR=2
 AU_WORKDIR_PREFIX=lossy2flac

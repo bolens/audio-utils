@@ -28,7 +28,7 @@ PLAYLIST_DEDUPE_BY="${PLAYLIST_DEDUPE_BY:-path}"
 plugin_consume_arg() {
   case "${1:-}" in
     --format)
-      [[ -n "${2:-}" ]] || { echo "Error: --format needs m3u|pls|xspf" >&2; return 1; }
+      [[ -n "${2:-}" ]] || { echo "Error: --format needs m3u|m3u8|pls|xspf" >&2; return 1; }
       PLAYLIST_OUT_FORMAT=$2
       AU_CONSUMED=2
       export AU_CONSUMED PLAYLIST_OUT_FORMAT
@@ -84,7 +84,7 @@ plugin_after_flags() {
     case "${PLAYLIST_OUT_FORMAT}" in
       m3u|m3u8|pls|xspf) ;;
       *)
-        echo "Error: --format must be m3u, pls, or xspf" >&2
+        echo "Error: --format must be m3u, m3u8, pls, or xspf" >&2
         return 1
         ;;
     esac

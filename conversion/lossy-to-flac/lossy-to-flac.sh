@@ -5,7 +5,7 @@
 #   lossy-to-flac.sh DIR [DIR ...]
 #   find-*-dirs.sh | lossy-to-flac.sh
 #
-# Accepts: .mp3 .m4a .aac .opus .ogg .wma .mpc .spx (codec-gated; skips ALAC .m4a)
+# Accepts: .mp3 .m4a .aac .opus .ogg .oga .wma .mpc .spx (codec-gated; skips ALAC .m4a)
 #
 # Options:
 #   -f FILE  -d  -D  -L FILE  -S FILE  -n  -y  -j N  -q  -v  -h  --version

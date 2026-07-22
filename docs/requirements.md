@@ -63,7 +63,7 @@ On Fedora, enable [RPM Fusion](https://rpmfusion.org/) before installing `ffmpeg
 | ape-to-flac | ffmpeg ape **decoder** (usually present) |
 | flac-to-tta / tta-to-flac | ffmpeg `tta` |
 | shn-to-flac | ffmpeg Shorten **decoder** (no encoder) |
-| lossy-to-flac | core set (decodes mp3/aac/opus/vorbis/wma/mpc/**speex**; skips ALAC) |
+| lossy-to-flac | core set (decodes mp3/aac/opus/vorbis/wma/mpc/**speex**; `.ogg`/`.oga`; skips ALAC) |
 | caf-to-flac / flac-to-caf | core set (CAF mux/demux) |
 | dsf-to-flac | ffmpeg DSF demuxer; optional **sox** for DFF |
 | flac-to-tak | Official **Takc** (+ Wine if `.exe`); see [tak.md](tak.md) |

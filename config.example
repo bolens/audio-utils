@@ -16,6 +16,9 @@ AUDIO_UTILS_ROOTS="$HOME/Music $HOME/Downloads"
 # GNU find binary if not named `find` (must support -printf):
 # AUDIO_UTILS_FIND=gfind
 
+# Workdir name prefix beside album dirs (default: tool-specific, e.g. wav2flac):
+# AUDIO_UTILS_WORKDIR_PREFIX=wav2flac
+
 # --- Lossy quality (MP3 default stays v0) ---
 # AUDIO_UTILS_MP3_QUALITY=v0
 # AUDIO_UTILS_OPUS_QUALITY=128

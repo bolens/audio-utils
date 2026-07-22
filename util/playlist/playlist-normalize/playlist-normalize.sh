@@ -5,7 +5,7 @@
 #   playlist-normalize.sh DIR [DIR ...]
 #
 # Options:
-#   --format m3u|pls|xspf   Output format (default: same as input)
+#   --format m3u|m3u8|pls|xspf   Output format (default: same as input)
 #   --relative              Paths relative to playlist dir (default)
 #   --absolute              Absolute paths
 #   --dedupe                Drop duplicate entries while rewriting
