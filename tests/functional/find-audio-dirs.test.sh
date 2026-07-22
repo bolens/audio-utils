@@ -138,4 +138,22 @@ test_preset_library_junk() {
   assert_grep "Junk Only" "$out"
 }
 
+test_preset_sees_speex_and_caf() {
+  _mk_tree
+  mkdir -p "$T/lib/Speex Only" "$T/lib/Caf Only"
+  : >"$T/lib/Speex Only/track.spx"
+  : >"$T/lib/Caf Only/track.caf"
+  local out
+  out=$("$_FIND" --preset portable "$T/lib")
+  assert_grep "Speex Only" "$out"
+  out=$("$_FIND" --preset lossy "$T/lib")
+  assert_grep "Speex Only" "$out"
+  out=$("$_FIND" --preset pcm "$T/lib")
+  assert_grep "Caf Only" "$out"
+  out=$("$_FIND" --preset portable-pcm "$T/lib")
+  assert_grep "Caf Only" "$out"
+  out=$("$_FIND" --preset playlist "$T/lib")
+  assert_not_grep "Speex Only" "$out"
+}
+
 run_tests

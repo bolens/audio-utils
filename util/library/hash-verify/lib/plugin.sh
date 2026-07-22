@@ -18,7 +18,7 @@ while [[ ! -f "$_AU_ROOT/lib/plugin_init.sh" ]]; do
 done
 # shellcheck source=../../../../lib/media/audio_exts.sh
 source "$_AU_ROOT/lib/media/audio_exts.sh"
-AU_SOURCE_EXTS="$AU_AUDIO_EXTS_DEFAULT $AU_AUDIO_EXTS_PCM"
+AU_SOURCE_EXTS="$AU_AUDIO_EXTS_DEFAULT $AU_AUDIO_EXTS_PCM $AU_AUDIO_EXTS_ARCHIVE"
 # shellcheck source=../../../../lib/plugin_init.sh
 source "$_AU_ROOT/lib/plugin_init.sh"
 

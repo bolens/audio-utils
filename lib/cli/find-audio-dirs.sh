@@ -34,7 +34,7 @@ Usage: find-audio-dirs.sh --ext EXT [-e EXT ...] [ROOT ...]
 
   --ext EXT, -e EXT   File extension without dot (repeatable; e.g. aiff aif)
   --preset NAME       Shared cluster: portable|portable-pcm|pcm|lossy|
-                      portable-pcm-archive|library|library-junk|viz
+                      portable-pcm-archive|library|library-junk|viz|playlist
                       (see lib/media/audio_exts.sh)
   --version           Print version and exit
   -h, --help          Show this help
@@ -46,7 +46,7 @@ Exit codes: 0 ok, 2 usage/config error
 EOF
 }
 
-_PRESET_HELP="portable|portable-pcm|pcm|lossy|portable-pcm-archive|library|library-junk|viz"
+_PRESET_HELP="portable|portable-pcm|pcm|lossy|portable-pcm-archive|library|library-junk|viz|playlist"
 
 while (($# > 0)); do
   case "$1" in

@@ -6,5 +6,4 @@ while [[ ! -f "$AU_ROOT/lib/plugin_init.sh" ]]; do
   [[ "$AU_ROOT" != / ]] || { echo "audio-utils: shared lib/ not found" >&2; exit 2; }
   AU_ROOT=$(dirname "$AU_ROOT")
 done
-exec "${AU_ROOT}/lib/cli/find-audio-dirs.sh" \
-  --ext m3u -e m3u8 -e pls -e xspf "$@"
+exec "${AU_ROOT}/lib/cli/find-audio-dirs.sh" --preset playlist "$@"

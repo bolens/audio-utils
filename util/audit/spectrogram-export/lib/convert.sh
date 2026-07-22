@@ -21,7 +21,7 @@ convert_one() {
   out="${src}.spectrogram.png"
 
   if [[ "${DRY_RUN:-0}" -eq 1 ]]; then
-    log_progress "would spectrogram: $src → $(basename -- "$out")"
+    log_progress "would spectrogram: $src -> $(basename -- "$out")"
     return 0
   fi
 
@@ -37,7 +37,7 @@ convert_one() {
   }
 
   case "${src,,}" in
-    *.flac | *.wav | *.aiff | *.aif)
+    *.flac | *.wav | *.aiff | *.aif | *.caf)
       if command -v sox >/dev/null 2>&1; then
         _spec_sox "$src" "$out" "$err" && rc=0
       fi

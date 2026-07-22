@@ -3,7 +3,6 @@
 
 AU_TOOL_NAME="${AU_TOOL_NAME:-playlist-export}"
 AU_SOURCE_EXT=m3u
-AU_SOURCE_EXTS="m3u m3u8 pls xspf"
 AU_DEST_EXT=m3u
 AU_DISK_FACTOR=0
 AU_WORKDIR_PREFIX=plexp
@@ -17,6 +16,9 @@ while [[ ! -f "$_AU_ROOT/lib/plugin_init.sh" ]]; do
   [[ "$_AU_ROOT" != / ]] || { echo "audio-utils: shared lib/ not found" >&2; return 1 2>/dev/null || exit 2; }
   _AU_ROOT=$(dirname "$_AU_ROOT")
 done
+# shellcheck source=../../../../lib/media/audio_exts.sh
+source "$_AU_ROOT/lib/media/audio_exts.sh"
+AU_SOURCE_EXTS=$AU_AUDIO_EXTS_PLAYLIST
 # shellcheck source=../../../../lib/plugin_init.sh
 source "$_AU_ROOT/lib/plugin_init.sh"
 
