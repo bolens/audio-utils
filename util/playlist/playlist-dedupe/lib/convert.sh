@@ -14,10 +14,6 @@ convert_one() {
     log_fail "$pl" "unknown playlist format"
     return 1
   fi
-  case "$fmt" in
-    m3u) ;;
-    *) ;;
-  esac
 
   entries_file=$(audio_utils_mktemp "plentries.XXXXXX") || return 1
   playlist_parse "$pl" >"$entries_file" || {

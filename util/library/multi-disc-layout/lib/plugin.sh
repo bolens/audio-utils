@@ -19,7 +19,7 @@ done
 # shellcheck source=../../../../lib/plugin_init.sh
 source "$_AU_ROOT/lib/plugin_init.sh"
 
-# disc-subdir: Album/Disc N/track.flac | flat: leave flat when single-disc
+# disc-subdir: Album/Disc N/track.flac (single-disc albums stay flat)
 MULTIDISC_LAYOUT="${MULTIDISC_LAYOUT:-disc-subdir}"
 MULTIDISC_APPLY="${MULTIDISC_APPLY:-0}"
 MULTIDISC_PREFIX="${MULTIDISC_PREFIX:-Disc}"
@@ -30,7 +30,7 @@ plugin_consume_arg() {
       MULTIDISC_LAYOUT="${1#--layout=}"; AU_CONSUMED=1
       export AU_CONSUMED MULTIDISC_LAYOUT; return 0 ;;
     --layout)
-      [[ -n "${2:-}" ]] || { echo "Error: --layout needs disc-subdir|report-only" >&2; return 1; }
+      [[ -n "${2:-}" ]] || { echo "Error: --layout needs disc-subdir" >&2; return 1; }
       MULTIDISC_LAYOUT=$2; AU_CONSUMED=2
       export AU_CONSUMED MULTIDISC_LAYOUT; return 0 ;;
     --apply)

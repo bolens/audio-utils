@@ -81,6 +81,11 @@ test_multi_disc_layout_report_and_apply() {
   metaflac --remove-tag=DISCNUMBER --set-tag="DISCNUMBER=2" \
     --remove-tag=TOTALDISCS --set-tag="TOTALDISCS=2" -- "$T/album/d2.flac"
 
+  run_tool util/library/multi-disc-layout/multi-disc-layout.sh -j 1 \
+    --layout report-only "$T/album"
+  assert_eq "$(tool_rc)" 2 "invalid --layout rc ($(tool_out | tail -3))"
+  tool_out | grep -q "invalid --layout" || fail "expected invalid --layout error"
+
   run_tool util/library/multi-disc-layout/multi-disc-layout.sh -j 1 "$T/album"
   assert_eq "$(tool_rc)" 1 "candidate rc ($(tool_out | tail -3))"
   assert_file "$T/album/d1.flac"
