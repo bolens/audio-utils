@@ -84,4 +84,33 @@ test_help_and_version_exit_zero() {
   assert_grep "find-audio-dirs" "$out"
 }
 
+test_preset_portable_pcm_finds_wav_and_rejects_unknown() {
+  _mk_tree
+  local out
+  out=$("$_FIND" --preset portable-pcm "$T/lib")
+  assert_grep "Album One" "$out"
+  assert_grep "Album Two/CD1" "$out"
+  assert_exit 2 "$_FIND" --preset not-a-real-preset "$T/lib" 2>/dev/null
+}
+
+test_preset_lossy_and_viz() {
+  _mk_tree
+  : >"$T/lib/Album One/track.mp3"
+  local out
+  out=$("$_FIND" --preset lossy "$T/lib")
+  assert_grep "Album One" "$out"
+  assert_not_grep "Album Two/CD1" "$out"  # aiff/wav only there
+  out=$("$_FIND" --preset viz "$T/lib")
+  assert_grep "Album One" "$out"
+  assert_grep "Album Two/CD1" "$out"
+}
+
+test_preset_library_includes_sidecar_exts() {
+  _mk_tree
+  : >"$T/lib/Art Only/album.cue"
+  local out
+  out=$("$_FIND" --preset library "$T/lib")
+  assert_grep "Art Only" "$out"
+}
+
 run_tests

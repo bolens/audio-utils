@@ -6,5 +6,4 @@ while [[ ! -f "$AU_ROOT/lib/plugin_init.sh" ]]; do
   [[ "$AU_ROOT" != / ]] || { echo "audio-utils: shared lib/ not found" >&2; exit 2; }
   AU_ROOT=$(dirname "$AU_ROOT")
 done
-exec "${AU_ROOT}/lib/cli/find-audio-dirs.sh" \
-  --ext mp3 --ext m4a --ext aac --ext opus --ext ogg --ext oga --ext wma --ext mpc --ext spx "$@"
+exec "${AU_ROOT}/lib/cli/find-audio-dirs.sh" --preset lossy "$@"

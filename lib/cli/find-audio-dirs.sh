@@ -30,10 +30,12 @@ FIND_BIN=$(au_find_bin)
 usage() {
   cat >&2 <<'EOF'
 Usage: find-audio-dirs.sh --ext EXT [-e EXT ...] [ROOT ...]
-       find-audio-dirs.sh --preset portable|portable-pcm|pcm|lossy [ROOT ...]
+       find-audio-dirs.sh --preset NAME [ROOT ...]
 
   --ext EXT, -e EXT   File extension without dot (repeatable; e.g. aiff aif)
-  --preset NAME       Use a shared extension cluster (see lib/media/audio_exts.sh)
+  --preset NAME       Shared cluster: portable|portable-pcm|pcm|lossy|
+                      portable-pcm-archive|library|library-junk|viz
+                      (see lib/media/audio_exts.sh)
   --version           Print version and exit
   -h, --help          Show this help
 
@@ -44,6 +46,8 @@ Exit codes: 0 ok, 2 usage/config error
 EOF
 }
 
+_PRESET_HELP="portable|portable-pcm|pcm|lossy|portable-pcm-archive|library|library-junk|viz"
+
 while (($# > 0)); do
   case "$1" in
     -e|--ext)
@@ -52,9 +56,9 @@ while (($# > 0)); do
       shift 2
       ;;
     --preset)
-      (($# >= 2)) || { echo "Error: --preset needs portable|portable-pcm|pcm|lossy" >&2; exit 2; }
+      (($# >= 2)) || { echo "Error: --preset needs ${_PRESET_HELP}" >&2; exit 2; }
       _preset_list=$(au_audio_exts_for_preset "$2") || {
-        echo "Error: unknown --preset '$2' (portable|portable-pcm|pcm|lossy)" >&2
+        echo "Error: unknown --preset '$2' (${_PRESET_HELP})" >&2
         exit 2
       }
       # shellcheck disable=SC2206

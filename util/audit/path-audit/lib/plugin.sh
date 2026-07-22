@@ -3,7 +3,6 @@
 
 AU_TOOL_NAME="${AU_TOOL_NAME:-path-audit}"
 AU_SOURCE_EXT=flac
-AU_SOURCE_EXTS="flac mp3 opus m4a ogg oga wma mpc spx aac wav aiff aif caf wv ape tak tta cue m3u m3u8 pls xspf jpg jpeg png log"
 AU_DEST_EXT=flac
 AU_DISK_FACTOR=0
 AU_WORKDIR_PREFIX=pathaudit
@@ -17,6 +16,9 @@ while [[ ! -f "$_AU_ROOT/lib/plugin_init.sh" ]]; do
   [[ "$_AU_ROOT" != / ]] || { echo "audio-utils: shared lib/ not found" >&2; return 1 2>/dev/null || exit 2; }
   _AU_ROOT=$(dirname "$_AU_ROOT")
 done
+# shellcheck source=../../../../lib/media/audio_exts.sh
+source "$_AU_ROOT/lib/media/audio_exts.sh"
+AU_SOURCE_EXTS="$AU_AUDIO_EXTS_DEFAULT $AU_AUDIO_EXTS_PCM $AU_AUDIO_EXTS_ARCHIVE $AU_AUDIO_EXTS_SIDECAR"
 # shellcheck source=../../../../lib/plugin_init.sh
 source "$_AU_ROOT/lib/plugin_init.sh"
 
