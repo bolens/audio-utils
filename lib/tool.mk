@@ -10,6 +10,7 @@
 #   CONVERT         — default ./convert-all.sh
 #   EXTRA_PHONY     — additional .PHONY targets
 #   HAS_CONVERT_VERBOSE / HAS_CONVERT_CLEAN / HAS_RETAG — set to 1 to enable
+#   HAS_DELETE      — set to 0 to omit convert-delete / -D targets (default 1)
 #   DELETE_TARGET   — make target name for -D (default delete-sources)
 
 # -x follows sources for symbol resolution; omit -a so each tool does not
@@ -19,13 +20,17 @@ CONVERT ?= ./convert-all.sh
 ARGS ?=
 ROOTS ?= $(AUDIO_UTILS_ROOTS)
 DELETE_TARGET ?= delete-sources
+HAS_DELETE ?= 1
 
-.PHONY: help check test dry-run convert convert-quiet convert-delete \
-	$(DELETE_TARGET) $(DELETE_TARGET)-dry clean clean-tmp \
+.PHONY: help check test dry-run convert convert-quiet clean clean-tmp \
 	$(EXTRA_PHONY)
 
 help:
-	@echo "$(TOOL): make check | test | convert | convert-quiet | convert-delete | $(DELETE_TARGET)"
+	@echo -n "$(TOOL): make check | test | convert | convert-quiet"
+ifeq ($(HAS_DELETE),1)
+	@echo -n " | convert-delete | $(DELETE_TARGET)"
+endif
+	@echo
 	@echo "  make dry-run / clean / clean-tmp"
 ifneq ($(FIND_SCRIPT),)
 	@echo "  make find-dirs   (needs AUDIO_UTILS_ROOTS or ROOTS=)"
@@ -60,6 +65,8 @@ convert:
 convert-quiet:
 	$(CONVERT) -q $(ARGS)
 
+ifeq ($(HAS_DELETE),1)
+.PHONY: convert-delete $(DELETE_TARGET) $(DELETE_TARGET)-dry
 convert-delete:
 	$(CONVERT) -d $(ARGS)
 
@@ -68,6 +75,7 @@ $(DELETE_TARGET)-dry:
 
 $(DELETE_TARGET):
 	$(CONVERT) -D $(ARGS)
+endif
 
 ifeq ($(HAS_CONVERT_VERBOSE),1)
 .PHONY: convert-verbose

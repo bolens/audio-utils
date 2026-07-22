@@ -7,7 +7,7 @@ AU_DEST_EXT=flac
 AU_DISK_FACTOR=4
 AU_WORKDIR_PREFIX=bluray2flac
 AU_SUCCESS_COLUMNS='timestamp,src,flac,audio_md5,flac_sha256,codec,bytes,samples,notes'
-AU_GETOPT_EXTRA="D:"
+AU_GETOPT_EXTRA=""
 
 AU_CLEANUP_SKIP=1
 
