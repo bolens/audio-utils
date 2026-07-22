@@ -8,6 +8,8 @@
 #   AU_DEST_EXT           e.g. wav
 #   AU_DISK_FACTOR        e.g. 2 or 1.5 (default 3)
 #   AU_SUCCESS_COLUMNS    CSV header hint for finalize tip
+#   AU_QUEUE_EMPTY_DIRS   if 1, queue DIR itself when it has no matching files
+#                         (dir-level utils such as empty-dirs)
 #   AU_GETOPT_EXTRA       extra getopts chars (e.g. 'Q:cR')
 #
 # Plugin must define:
@@ -313,8 +315,15 @@ audio_utils_run() {
     fi
 
     if ((${#srcs[@]} == 0)); then
-      log_info "==> $dir"
-      log_info "  (no matching .${AU_SOURCE_EXTS// /|} files)"
+      # Dir-level utils (e.g. empty-dirs) may queue the directory itself when
+      # AU_QUEUE_EMPTY_DIRS=1 and find listed empty dirs as scan targets.
+      if [[ "${AU_QUEUE_EMPTY_DIRS:-0}" -eq 1 ]]; then
+        log_info "==> $dir (dir candidate)"
+        ALL_SRCS+=("$dir")
+      else
+        log_info "==> $dir"
+        log_info "  (no matching .${AU_SOURCE_EXTS// /|} files)"
+      fi
       continue
     fi
 
