@@ -51,6 +51,8 @@ Utils are grouped by category: `util/<category>/<tool>/`.
 | [`flac-strip/`](util/flac/flac-strip/) | Strip padding / APPLICATION; optional core-tags-only |
 | [`flac-inventory/`](util/flac/flac-inventory/) | Library inventory report (rate/depth/RG/art/size) |
 | [`flac-resample/`](util/flac/flac-resample/) | Intentional rate/depth downsample (report / `--apply`) |
+| [`silence-split/`](util/flac/silence-split/) | Split long FLAC/PCM on silence → numbered tracks |
+| [`silence-trim/`](util/flac/silence-trim/) | Trim leading/trailing silence (report / `--apply`) |
 
 #### `util/audio/` — multi-format tools
 
@@ -66,6 +68,7 @@ Utils are grouped by category: `util/<category>/<tool>/`.
 | [`tags-lookup/`](util/audio/tags-lookup/) | AcoustID → MusicBrainz MBID report ([opt-in network](docs/enrichment.md)) |
 | [`audio-compare/`](util/audio/audio-compare/) | Compare vs `--against` tree (decode MD5 / STREAMINFO / peak) |
 | [`genre-canonicalize/`](util/audio/genre-canonicalize/) | Map freeform `GENRE` to a controlled vocabulary |
+| [`classical-tags/`](util/audio/classical-tags/) | Classical roles (COMPOSER/WORK/MOVEMENT; report / `--apply`) |
 
 #### `util/playlist/` — playlists
 
@@ -76,15 +79,19 @@ Utils are grouped by category: `util/<category>/<tool>/`.
 | [`playlist-generate/`](util/playlist/playlist-generate/) | Build `.m3u` per audio directory |
 | [`playlist-dedupe/`](util/playlist/playlist-dedupe/) | Drop duplicate songs from playlists |
 | [`playlist-export/`](util/playlist/playlist-export/) | Copy playlist contents + rewritten `.m3u` to a device |
+| [`playlist-smart/`](util/playlist/playlist-smart/) | Filtered `.m3u` from tag queries (genre/BPM/key/RG) |
 
 #### `util/audit/` — audits and reports
 
 | Tool | Description |
 |------|-------------|
 | [`album-audit/`](util/audit/album-audit/) | Album-level audit (track gaps, mixed tags/rate/depth) |
+| [`album-incomplete/`](util/audit/album-incomplete/) | Completeness (TOTALTRACKS/TOTALDISCS / duration outliers) |
 | [`cue-audit/`](util/audit/cue-audit/) | CUE health (image, tracks, UTF-8) |
+| [`rip-log-audit/`](util/audit/rip-log-audit/) | CD ripper `.log` health (EAC / XLD / Whipper / CUETools) |
 | [`gapless-audit/`](util/audit/gapless-audit/) | Gapless metadata (MP3 LAME header, M4A `iTunSMPB`) |
 | [`lossy-audit/`](util/audit/lossy-audit/) | Portable lossy audit (tags, cover, bitrate) |
+| [`lossy-authenticity/`](util/audit/lossy-authenticity/) | Fake high-bitrate / re-encode heuristic (spectral cliff) |
 | [`path-audit/`](util/audit/path-audit/) | Filename portability audit (FAT/NTFS chars, length, UTF-8) |
 | [`disc-inventory/`](util/audit/disc-inventory/) | Catalog VIDEO_TS / BDMV / CUE units |
 | [`silence-detect/`](util/audit/silence-detect/) | Leading/trailing silence + clipping QC |
@@ -105,6 +112,7 @@ Utils are grouped by category: `util/<category>/<tool>/`.
 | [`perms-normalize/`](util/library/perms-normalize/) | Permission modes report / `--apply` (644 / 755) |
 | [`empty-dirs/`](util/library/empty-dirs/) | Empty album/artist dirs after prune (report / `-d`) |
 | [`multi-disc-layout/`](util/library/multi-disc-layout/) | Multi-disc albums → `Disc N/` from `DISCNUMBER` |
+| [`hardlink-dupes/`](util/library/hardlink-dupes/) | Hardlink content-identical FLACs (report / `--apply`) |
 
 ## Quick start
 

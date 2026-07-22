@@ -105,6 +105,14 @@ On Fedora, enable [RPM Fusion](https://rpmfusion.org/) before installing `ffmpeg
 | playlist-generate | `lib/media/playlist.sh`; `#EXTINF` from `ffprobe`/`metaflac` when present (still works without — paths only) |
 | playlist-export | `lib/media/playlist.sh`, coreutils (`cp`) |
 | album-audit | `ffprobe`; `metaflac` used for FLAC tags when present |
+| album-incomplete | `ffprobe`; `metaflac` for FLAC tags when present; `awk` |
+| rip-log-audit | `grep`, `awk`, `flock`; optional `iconv` (UTF-8) |
+| lossy-authenticity | `ffmpeg`/`ffprobe`, `awk` |
+| classical-tags | `ffmpeg`/`ffprobe`; `metaflac` preferred for FLAC |
+| hardlink-dupes | `flac`, `metaflac`, `ln`, `flock`; `-M`/`--md5` needs `ffmpeg` |
+| playlist-smart | `lib/media/playlist.sh`; `ffprobe`/`metaflac` for tag filters |
+| silence-split | `ffmpeg`/`ffprobe`, `flac`, `awk` |
+| silence-trim | `ffmpeg`/`ffprobe`, `flac`, `metaflac`, `awk` |
 | path-audit | coreutils; optional `iconv` (UTF-8 name check) |
 | junk-cleanup | coreutils only |
 | perms-normalize | coreutils (`stat`, `chmod`) |

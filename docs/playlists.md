@@ -19,6 +19,7 @@ Default path style when writing: **relative** to the playlist’s directory (por
 | [`util/playlist/playlist-audit/`](../util/playlist/playlist-audit/) | Read-only: missing paths, empty lists, duplicate songs, non-UTF-8 |
 | [`util/playlist/playlist-normalize/`](../util/playlist/playlist-normalize/) | Rewrite format and/or `--relative` / `--absolute`; optional `--dedupe` |
 | [`util/playlist/playlist-generate/`](../util/playlist/playlist-generate/) | One `.m3u` per audio directory (`<dirname>.m3u` beside tracks) |
+| [`util/playlist/playlist-smart/`](../util/playlist/playlist-smart/) | One filtered `.m3u` from tag queries (`--out` + genre/BPM/key/RG) |
 | [`util/playlist/playlist-dedupe/`](../util/playlist/playlist-dedupe/) | Drop duplicate entries (keep first); `-y` required to overwrite |
 | [`util/playlist/playlist-export/`](../util/playlist/playlist-export/) | Copy referenced tracks to `--dest` and rewrite a relative `.m3u` |
 
@@ -35,6 +36,7 @@ This is playlist entry hygiene — not PCM / chromaprint identity ([`flac-dupes`
 
 ```bash
 make -C util/playlist/playlist-generate convert-quiet
+make -C util/playlist/playlist-smart convert-quiet -- --out /tmp/rock.m3u --genre Rock
 make -C util/playlist/playlist-audit convert-quiet
 make -C util/playlist/playlist-normalize convert-quiet -- --relative
 make -C util/playlist/playlist-dedupe convert-quiet -- -y
