@@ -1,0 +1,47 @@
+#!/usr/bin/env bash
+# Git pre-commit: shellcheck staged scripts; match CI check-lib when lib/ changes.
+#
+# Install once (from repo root):
+#   make install-hooks
+# or:
+#   git config core.hooksPath .githooks
+#
+# Skip for an emergency commit: git commit --no-verify
+
+set -euo pipefail
+
+ROOT=$(git rev-parse --show-toplevel)
+cd "$ROOT"
+
+if ! command -v shellcheck >/dev/null 2>&1; then
+  echo "pre-commit: shellcheck not found in PATH (e.g. pacman -S shellcheck)" >&2
+  exit 1
+fi
+
+mapfile -t staged < <(
+  git diff --cached --name-only --diff-filter=ACM \
+    | grep -E '\.sh$' || true
+)
+
+if ((${#staged[@]} == 0)); then
+  exit 0
+fi
+
+echo "pre-commit: shellcheck -x (${#staged[@]} staged script(s))" >&2
+# -x follows shellcheck source= directives (same as tool.mk).
+shellcheck -x -- "${staged[@]}"
+
+# CI's make check-lib uses -a over the full lib graph; that catches follow-through
+# issues (e.g. SC1091 via lib/cli → media) that per-file -x can miss.
+if git diff --cached --name-only --diff-filter=ACM | grep -qE '^lib/'; then
+  echo "pre-commit: make check-lib (lib/ changed)" >&2
+  make -s check-lib
+fi
+
+# Test harness / scripts are checked with the same flags CI uses for that set.
+if git diff --cached --name-only --diff-filter=ACM | grep -qE '^(tests/|scripts/)'; then
+  echo "pre-commit: make check-tests (tests/ or scripts/ changed)" >&2
+  make -s check-tests
+fi
+
+exit 0

@@ -32,6 +32,8 @@ source "${_AUDIO_UTILS_LIB_DIR}/core/tmpdir.sh"
 source "${_AUDIO_UTILS_LIB_DIR}/media/probe.sh"
 # shellcheck source=media/tags.sh
 source "${_AUDIO_UTILS_LIB_DIR}/media/tags.sh"
+# shellcheck source=media/audio_exts.sh
+source "${_AUDIO_UTILS_LIB_DIR}/media/audio_exts.sh"
 # shellcheck source=media/audio_meta.sh
 source "${_AUDIO_UTILS_LIB_DIR}/media/audio_meta.sh"
 

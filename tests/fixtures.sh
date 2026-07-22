@@ -12,7 +12,7 @@
 # Generators need ffmpeg + flac + metaflac; call require_cmd first (fixture
 # does it for you and skips the test when they are missing).
 
-_AU_FIXTURE_VERSION=2
+_AU_FIXTURE_VERSION=3
 AU_FIXTURE_CACHE="${AU_FIXTURE_CACHE:-$AU_REPO_ROOT/tests/.cache/fixtures-v${_AU_FIXTURE_VERSION}}"
 
 # fixture NAME → prints the fixture dir, building it under a lock if needed.
@@ -121,15 +121,21 @@ _fixture_build_dsf() {
 }
 
 # Short DSDIFF (.dff) via sox (for dsf-to-flac sox fallback path).
+# Ubuntu's sox needs libsox-fmt-all for the dff handler; skip builders otherwise.
 _fixture_build_dff() {
   local d=$1
   command -v sox >/dev/null 2>&1 || {
     echo "fixture dff: sox required" >&2
     return 1
   }
+  sox --help 2>&1 | grep -qE '(^|[[:space:]])dff([[:space:]]|$)' || {
+    echo "fixture dff: sox lacks dff handler (install libsox-fmt-all)" >&2
+    return 1
+  }
   _ffq -f lavfi -i "sine=frequency=440:duration=0.25:sample_rate=44100" \
-    -ac 2 -c:a pcm_s16le "$d/tone.wav"
-  sox "$d/tone.wav" "$d/tone.dff"
+    -ac 2 -c:a pcm_s16le "$d/tone.wav" || return 1
+  sox "$d/tone.wav" "$d/tone.dff" || return 1
+  [[ -f "$d/tone.dff" ]] || return 1
   rm -f "$d/tone.wav"
 }
 

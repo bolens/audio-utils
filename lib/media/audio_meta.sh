@@ -1,9 +1,6 @@
 #!/usr/bin/env bash
 # Multi-format tag / cover helpers (ffprobe + ffmpeg; metaflac for FLAC).
-
-# Extension list constants live in audio_exts.sh (also used by find --preset).
-# shellcheck source=audio_exts.sh
-source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/audio_exts.sh"
+# Extension list constants: lib/media/audio_exts.sh (sourced from load.sh / find --preset).
 
 # Get a metadata tag via ffprobe (format tags). Empty if missing.
 audio_meta_get() {

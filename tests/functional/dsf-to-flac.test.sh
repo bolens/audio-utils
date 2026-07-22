@@ -107,6 +107,8 @@ EOF
 # Exercises sox when ffmpeg cannot demux DSDIFF (forced via shim if needed).
 test_dff_converts_via_sox_fallback() {
   require_cmd flac metaflac ffmpeg ffprobe flock sox
+  sox --help 2>&1 | grep -qE '(^|[[:space:]])dff([[:space:]]|$)' \
+    || skip "sox lacks dff handler (install libsox-fmt-all)"
   local src rate bits
   src=$(fixture dff)
   mkdir -p "$T/album"

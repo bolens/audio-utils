@@ -299,7 +299,7 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y ffmpeg flac bpm-tools musepack-tools libchromaprint-tools \
-            cmake g++ unzip zip rsgain pkg-config git sox \
+            cmake g++ unzip zip rsgain pkg-config git sox libsox-fmt-all \
             libfftw3-dev libavcodec-dev libavformat-dev libavutil-dev libswresample-dev
 
       # BtbN static build of the latest upstream release; shadows apt's
@@ -409,7 +409,8 @@ jobs:
               *'no rsgain'*|\
               *'no C++ compiler'*|\
               *'running as root'*|\
-              *'fixture build failed'*)
+              *'fixture build failed'*|\
+              *'sox lacks dff'*)
                 ;;
               *)
                 echo "::error::Unexpected skip (not in allowlist): $line"

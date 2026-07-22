@@ -22,7 +22,7 @@ TEST_SCRIPTS := tests/run.sh tests/harness.sh tests/fixtures.sh \
 .PHONY: help check check-lib check-conversion check-util check-tools \
 	check-tests test test-functional test-all test-ci clean-tests coverage new-util \
 	new-converter ape-install ape-update ape-status ape-uninstall \
-	keyfinder-install keyfinder-status \
+	keyfinder-install keyfinder-status install-hooks \
 	$(addsuffix -%,$(TOOLS))
 
 help:
@@ -34,6 +34,7 @@ help:
 	@echo "  make check-conversion      shellcheck conversion/ tools (parallel)"
 	@echo "  make check-util            shellcheck util/ tools (parallel)"
 	@echo "  make check-tests           shellcheck the test suite"
+	@echo "  make install-hooks         enable .githooks/ (shellcheck on commit)"
 	@echo "  make test                  run unit + smoke tests"
 	@echo "  make test-functional       run functional tests (needs ffmpeg/flac)"
 	@echo "  make test-all              run every test tier"
@@ -70,6 +71,12 @@ check-lib:
 
 check-tests:
 	$(SHELLCHECK) $(TEST_SCRIPTS)
+
+# Point this clone at .githooks/ so pre-commit runs shellcheck (matches CI).
+install-hooks:
+	git config core.hooksPath .githooks
+	@chmod +x .githooks/pre-commit
+	@echo "hooksPath=.githooks (pre-commit will shellcheck staged scripts)"
 
 # Optional K=PATTERN narrows to matching test files (tests/run.sh -k).
 test:

@@ -55,7 +55,7 @@ REPO_ROOT=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
 
 # Mirrors the CI functional job's dependency list (.github/workflows/ci.yml).
 PKGS="ffmpeg flac bpm-tools musepack-tools libchromaprint-tools
-  cmake g++ unzip zip rsgain pkg-config git sox
+  cmake g++ unzip zip rsgain pkg-config git sox libsox-fmt-all
   libfftw3-dev libavcodec-dev libavformat-dev libavutil-dev libswresample-dev
   util-linux python3 curl ca-certificates xz-utils"
 # shellcheck disable=SC2086  # PKGS is a fixed word list

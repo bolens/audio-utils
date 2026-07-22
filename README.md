@@ -123,6 +123,7 @@ make flac-verify-convert-quiet   # short alias for any tool
 Development:
 
 ```bash
+make install-hooks               # once per clone: shellcheck staged scripts on commit
 make test                        # unit + smoke tests
 make test-functional             # end-to-end pipeline tests (needs ffmpeg/flac)
 make test-all                    # everything
@@ -131,6 +132,11 @@ make -C util/flac/flac-verify test   # one tool's smoke + matching tests
 make new-util CATEGORY=flac NAME=flac-frob    # scaffold a new util
 make new-converter NAME=flac-to-xyz           # scaffold a new converter
 ```
+
+The pre-commit hook (`.githooks/pre-commit`) runs `shellcheck -x` on staged
+`.sh` files, plus `make check-lib` / `make check-tests` when `lib/` or
+`tests/`/`scripts/` change — the same follow-through checks CI uses. Skip with
+`git commit --no-verify` only when you must.
 
 Codecs without official Linux builds:
 
