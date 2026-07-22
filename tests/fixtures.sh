@@ -120,6 +120,19 @@ _fixture_build_dsf() {
   _mk_dsf "$d/tone.dsf"
 }
 
+# Short DSDIFF (.dff) via sox (for dsf-to-flac sox fallback path).
+_fixture_build_dff() {
+  local d=$1
+  command -v sox >/dev/null 2>&1 || {
+    echo "fixture dff: sox required" >&2
+    return 1
+  }
+  _ffq -f lavfi -i "sine=frequency=440:duration=0.25:sample_rate=44100" \
+    -ac 2 -c:a pcm_s16le "$d/tone.wav"
+  sox "$d/tone.wav" "$d/tone.dff"
+  rm -f "$d/tone.wav"
+}
+
 # 2s stereo 16-bit 44.1 kHz sine + white noise WAVs.
 _fixture_build_wav_sine() {
   local d=$1

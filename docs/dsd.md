@@ -29,7 +29,7 @@ sudo pacman -S sox
 
 DSD→PCM is a format change, not a lossless remux. Verify with the tool’s usual PCM MD5 against the decoded PCM (not the original DSD bitstream).
 
-The **sox** DFF fallback is not exercised in CI (no `.dff` fixture / sox on runners). DSF via ffmpeg is covered by functional tests.
+Functional tests cover DSF via ffmpeg and DFF via the sox fallback (CI installs sox; the suite forces the sox path when a local ffmpeg can demux DFF).
 
 ## See also
 

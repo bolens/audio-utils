@@ -78,4 +78,52 @@ test_dsf_dry_run_and_skip_existing() {
     "existing flac must not be rebuilt"
 }
 
+_ffmpeg_demuxes_dff() {
+  ffmpeg -nostdin -v error -i "$1" -t 0.05 -f null - >/dev/null 2>&1
+}
+
+# Install a PATH shim that rejects .dff inputs so decode falls through to sox;
+# remux/encode still use the real ffmpeg.
+_force_sox_dff_path() {
+  local real
+  real=$(command -v ffmpeg)
+  mkdir -p "$T/bin"
+  cat >"$T/bin/ffmpeg" <<EOF
+#!/usr/bin/env bash
+for a in "\$@"; do
+  case "\$a" in
+    *.dff|*.DFF)
+      echo "shim: refusing DFF demux (exercise sox fallback)" >&2
+      exit 1
+      ;;
+  esac
+done
+exec $(printf '%q' "$real") "\$@"
+EOF
+  chmod +x "$T/bin/ffmpeg"
+  export PATH="$T/bin:$PATH"
+}
+
+# Exercises sox when ffmpeg cannot demux DSDIFF (forced via shim if needed).
+test_dff_converts_via_sox_fallback() {
+  require_cmd flac metaflac ffmpeg ffprobe flock sox
+  local src rate bits
+  src=$(fixture dff)
+  mkdir -p "$T/album"
+  cp "$src/tone.dff" "$T/album/"
+  if _ffmpeg_demuxes_dff "$T/album/tone.dff"; then
+    _force_sox_dff_path
+  fi
+
+  run_tool "$_TOOL" -j 1 "$T/album"
+  assert_eq "$(tool_rc)" 0 "rc ($(tool_out | tail -5))"
+  assert_file "$T/album/tone.flac"
+  rate=$(ffprobe -v error -select_streams a:0 -show_entries stream=sample_rate \
+    -of default=noprint_wrappers=1:nokey=1 "$T/album/tone.flac")
+  bits=$(ffprobe -v error -select_streams a:0 -show_entries stream=bits_per_raw_sample \
+    -of default=noprint_wrappers=1:nokey=1 "$T/album/tone.flac")
+  assert_eq "$rate" "88200" "DFF→PCM default rate"
+  assert_eq "$bits" "24" "24-bit PCM"
+}
+
 run_tests
