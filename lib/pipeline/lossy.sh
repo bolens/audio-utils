@@ -88,7 +88,9 @@ require_ffmpeg_encoder() {
   local out
   out=$(ffmpeg -hide_banner -encoders 2>/dev/null) || true
   # Encoder lines look like: " A..... name  Description"
-  if printf '%s\n' "$out" | grep -qE "^[[:space:]]*[A-Z.]+[[:space:]]+${name}([[:space:]]|$)"; then
+  # Use a here-string — printf|grep -q under pipefail SIGPIPEs on a match and
+  # falsely reports the encoder as missing.
+  if grep -qE "^[[:space:]]*[A-Z.]+[[:space:]]+${name}([[:space:]]|$)" <<<"$out"; then
     return 0
   fi
   log_err "Error: ffmpeg lacks encoder '$name' (install matching lib / ffmpeg build)."
@@ -191,6 +193,8 @@ EOF
       ;;
     aac)
       case "$profile" in
+        64|cbr64) LOSSY_QUALITY_NAME=64; LOSSY_FF_ARGS=(-codec:a aac -b:a 64k) ;;
+        96|cbr96) LOSSY_QUALITY_NAME=96; LOSSY_FF_ARGS=(-codec:a aac -b:a 96k) ;;
         128|cbr128) LOSSY_QUALITY_NAME=128; LOSSY_FF_ARGS=(-codec:a aac -b:a 128k) ;;
         160|cbr160) LOSSY_QUALITY_NAME=160; LOSSY_FF_ARGS=(-codec:a aac -b:a 160k) ;;
         192|cbr192) LOSSY_QUALITY_NAME=192; LOSSY_FF_ARGS=(-codec:a aac -b:a 192k) ;;
@@ -200,8 +204,8 @@ EOF
           cat >&2 <<'EOF'
 Error: unknown aac quality profile.
 
-Profiles (default: 192):
-  128 160 192 256 320  - CBR kbps via aac
+Profiles (default: 96):
+  64 96 128 160 192 256 320  - CBR kbps via aac
 
 Set via: -Q PROFILE, --quality PROFILE,
          FLAC2AAC_QUALITY, or AUDIO_UTILS_AAC_QUALITY

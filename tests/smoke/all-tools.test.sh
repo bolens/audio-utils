@@ -88,6 +88,7 @@ test_dry_run_empty_dir_is_clean() {
     [audio-compare]="--against=$other"
     [flac-resample]="--rate=44100"
     [playlist-export]="--dest=$T/export-dest"
+    [playlist-smart]="--out=$T/smart.m3u --genre=Rock"
     [tags-lookup]="--client-key=testkey"
   )
 

@@ -106,10 +106,12 @@ assert_not_grep() { # pattern file_or_string
 
 require_ffmpeg_encoder() {
   require_cmd ffmpeg
-  # Capture first: grep -q on a live pipe SIGPIPEs ffmpeg → pipefail failure.
+  # Capture first, then match encoder field (same rule as lib/pipeline/lossy.sh).
+  # Avoid printf|grep -q under pipefail — SIGPIPE on match falsely skips/fails.
   local encoders
-  encoders=$(ffmpeg -hide_banner -v error -encoders 2>/dev/null) || true
-  grep -q " $1 " <<<"$encoders" || skip "ffmpeg lacks encoder: $1"
+  encoders=$(ffmpeg -hide_banner -encoders 2>/dev/null) || true
+  grep -qE "^[[:space:]]*[A-Z.]+[[:space:]]+${1}([[:space:]]|$)" <<<"$encoders" \
+    || skip "ffmpeg lacks encoder: $1"
 }
 
 # Container-level tag via ffprobe (case-insensitive tag name).
