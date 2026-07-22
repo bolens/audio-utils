@@ -4,7 +4,7 @@ FLAC is the archive hub. Lossless tools verify with **PCM audio MD5** (and `flac
 
 ```
 WAV / AIFF / CAF / ALAC / WV / APE / TAK / TTA  ↔  FLAC  →  MP3 / Opus / AAC / Vorbis / WMA / Speex / MPC
-SHN / DSD / lossy (normalize) / CUE+image / streams / DVD / CDDA   →  FLAC
+SHN / DSD / lossy (normalize) / CUE+image / streams / DVD / Blu-ray / CDDA   →  FLAC
 ```
 
 ## Skip and `-D` cleanup
@@ -35,6 +35,7 @@ Shared clusters live in [`lib/media/audio_exts.sh`](../lib/media/audio_exts.sh).
 | `library` | archive cluster + cue/m3u/cover sidecars |
 | `library-junk` | library + junk (`.db` / `.ini` / …) |
 | `viz` | formats suited to spectrogram / waveform tools |
+| `playlist` | m3u / m3u8 / pls / xspf |
 
 ## See also
 

@@ -109,7 +109,7 @@ On Fedora, enable [RPM Fusion](https://rpmfusion.org/) before installing `ffmpeg
 | junk-cleanup | coreutils only |
 | perms-normalize | coreutils (`stat`, `chmod`) |
 | dynamics-report | `ffmpeg`/`ffprobe` (`ebur128` filter), `awk` |
-| spectrogram-export | `ffmpeg` (`showspectrumpic`); **sox** preferred for FLAC/WAV/AIFF |
+| spectrogram-export | `ffmpeg` (`showspectrumpic`); **sox** preferred for FLAC/WAV/AIFF/CAF |
 | gapless-audit | `ffprobe`, `od`, GNU `dd`, `grep` |
 | tags-lookup | **fpcalc** (chromaprint) + **curl**; optional `jq`; AcoustID client key ([enrichment.md](enrichment.md)) |
 | audio-lyrics | `ffprobe`; `metaflac` for `--import` |

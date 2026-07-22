@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Thin CLI bootstrap for driver-based converters.
 #
-# In a tool entrypoint under conversion/<tool>/ or util/<tool>/
+# In a tool entrypoint under conversion/<tool>/ or util/<category>/<tool>/
 # (after the # Usage comment block):
 #
 #   set -euo pipefail

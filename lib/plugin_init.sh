@@ -3,11 +3,12 @@
 #
 # Expects to be sourced from <tool>/lib/plugin.sh. Sets AU_TOOL_DIR, sources
 # shared lib/load.sh, and exports the standard contract variables.
+#
+# Walks up from the tool dir until shared lib/plugin_init.sh is found.
 
 _AU_CALLER_LIB=$(cd "$(dirname "${BASH_SOURCE[1]}")" && pwd)
 AU_TOOL_DIR=$(cd "${_AU_CALLER_LIB}/.." && pwd)
-# Walk up from the tool dir until the shared lib/ is found. Must not match the
-# tool-local lib/load.sh (which only re-sources plugin.sh).
+# Walk up from the tool dir until the shared lib/ is found.
 _AU_ROOT=$AU_TOOL_DIR
 while [[ ! -f "${_AU_ROOT}/lib/plugin_init.sh" ]]; do
   _AU_PARENT=$(cd "${_AU_ROOT}/.." && pwd)
@@ -49,8 +50,8 @@ export AUDIO_UTILS_WORKDIR_PREFIX="${AUDIO_UTILS_WORKDIR_PREFIX:-$AU_WORKDIR_PRE
 # shellcheck source=load.sh
 source "${_AU_ROOT}/lib/load.sh"
 
-# Convenience: local modules if present (legacy tools).
-for _au_mod in prepare encode convert; do
+# Convenience: local convert.sh (and legacy prepare.sh / encode.sh if present).
+for _au_mod in convert prepare encode; do
   if [[ -f "${_AU_CALLER_LIB}/${_au_mod}.sh" ]]; then
     # shellcheck source=/dev/null
     source "${_AU_CALLER_LIB}/${_au_mod}.sh"

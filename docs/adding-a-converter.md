@@ -12,7 +12,7 @@ The manual steps below describe what the generator produces.
 2. Write `lib/plugin.sh`:
    - Set `AU_TOOL_NAME`, `AU_SOURCE_EXT`, `AU_DEST_EXT`, `AU_DISK_FACTOR`, `AU_WORKDIR_PREFIX`, `AU_SUCCESS_COLUMNS`
    - Optional: `AU_SOURCE_EXTS`, `AU_GETOPT_EXTRA`, `AU_CLEANUP_SKIP=1`, `AU_LOSSLESS_CODEC`, `LOSSY_FAMILY`, …
-   - Locate the repo root with the walk-up idiom and source `lib/plugin_init.sh` (loads shared libs; auto-sources local `prepare.sh` / `encode.sh` / `convert.sh` if present) — see any peer plugin
+   - Locate the repo root with the walk-up idiom and source `lib/plugin_init.sh` (loads shared libs; auto-sources local `convert.sh`, and legacy `prepare.sh` / `encode.sh` if present) — see any peer plugin
    - Define `plugin_require_deps` and optional hooks (`plugin_parse_opt`, `plugin_sibling_ok`, …)
 3. Implement `convert_one` (or call a shared helper):
    - Lossy: set `LOSSY_*`; call `lossy_plugin_wire`; source `lib/pipeline/lossy_hooks.sh`
