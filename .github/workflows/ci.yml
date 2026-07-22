@@ -299,7 +299,7 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y ffmpeg flac bpm-tools musepack-tools libchromaprint-tools \
-            cmake g++ unzip zip rsgain pkg-config git \
+            cmake g++ unzip zip rsgain pkg-config git sox \
             libfftw3-dev libavcodec-dev libavformat-dev libavutil-dev libswresample-dev
 
       # BtbN static build of the latest upstream release; shadows apt's
@@ -325,9 +325,11 @@ jobs:
       # audio-key tests can run; on failure they SKIP (MAX_SKIPS still applies).
       - name: Install keyfinder-cli (best effort)
         continue-on-error: true
+        run: bash scripts/keyfinder-cli.sh install --prefix "$HOME/.local"
+
+      # Always expose ~/.local for mac / keyfinder even if a best-effort step failed.
+      - name: Export ~/.local for optional tools
         run: |
-          set -euo pipefail
-          bash scripts/keyfinder-cli.sh install --prefix "$HOME/.local"
           echo "$HOME/.local/bin" >>"$GITHUB_PATH"
           echo "LD_LIBRARY_PATH=$HOME/.local/lib:$HOME/.local/lib/x86_64-linux-gnu:${LD_LIBRARY_PATH:-}" >>"$GITHUB_ENV"
 

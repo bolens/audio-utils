@@ -22,6 +22,7 @@ TEST_SCRIPTS := tests/run.sh tests/harness.sh tests/fixtures.sh \
 .PHONY: help check check-lib check-conversion check-util check-tools \
 	check-tests test test-functional test-all test-ci clean-tests coverage new-util \
 	new-converter ape-install ape-update ape-status ape-uninstall \
+	keyfinder-install keyfinder-status \
 	$(addsuffix -%,$(TOOLS))
 
 help:
@@ -47,6 +48,8 @@ help:
 	@echo "  make ape-update            update the codec to the latest release"
 	@echo "  make ape-status            installed codec version + integrity"
 	@echo "  make ape-uninstall         remove the codec (manifest-driven)"
+	@echo "  make keyfinder-install     build + install keyfinder-cli (best effort)"
+	@echo "  make keyfinder-status      show keyfinder-cli install path"
 	@echo "  make -C conversion/TOOL help"
 	@echo "  make -C util/CATEGORY/TOOL help"
 	@echo "  make TOOL-check            short alias (e.g. wav-to-flac-check)"
@@ -103,6 +106,12 @@ ape-status:
 
 ape-uninstall:
 	bash scripts/ape-codec.sh uninstall $(APE_FLAGS)
+
+keyfinder-install:
+	bash scripts/keyfinder-cli.sh install $(KEYFINDER_FLAGS)
+
+keyfinder-status:
+	bash scripts/keyfinder-cli.sh status $(KEYFINDER_FLAGS)
 
 new-util:
 	@[ -n "$(CATEGORY)" ] && [ -n "$(NAME)" ] \

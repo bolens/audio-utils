@@ -55,8 +55,9 @@ REPO_ROOT=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
 
 # Mirrors the CI functional job's dependency list (.github/workflows/ci.yml).
 PKGS="ffmpeg flac bpm-tools musepack-tools libchromaprint-tools
-  cmake g++ unzip zip rsgain util-linux python3
-  curl ca-certificates xz-utils"
+  cmake g++ unzip zip rsgain pkg-config git sox
+  libfftw3-dev libavcodec-dev libavformat-dev libavutil-dev libswresample-dev
+  util-linux python3 curl ca-certificates xz-utils"
 # shellcheck disable=SC2086  # PKGS is a fixed word list
 IMAGE="audio-utils-test-ci:$(printf '%s %s' "$PKGS" "$FFMPEG" | sha256sum | cut -c1-12)"
 
@@ -95,5 +96,10 @@ exec "$ENGINE" run --rm -v "$REPO_ROOT":/repo:ro "$IMAGE" bash -c '
   cd "$HOME/work"
   rm -rf tests/.cache
   ffmpeg -version | head -1
+  # Best-effort optional tools (same spirit as CI continue-on-error).
+  bash scripts/ape-codec.sh install --prefix "$HOME/.local" || true
+  bash scripts/keyfinder-cli.sh install --prefix "$HOME/.local" || true
+  export PATH="$HOME/.local/bin:$PATH"
+  export LD_LIBRARY_PATH="$HOME/.local/lib:$HOME/.local/lib/x86_64-linux-gnu:${LD_LIBRARY_PATH:-}"
   exec bash tests/run.sh "$@"
 ' _ "${RUN_ARGS[@]}"
