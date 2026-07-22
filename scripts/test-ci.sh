@@ -54,8 +54,8 @@ fi
 REPO_ROOT=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
 
 # Mirrors the CI functional job's dependency list (.github/workflows/ci.yml).
-PKGS="ffmpeg flac vorbis-tools opus-tools lame wavpack bpm-tools
-  musepack-tools libchromaprint-tools util-linux python3
+PKGS="ffmpeg flac bpm-tools musepack-tools libchromaprint-tools
+  cmake g++ unzip zip rsgain util-linux python3
   curl ca-certificates xz-utils"
 # shellcheck disable=SC2086  # PKGS is a fixed word list
 IMAGE="audio-utils-test-ci:$(printf '%s %s' "$PKGS" "$FFMPEG" | sha256sum | cut -c1-12)"

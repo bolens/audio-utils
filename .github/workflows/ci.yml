@@ -51,6 +51,8 @@ jobs:
               - 'lib/**'
               - 'Makefile'
               - '.github/workflows/ci.yml'
+              - 'scripts/**'
+              - '.github/actions/**'
             conversion:
               - 'conversion/**'
             util:
@@ -64,6 +66,8 @@ jobs:
               - 'tests/**'
               - 'Makefile'
               - '.github/workflows/ci.yml'
+              - 'scripts/**'
+              - '.github/actions/**'
 
       - name: Plan shellcheck matrices
         id: plan
@@ -294,7 +298,9 @@ jobs:
       - name: Install dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y ffmpeg flac vorbis-tools opus-tools lame wavpack bpm-tools musepack-tools libchromaprint-tools cmake g++ unzip zip
+          sudo apt-get install -y ffmpeg flac bpm-tools musepack-tools libchromaprint-tools \
+            cmake g++ unzip zip rsgain pkg-config git \
+            libfftw3-dev libavcodec-dev libavformat-dev libavutil-dev libswresample-dev
 
       # BtbN static build of the latest upstream release; shadows apt's
       # ffmpeg/ffprobe via /usr/local/bin PATH precedence.
@@ -314,6 +320,16 @@ jobs:
       - name: Install APE codec (best effort)
         continue-on-error: true
         run: bash scripts/ape-codec.sh install --prefix "$HOME/.local"
+
+      # Best effort: keyfinder-cli is not in Ubuntu apt. Build from source so
+      # audio-key tests can run; on failure they SKIP (MAX_SKIPS still applies).
+      - name: Install keyfinder-cli (best effort)
+        continue-on-error: true
+        run: |
+          set -euo pipefail
+          bash scripts/keyfinder-cli.sh install --prefix "$HOME/.local"
+          echo "$HOME/.local/bin" >>"$GITHUB_PATH"
+          echo "LD_LIBRARY_PATH=$HOME/.local/lib:$HOME/.local/lib/x86_64-linux-gnu:${LD_LIBRARY_PATH:-}" >>"$GITHUB_ENV"
 
       # Fixtures are deterministic per (generator script, ffmpeg build).
       - name: Fixture cache key
