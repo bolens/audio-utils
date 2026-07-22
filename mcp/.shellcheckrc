@@ -1,0 +1,2 @@
+# mcp/ — shellcheck follows relative sources next to scripts
+source-path=SCRIPTDIR
