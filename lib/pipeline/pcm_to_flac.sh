@@ -52,7 +52,7 @@ pcm_to_flac_retag_one() {
   cleanup
 }
 
-# Default clean-replace: WAV ← decoded PCM; AIFF ← ffmpeg BE PCM from FLAC.
+# Default clean-replace: WAV ← decoded PCM; AIFF/CAF ← ffmpeg PCM from FLAC.
 pcm_to_flac_clean_replace() {
   local src="$1" flac="$2" decoded="$3" tmpdir="$4"
   local clean_tmp ext target clean_err
@@ -77,6 +77,15 @@ pcm_to_flac_clean_replace() {
       target=$(target_pcm_be_codec "$flac")
       clean_err="${tmpdir}/clean.err"
       if ! ffmpeg -v error -y -i "$flac" -map 0:a:0 -c:a "$target" "$clean_tmp" 2>"$clean_err"; then
+        set_last_err_file "$clean_err"
+        rm -f -- "$clean_tmp"
+        return 1
+      fi
+      ;;
+    caf)
+      target=$(target_pcm_le_codec "$flac")
+      clean_err="${tmpdir}/clean.err"
+      if ! ffmpeg -v error -y -i "$flac" -map 0:a:0 -c:a "$target" -f caf "$clean_tmp" 2>"$clean_err"; then
         set_last_err_file "$clean_err"
         rm -f -- "$clean_tmp"
         return 1

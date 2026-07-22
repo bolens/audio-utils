@@ -56,6 +56,25 @@ test_caf_roundtrip() {
   _roundtrip flac-to-caf caf-to-flac caf
 }
 
+test_caf_to_flac_retag_and_clean() {
+  require_cmd flac metaflac ffmpeg ffprobe flock
+  _setup_flac
+
+  run_tool conversion/flac-to-caf/flac-to-caf.sh -j 1 "$T/album"
+  assert_eq "$(tool_rc)" 0 "flac-to-caf rc"
+  assert_file "$T/album/track.caf"
+
+  run_tool conversion/caf-to-flac/caf-to-flac.sh -j 1 "$T/album"
+  assert_eq "$(tool_rc)" 0 "caf-to-flac rc"
+
+  run_tool conversion/caf-to-flac/caf-to-flac.sh -j 1 -R -n "$T/album"
+  assert_eq "$(tool_rc)" 0 "retag dry-run rc ($(tool_out | tail -3))"
+  tool_out | grep -q "would retag" || fail "expected would retag"
+
+  run_tool conversion/caf-to-flac/caf-to-flac.sh -j 1 -c -n "$T/album"
+  assert_eq "$(tool_rc)" 0 "clean dry-run rc ($(tool_out | tail -3))"
+}
+
 test_wav_to_aiff_and_back() {
   require_cmd ffmpeg ffprobe flock
   local src
