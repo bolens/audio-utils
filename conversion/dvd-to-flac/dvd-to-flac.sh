@@ -7,7 +7,8 @@
 #   dvd-to-flac.sh -f list.txt
 #
 # Options:
-#   -f FILE  -L FILE  -S FILE  -n  -y  -j N  -q  -v  -h  --version
+#   -f FILE  -L FILE  -S FILE  -n  -y  -q  -v  -h  --version
+#   -j N     Accepted for CLI parity; DVD extract is serial (ignored)
 #
 # Exit codes: 0 ok, 1 failures, 2 usage/deps
 

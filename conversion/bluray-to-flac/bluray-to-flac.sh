@@ -9,7 +9,8 @@
 #
 # Options:
 #   -D DEVICE  Blu-ray device (default: AUDIO_UTILS_BD_DEVICE or /dev/sr0)
-#   -f FILE  -L FILE  -S FILE  -n  -y  -j N  -q  -v  -h  --version
+#   -f FILE  -L FILE  -S FILE  -n  -y  -q  -v  -h  --version
+#   -j N       Accepted for CLI parity; extract is serial per title (ignored)
 #
 # Hybrid: uses libbluray+libaacs (+ operator KEYDB) or MakeMKV when present;
 # otherwise accepts already-decrypted media. No keys shipped in-repo.

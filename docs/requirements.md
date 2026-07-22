@@ -71,7 +71,8 @@ On Fedora, enable [RPM Fusion](https://rpmfusion.org/) before installing `ffmpeg
 | dvd-to-flac | **libdvdcss**; optional `dvdbackup` |
 | bluray-to-flac | **libbluray** + **libaacs** (+ operator `KEYDB.cfg`); optional **libbdplus**, **MakeMKV** (`AUDIO_UTILS_MAKEMKV`); or already-decrypted M2TS/MKV |
 | cdda-to-flac | **cdparanoia** (AccurateRip / MusicBrainz workflows are external — not wired here) |
-| cue / remux / streams | core set only |
+| cue-to-flac / streams-to-flac / remux-to-flac | core set only |
+| wav-to-aiff / aiff-to-wav / flac-to-wav / flac-to-aiff / flac-to-caf | core set (PCM remux) |
 | flac-verify | core `flac` + `flock`; `-M` needs `ffmpeg`/`ffprobe`/`metaflac` |
 | flac-replaygain | `metaflac` + **rsgain** (preferred) or **loudgain** |
 | flac-artwork | `metaflac` |
