@@ -40,6 +40,8 @@ AUDIO_UTILS_ROOTS="$HOME/Music $HOME/Downloads"
 # AUDIO_UTILS_TAK_PRESET=p2
 
 # --- Optical ---
+# DVD converter takes on-disk VIDEO_TS only. AUDIO_UTILS_DVD_DEVICE is for the
+# optional dvd_backup_title helper in lib/pipeline/dvd.sh (not the converter CLI).
 # AUDIO_UTILS_DVD_DEVICE=/dev/sr0
 # AUDIO_UTILS_CD_DEVICE=/dev/sr0
 # AUDIO_UTILS_BD_DEVICE=/dev/sr0

@@ -1,6 +1,6 @@
 # Playlists
 
-Local path playlists (not streaming service lists). Shared helpers: [`lib/playlist.sh`](../lib/playlist.sh). Dependencies: [requirements.md](requirements.md) (core `flac`/`ffmpeg`; optional `iconv` / tags).
+Local path playlists (not streaming service lists). Shared helpers: [`lib/media/playlist.sh`](../lib/media/playlist.sh). Dependencies: [requirements.md](requirements.md) (core `flac`/`ffmpeg`; optional `iconv` / tags).
 
 ## Formats
 

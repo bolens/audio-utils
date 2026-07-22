@@ -68,10 +68,10 @@ On Fedora, enable [RPM Fusion](https://rpmfusion.org/) before installing `ffmpeg
 | dsf-to-flac | ffmpeg DSF demuxer; optional **sox** for DFF |
 | flac-to-tak | Official **Takc** (+ Wine if `.exe`); see [tak.md](tak.md) |
 | tak-to-flac | ffmpeg TAK decoder and/or Takc |
-| dvd-to-flac | **libdvdcss**; optional `dvdbackup` |
+| dvd-to-flac | **libdvdcss**; on-disk `VIDEO_TS` only (optional `dvdbackup` via `dvd_backup_title` in `lib/pipeline/dvd.sh`, not wired into the converter) |
 | bluray-to-flac | **libbluray** + **libaacs** (+ operator `KEYDB.cfg`); optional **libbdplus**, **MakeMKV** (`AUDIO_UTILS_MAKEMKV`); or already-decrypted M2TS/MKV |
 | cdda-to-flac | **cdparanoia** (AccurateRip / MusicBrainz workflows are external — not wired here) |
-| cue-to-flac / streams-to-flac / remux-to-flac | core set only |
+| cue-to-flac / streams-to-flac | core set only |
 | wav-to-aiff / aiff-to-wav / flac-to-wav / flac-to-aiff / flac-to-caf | core set (PCM remux) |
 | flac-verify | core `flac` + `flock`; `-M` needs `ffmpeg`/`ffprobe`/`metaflac` |
 | flac-replaygain | `metaflac` + **rsgain** (preferred) or **loudgain** |
@@ -96,14 +96,14 @@ On Fedora, enable [RPM Fusion](https://rpmfusion.org/) before installing `ffmpeg
 | tree-diff | coreutils; `--hash` needs `sha256sum` |
 | hash-verify | `sha256sum` or `md5sum` |
 | pcm-cleanup | `flac`, `ffmpeg`/`ffprobe` |
-| cue-audit | shared `lib/cue.sh`; optional `iconv` for UTF-8 |
+| cue-audit | shared `lib/media/cue.sh`; optional `iconv` for UTF-8 |
 | silence-detect | `ffmpeg`/`ffprobe`, `awk` |
 | disc-inventory | core set |
 | lossy-audit | `ffmpeg`/`ffprobe` |
-| playlist-audit | `lib/playlist.sh`; optional `iconv` (UTF-8); `--by title` uses `ffprobe`/`metaflac` when present |
-| playlist-normalize / playlist-dedupe | `lib/playlist.sh` only (`flock`); `--by title` / `--dedupe --by title` use tags when `ffprobe`/`metaflac` available |
-| playlist-generate | `lib/playlist.sh`; `#EXTINF` from `ffprobe`/`metaflac` when present (still works without — paths only) |
-| playlist-export | `lib/playlist.sh`, coreutils (`cp`) |
+| playlist-audit | `lib/media/playlist.sh`; optional `iconv` (UTF-8); `--by title` uses `ffprobe`/`metaflac` when present |
+| playlist-normalize / playlist-dedupe | `lib/media/playlist.sh` only (`flock`); `--by title` / `--dedupe --by title` use tags when `ffprobe`/`metaflac` available |
+| playlist-generate | `lib/media/playlist.sh`; `#EXTINF` from `ffprobe`/`metaflac` when present (still works without — paths only) |
+| playlist-export | `lib/media/playlist.sh`, coreutils (`cp`) |
 | album-audit | `ffprobe`; `metaflac` used for FLAC tags when present |
 | path-audit | coreutils; optional `iconv` (UTF-8 name check) |
 | junk-cleanup | coreutils only |

@@ -1,6 +1,7 @@
 # cdda-to-flac
 
 Rip audio CD tracks via **cdparanoia** → verified FLAC.
+`-j` is accepted for CLI parity; the rip is serial.
 
 ```bash
 ./cdda-to-flac.sh                  # default /dev/sr0 → ./cdda-rip/

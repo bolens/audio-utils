@@ -5,7 +5,8 @@ Intended for archiving discs **you are allowed to copy**. This project does **no
 ## DVD-Video CSS (`dvd-to-flac`)
 
 - Needs **libdvdcss** on the system.
-- Input: on-disk `VIDEO_TS` (ripped/copied tree). Device→backup via `dvdbackup` is available in `lib/dvd.sh` when that CLI is installed.
+- Input: on-disk `VIDEO_TS` (ripped/copied tree). **`dvd-to-flac` does not call `dvdbackup`** — rip/copy the disc first, then pass the `VIDEO_TS` path.
+- Optional library helper: `dvd_backup_title` in [`lib/pipeline/dvd.sh`](../lib/pipeline/dvd.sh) (needs `dvdbackup` + `AUDIO_UTILS_DVD_DEVICE`) for operators who want a separate device→folder step.
 - Audio streams from `VTS_*.VOB` (menu `*_0.VOB` skipped) → FLAC beside the tree.
 
 ```bash
@@ -17,7 +18,7 @@ sudo apt-get install libdvdcss2
 sudo dnf install libdvdcss
 ```
 
-Env: `AUDIO_UTILS_DVD_DEVICE` (for backup helpers), paths passed as `VIDEO_TS` dirs to the tool.
+Env: paths passed as `VIDEO_TS` dirs to the tool. `AUDIO_UTILS_DVD_DEVICE` is only for the optional `dvd_backup_title` helper, not the converter CLI.
 
 ## DVD-Audio CPPM
 

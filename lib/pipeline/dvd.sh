@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 # DVD CSS helpers (libdvdcss / dvdbackup). No keys or circumvention blobs in-repo.
+# dvd-to-flac consumes on-disk VIDEO_TS only; dvd_backup_title is an optional
+# operator helper (not called by the converter).
 
 # Fail closed unless libdvdcss looks available on the system.
 dvd_require_css() {
