@@ -380,8 +380,8 @@ jobs:
           bash tests/run.sh "${mine[@]}" 2>&1 | tee test-output.log
 
       # Skips are how coverage erodes silently (a dependency vanishes from
-      # the image and its tests stop running). Surface them on the run page
-      # and fail if they grow past the expected baseline.
+      # the image and its tests stop running). Surface them on the run page,
+      # fail on unexpected skip reasons, and fail if the count grows past baseline.
       - name: Skip report
         if: always()
         env:
@@ -394,6 +394,32 @@ jobs:
             echo "### Skipped tests: ${skips} (shard ${{ matrix.shard }}, ffmpeg ${{ matrix.ffmpeg }})"
             grep '# SKIP' test-output.log | sed 's/^ *//; s/^/- /' || true
           } >>"$GITHUB_STEP_SUMMARY"
+
+          unexpected=0
+          while IFS= read -r line; do
+            [[ -n "$line" ]] || continue
+            case "$line" in
+              *'missing dependency:'*|\
+              *'ffmpeg lacks'*|\
+              *'no fpcalc'*|\
+              *'no python3'*|\
+              *'no mac binary'*|\
+              *'no mpcenc'*|\
+              *'no bpm'*|\
+              *'no rsgain'*|\
+              *'no C++ compiler'*|\
+              *'running as root'*|\
+              *'fixture build failed'*)
+                ;;
+              *)
+                echo "::error::Unexpected skip (not in allowlist): $line"
+                unexpected=1
+                ;;
+            esac
+          done < <(grep '# SKIP' test-output.log || true)
+          if ((unexpected)); then
+            exit 1
+          fi
           if ((skips > MAX_SKIPS)); then
             echo "::error::$skips skipped tests exceeds MAX_SKIPS=$MAX_SKIPS — missing dependency on the runner?"
             exit 1
