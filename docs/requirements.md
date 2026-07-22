@@ -28,7 +28,11 @@ On Fedora, enable [RPM Fusion](https://rpmfusion.org/) before installing `ffmpeg
 | Binary / need | Arch / CachyOS | Debian / Ubuntu | Fedora |
 |---------------|----------------|-----------------|--------|
 | `fpcalc` (chromaprint) | `chromaprint` | `libchromaprint-tools` | `chromaprint` (RPM Fusion) |
-| `mpcenc` | `musepack-tools` | `musepack-tools` | `musepack-tools` |
+| `mpcenc` / `mpcdec` | `musepack-tools` | `musepack-tools` | `musepack-tools` |
+| `mac` (Monkey’s Audio encoder) | build via `scripts/ape-codec.sh` | same | same |
+| `bpm` (bpm-tools) | `bpm-tools` | `bpm-tools` | `bpm-tools` |
+| `aubio` (audio-bpm fallback) | `aubio` | `aubio-tools` | `aubio-tools` |
+| `keyfinder-cli` | AUR / `scripts/keyfinder-cli.sh` | same (not in apt) | same |
 | `rsgain` (preferred ReplayGain) | AUR / chaotic-aur | `rsgain` | COPR / third-party (or use `loudgain`) |
 | `loudgain` (ReplayGain fallback) | AUR | `loudgain` | check COPR / third-party |
 | `dvdbackup` | `dvdbackup` | `dvdbackup` | `dvdbackup` |
@@ -52,14 +56,14 @@ On Fedora, enable [RPM Fusion](https://rpmfusion.org/) before installing `ffmpeg
 | flac-to-vorbis | ffmpeg `libvorbis` |
 | flac-to-wma | ffmpeg `wmav2` |
 | flac-to-speex | ffmpeg `libspeex` |
-| flac-to-mpc | **mpcenc** (`musepack-tools`) |
+| flac-to-mpc | **mpcenc** + **mpcdec** (`musepack-tools`) |
 | flac-to-alac / alac-to-flac | ffmpeg `alac` |
 | flac-to-wv / wv-to-flac | ffmpeg `wavpack` |
-| flac-to-ape | ffmpeg **ape encoder** (often missing in distro builds; preflighted at startup) |
+| flac-to-ape | **`mac`** (Monkey’s Audio; ffmpeg has **no** APE encoder — decode-only). Install via `scripts/ape-codec.sh` or set `AUDIO_UTILS_MAC` |
 | ape-to-flac | ffmpeg ape **decoder** (usually present) |
 | flac-to-tta / tta-to-flac | ffmpeg `tta` |
 | shn-to-flac | ffmpeg Shorten **decoder** (no encoder) |
-| lossy-to-flac | core set (decodes mp3/aac/opus/vorbis/wma/mpc; skips ALAC) |
+| lossy-to-flac | core set (decodes mp3/aac/opus/vorbis/wma/mpc/**speex**; skips ALAC) |
 | caf-to-flac / flac-to-caf | core set (CAF mux/demux) |
 | dsf-to-flac | ffmpeg DSF demuxer; optional **sox** for DFF |
 | flac-to-tak | Official **Takc** (+ Wine if `.exe`); see [tak.md](tak.md) |

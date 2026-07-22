@@ -7,11 +7,14 @@
 # Environment variables already set in the shell take precedence over this file.
 #
 # Only AUDIO_UTILS_* keys and WAV2FLAC_ROOTS are read from this file;
-# anything else is ignored with a warning (see lib/config.sh).
+# anything else is ignored with a warning (see lib/core/config.sh).
 
 AUDIO_UTILS_ROOTS="$HOME/Music $HOME/Downloads"
 
 # WAV2FLAC_ROOTS="$HOME/Music"
+
+# GNU find binary if not named `find` (must support -printf):
+# AUDIO_UTILS_FIND=gfind
 
 # --- Lossy quality (MP3 default stays v0) ---
 # AUDIO_UTILS_MP3_QUALITY=v0
@@ -21,6 +24,13 @@ AUDIO_UTILS_ROOTS="$HOME/Music $HOME/Downloads"
 # AUDIO_UTILS_WMA_QUALITY=192
 # AUDIO_UTILS_SPEEX_QUALITY=q6
 # AUDIO_UTILS_MPC_QUALITY=standard
+
+# --- APE (Monkey's Audio; encode needs `mac`, not ffmpeg) ---
+# AUDIO_UTILS_APE_LEVEL=normal
+# AUDIO_UTILS_MAC=/path/to/mac
+
+# --- DSD → FLAC PCM rate (Hz; default 88200) ---
+# AUDIO_UTILS_DSD_RATE=88200
 
 # --- TAK (see docs/tak.md) ---
 # AUDIO_UTILS_TAKC=/path/to/Takc.exe

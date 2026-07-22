@@ -2,12 +2,13 @@
 # Lossy-encode helpers: rate/channel allowlists, prepare, quality, encode, convert.
 #
 # Lossy tools set before convert:
-#   LOSSY_FAMILY          mp3|aac|opus|vorbis|wma|speex
+#   LOSSY_FAMILY          mp3|aac|opus|vorbis|wma|speex|mpc
 #   LOSSY_FFMPEG_ENCODER  libmp3lame|aac|libopus|libvorbis|wmav2|libspeex
 #   LOSSY_DEFAULT_QUALITY (e.g. v0, 192, 128, q6)
 #   LOSSY_QUALITY_ENV     primary env override (AUDIO_UTILS_MP3_QUALITY)
 #   LOSSY_QUALITY_ENV_ALT tool-specific (FLAC2MP3_QUALITY)
-#   AU_DEST_EXT           mp3|m4a|opus|ogg|wma|spx
+#   AU_DEST_EXT           mp3|m4a|opus|ogg|wma|spx|mpc
+# Note: mpc uses mpcenc (see flac-to-mpc), not LOSSY_FFMPEG_ENCODER.
 
 # Space-separated Hz allowlists per family.
 MP3_RATES="8000 11025 12000 16000 22050 24000 32000 44100 48000"
