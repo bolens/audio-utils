@@ -101,7 +101,7 @@ test_flac_to_aac_produces_tagged_m4a() {
   assert_eq "$(ffprobe_tag "$T/album/track.m4a" title)" "Test Title" "tag carried"
   # Success log has a quality column with the encode setting.
   assert_grep "quality" "$T/success.csv"
-  assert_grep "192" "$T/success.csv"
+  assert_grep "96" "$T/success.csv"
 }
 
 test_lossy_to_flac_decodes_mp3() {

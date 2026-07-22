@@ -19,14 +19,19 @@ AUDIO_UTILS_ROOTS="$HOME/Music $HOME/Downloads"
 # Workdir name prefix beside album dirs (default: tool-specific, e.g. wav2flac):
 # AUDIO_UTILS_WORKDIR_PREFIX=wav2flac
 
-# --- Lossy quality (MP3 default stays v0) ---
+# --- Lossy quality (MP3 default stays v0; AAC default is speech-oriented 96) ---
 # AUDIO_UTILS_MP3_QUALITY=v0
 # AUDIO_UTILS_OPUS_QUALITY=128
-# AUDIO_UTILS_AAC_QUALITY=192
+# AUDIO_UTILS_AAC_QUALITY=96
 # AUDIO_UTILS_VORBIS_QUALITY=q6
 # AUDIO_UTILS_WMA_QUALITY=192
 # AUDIO_UTILS_SPEEX_QUALITY=q6
 # AUDIO_UTILS_MPC_QUALITY=standard
+
+# --- Audiobook / M4B (tracks-to-m4b) ---
+# AUDIO_UTILS_M4B_CODEC=aac
+# AUDIO_UTILS_M4B_QUALITY=96
+
 
 # --- APE (Monkey's Audio; encode needs `mac`, not ffmpeg) ---
 # AUDIO_UTILS_APE_LEVEL=normal

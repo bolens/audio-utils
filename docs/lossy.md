@@ -16,11 +16,14 @@ Profiles live in shared `lib/pipeline/lossy.sh` (`lossy_resolve_quality`).
 | Tool | Default `-Q` | Profiles |
 |------|----------------|----------|
 | flac-to-opus | `128` | `64` `96` `128` `160` `192` `256` (CBR kbps, libopus) |
-| flac-to-aac | `192` | `128` `160` `192` `256` `320` (CBR kbps, aac) |
+| flac-to-aac | `96` | `64` `96` `128` `160` `192` `256` `320` (CBR kbps, aac) |
 | flac-to-vorbis | `q6` | `q4`…`q8` (libvorbis `-q:a`) |
 
 Env: `AUDIO_UTILS_OPUS_QUALITY`, `AUDIO_UTILS_AAC_QUALITY`, `AUDIO_UTILS_VORBIS_QUALITY`
 (and tool-specific `FLAC2*_QUALITY` overrides).
+
+AAC default **96** is speech/portable-oriented (shared with M4B). For music
+libraries set `-Q 192` or `AUDIO_UTILS_AAC_QUALITY=192`. See [audiobooks.md](audiobooks.md).
 
 ## WMA / Speex
 
