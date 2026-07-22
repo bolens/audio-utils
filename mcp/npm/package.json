@@ -1,0 +1,24 @@
+{
+  "name": "audio-utils-mcp",
+  "version": "0.5.0",
+  "private": true,
+  "description": "Optional Node launcher / HTTP+SSE gateway for the dep-free audio-utils Bash MCP server",
+  "type": "module",
+  "bin": {
+    "audio-utils-mcp": "./bin/stdio.js",
+    "audio-utils-mcp-http": "./bin/http.js",
+    "audio-utils-mcp-install-cursor": "./bin/install-cursor.js"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.12.1",
+    "express": "^4.21.2"
+  },
+  "files": [
+    "bin/",
+    "lib/"
+  ],
+  "license": "MIT"
+}
