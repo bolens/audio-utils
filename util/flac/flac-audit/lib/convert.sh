@@ -30,11 +30,18 @@ _audit_has_folder_cover() {
 
 _audit_leftover_pcm() {
   local flac=$1
-  local base ext
+  local base ext ue
   base=${flac%.*}
-  for ext in wav aiff aif caf WAV AIFF AIF CAF; do
+  : "${AU_AUDIO_EXTS_PCM:=wav aiff aif caf}"
+  # shellcheck disable=SC2086
+  for ext in $AU_AUDIO_EXTS_PCM; do
     if [[ -f "${base}.${ext}" ]]; then
       printf '%s\n' "${base}.${ext}"
+      return 0
+    fi
+    ue=${ext^^}
+    if [[ "$ue" != "$ext" && -f "${base}.${ue}" ]]; then
+      printf '%s\n' "${base}.${ue}"
       return 0
     fi
   done

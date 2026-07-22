@@ -7,7 +7,7 @@
 # Options:
 #   -f FILE  -L FILE  -S FILE  -n  -j N  -q  -v  -h  --version
 #   --portable-root=DIR   Required portable/lossy library root
-#   --exts=mp3,opus,m4a   Sibling extensions to accept (default mp3 opus m4a ogg)
+#   --exts=mp3,opus,m4a   Sibling extensions (default: AU_AUDIO_EXTS_LOSSY)
 #
 # Requires AUDIO_UTILS_ROOTS (or scanned dirs under it) to resolve relative paths.
 # Read-only: -d / -D / -y rejected.

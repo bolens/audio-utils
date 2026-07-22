@@ -36,16 +36,7 @@ plugin_require_deps() {
   command -v metaflac >/dev/null 2>&1 || true
 }
 
-plugin_accept_source() {
-  local f=$1 base
-  base=$(basename -- "$f")
-  case "${base,,}" in
-    *.flac|*.mp3|*.opus|*.m4a|*.ogg|*.oga|*.wma|*.mpc|*.aac|*.wav|*.aiff|*.aif|*.caf|*.wv|*.ape|*.tak|*.tta)
-      return 0
-      ;;
-    *) return 1 ;;
-  esac
-}
+# AU_SOURCE_EXTS already gates discovery; no redundant case list (avoids .spx drift).
 
 plugin_banner_extra() {
   log_always "mode:      generate .m3u per audio directory (relative paths)"
