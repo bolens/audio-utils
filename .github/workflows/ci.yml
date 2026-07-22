@@ -321,7 +321,7 @@ jobs:
         run: echo "ffmpeg=$(ffmpeg -version | head -1 | awk '{print $3}')" >>"$GITHUB_OUTPUT"
 
       - name: Cache test fixtures
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: tests/.cache
           key: fixtures-${{ hashFiles('tests/fixtures.sh') }}-ffmpeg-${{ steps.ffver.outputs.ffmpeg }}
