@@ -333,6 +333,20 @@ jobs:
           echo "$HOME/.local/bin" >>"$GITHUB_PATH"
           echo "LD_LIBRARY_PATH=$HOME/.local/lib:$HOME/.local/lib/x86_64-linux-gnu:${LD_LIBRARY_PATH:-}" >>"$GITHUB_ENV"
 
+      - name: Warn if optional codecs missing
+        run: |
+          set -euo pipefail
+          export PATH="$HOME/.local/bin:$PATH"
+          export LD_LIBRARY_PATH="$HOME/.local/lib:$HOME/.local/lib/x86_64-linux-gnu:${LD_LIBRARY_PATH:-}"
+          missing=()
+          command -v mac >/dev/null 2>&1 || missing+=(mac)
+          command -v keyfinder-cli >/dev/null 2>&1 || missing+=(keyfinder-cli)
+          if ((${#missing[@]} > 0)); then
+            echo "::warning::optional tools not on PATH (${missing[*]}); related tests will SKIP toward MAX_SKIPS"
+          else
+            echo "optional tools present: mac keyfinder-cli"
+          fi
+
       # Fixtures are deterministic per (generator script, ffmpeg build).
       - name: Fixture cache key
         id: ffver

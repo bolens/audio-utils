@@ -54,4 +54,17 @@ test_writes_spectrogram_png_with_ffmpeg_backend() {
   assert_file "$T/spec/fake96.ff.png"
 }
 
+test_writes_spectrogram_png_with_sox_backend() {
+  require_cmd flac metaflac ffmpeg ffprobe flock od awk sox
+  local src
+  src=$(fixture flac_hires)
+  mkdir -p "$T/spec"
+  cp "$src/fake96.flac" "$T/spec/"
+
+  run_tool util/flac/flac-authenticity/flac-authenticity.sh -j 1 \
+    -p --spectrogram-backend=sox "$T/spec"
+  assert_eq "$(tool_rc)" 1 "fake still flagged ($(tool_out | tail -3))"
+  assert_file "$T/spec/fake96.sox.png"
+}
+
 run_tests
