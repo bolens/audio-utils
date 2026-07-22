@@ -58,6 +58,7 @@ test_caf_roundtrip() {
 
 test_caf_to_flac_retag_and_clean() {
   require_cmd flac metaflac ffmpeg ffprobe flock
+  local title
   _setup_flac
 
   run_tool conversion/flac-to-caf/flac-to-caf.sh -j 1 "$T/album"
@@ -67,9 +68,15 @@ test_caf_to_flac_retag_and_clean() {
   run_tool conversion/caf-to-flac/caf-to-flac.sh -j 1 "$T/album"
   assert_eq "$(tool_rc)" 0 "caf-to-flac rc"
 
-  run_tool conversion/caf-to-flac/caf-to-flac.sh -j 1 -R -n "$T/album"
-  assert_eq "$(tool_rc)" 0 "retag dry-run rc ($(tool_out | tail -3))"
-  tool_out | grep -q "would retag" || fail "expected would retag"
+  metaflac --remove-tag=TITLE -- "$T/album/track.flac"
+  ffmpeg -v error -y -i "$T/album/track.caf" -c copy -metadata title=FromCAF \
+    "$T/album/track-tagged.caf"
+  mv -f -- "$T/album/track-tagged.caf" "$T/album/track.caf"
+
+  run_tool conversion/caf-to-flac/caf-to-flac.sh -j 1 -R "$T/album"
+  assert_eq "$(tool_rc)" 0 "retag apply rc ($(tool_out | tail -3))"
+  title=$(metaflac --show-tag=TITLE -- "$T/album/track.flac" | sed 's/^TITLE=//')
+  assert_eq "$title" "FromCAF" "CAF metadata retagged onto FLAC"
 
   run_tool conversion/caf-to-flac/caf-to-flac.sh -j 1 -c -n "$T/album"
   assert_eq "$(tool_rc)" 0 "clean dry-run rc ($(tool_out | tail -3))"

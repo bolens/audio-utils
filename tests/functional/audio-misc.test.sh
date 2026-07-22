@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Functional: gapless-audit, spectrogram-export, audio-dupes (md5 mode),
+# Functional: gapless-audit, spectrogram-export, audio-dupes (md5 + fingerprint),
 # audio-tags normalization across formats.
 set -euo pipefail
 # shellcheck source=../harness.sh
@@ -96,6 +96,18 @@ test_audio_dupes_md5_clean_library_passes() {
   cp "$src/album/"*.flac "$T/album/"
   run_tool util/audio/audio-dupes/audio-dupes.sh -j 1 -M "$T/album"
   assert_eq "$(tool_rc)" 0 "distinct tracks are not dupes ($(tool_out | tail -3))"
+}
+
+test_audio_dupes_fingerprint_flags_identical_audio() {
+  require_cmd flac metaflac ffmpeg ffprobe flock fpcalc
+  local src
+  src=$(fixture dupe_pair)
+  mkdir -p "$T/album"
+  cp "$src/original.flac" "$src/copy of original.flac" "$T/album/"
+
+  run_tool util/audio/audio-dupes/audio-dupes.sh -j 1 --fingerprint "$T/album"
+  assert_eq "$(tool_rc)" 1 "fingerprint mode must flag dupes ($(tool_out | tail -5))"
+  assert_grep "original.flac" "$T/out"
 }
 
 # --- audio-tags -------------------------------------------------------------------
