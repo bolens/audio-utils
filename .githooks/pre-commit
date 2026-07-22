@@ -38,6 +38,11 @@ if git diff --cached --name-only --diff-filter=ACM | grep -qE '^lib/'; then
   make -s check-lib
 fi
 
+if git diff --cached --name-only --diff-filter=ACM | grep -qE '^mcp/.*\.sh$'; then
+  echo "pre-commit: make check-mcp (mcp/ changed)" >&2
+  make -s check-mcp
+fi
+
 # Test harness / scripts are checked with the same flags CI uses for that set.
 if git diff --cached --name-only --diff-filter=ACM | grep -qE '^(tests/|scripts/)'; then
   echo "pre-commit: make check-tests (tests/ or scripts/ changed)" >&2

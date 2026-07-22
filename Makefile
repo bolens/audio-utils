@@ -12,15 +12,17 @@ UTIL := $(sort $(patsubst %/Makefile,%,$(wildcard util/*/Makefile util/*/*/Makef
 TOOLS = $(CONVERSION) $(UTIL)
 
 LIB_SCRIPTS := $(sort $(wildcard lib/*.sh lib/*/*.sh))
+MCP_SCRIPTS := $(sort $(wildcard mcp/*.sh))
 
 RUN_PARALLEL = $(CURDIR)/lib/cli/run_parallel.sh
 
 TEST_SCRIPTS := tests/run.sh tests/harness.sh tests/fixtures.sh \
 	$(sort $(wildcard tests/*/*.test.sh)) \
 	$(sort $(wildcard scripts/*.sh)) \
-	$(sort $(wildcard .githooks/*))
+	$(sort $(wildcard .githooks/*)) \
+	$(MCP_SCRIPTS)
 
-.PHONY: help check check-lib check-conversion check-util check-tools \
+.PHONY: help check check-lib check-mcp check-conversion check-util check-tools \
 	check-tests test test-functional test-all test-ci clean-tests coverage new-util \
 	new-converter ape-install ape-update ape-status ape-uninstall \
 	keyfinder-install keyfinder-status install-hooks \
@@ -31,6 +33,7 @@ help:
 	@echo ""
 	@echo "  make check                 shellcheck shared lib + tests + all tools (parallel)"
 	@echo "  make check-lib             shellcheck shared lib only"
+	@echo "  make check-mcp             shellcheck mcp/*.sh (Bash MCP server)"
 	@echo "  make check-tools           shellcheck all tools (bash job pool)"
 	@echo "  make check-conversion      shellcheck conversion/ tools (parallel)"
 	@echo "  make check-util            shellcheck util/ tools (parallel)"
@@ -60,7 +63,7 @@ help:
 	@echo "Conversion: $(notdir $(CONVERSION))"
 	@echo "Util:       $(notdir $(UTIL))"
 	@echo ""
-	@echo "Docs:  docs/  (requirements, formats, cue, discs, streaming, tak, dsd, lossy, playlists, enrichment, adding-a-*)"
+	@echo "Docs:  docs/  (requirements, formats, cue, discs, streaming, tak, dsd, lossy, playlists, enrichment, mcp, adding-a-*)"
 	@echo "Set library roots:"
 	@echo "  export AUDIO_UTILS_ROOTS=\"\$$HOME/Music \$$HOME/Downloads\""
 	@echo ""
@@ -69,6 +72,9 @@ help:
 
 check-lib:
 	$(SHELLCHECK) $(LIB_SCRIPTS)
+
+check-mcp:
+	$(SHELLCHECK) $(MCP_SCRIPTS)
 
 check-tests:
 	$(SHELLCHECK) $(TEST_SCRIPTS)
@@ -140,8 +146,8 @@ check-conversion:
 check-util:
 	@JOBS=$(JOBS) $(RUN_PARALLEL) -j $(JOBS) $(UTIL)
 
-# Lib + tests first (fast), then one parallel pool across every tool.
-check: check-lib check-tests check-tools
+# Lib + mcp + tests first (fast), then one parallel pool across every tool.
+check: check-lib check-mcp check-tests check-tools
 
 # Forward make -C PATH TARGET via e.g. `make conversion/cue-to-flac-check`
 define TOOL_FORWARD

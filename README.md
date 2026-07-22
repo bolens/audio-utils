@@ -4,7 +4,7 @@
 
 Verified **audio conversion utilities** for Linux libraries (GNU userland; bash 4.3+). **FLAC** is the archive hub. Not macOS, BSD, BusyBox, or Alpine — see [requirements](docs/requirements.md).
 
-Docs: **[docs/](docs/)** — [requirements](docs/requirements.md) · [formats](docs/formats.md) · [cue](docs/cue.md) · [discs](docs/discs.md) · [streaming](docs/streaming.md) · [tak](docs/tak.md) · [dsd](docs/dsd.md) · [lossy](docs/lossy.md) · [audiobooks](docs/audiobooks.md) · [playlists](docs/playlists.md) · [enrichment](docs/enrichment.md) · [accessibility](docs/accessibility.md) · [adding a converter](docs/adding-a-converter.md) · [adding a util](docs/adding-a-util.md)
+Docs: **[docs/](docs/)** — [requirements](docs/requirements.md) · [formats](docs/formats.md) · [cue](docs/cue.md) · [discs](docs/discs.md) · [streaming](docs/streaming.md) · [tak](docs/tak.md) · [dsd](docs/dsd.md) · [lossy](docs/lossy.md) · [audiobooks](docs/audiobooks.md) · [playlists](docs/playlists.md) · [enrichment](docs/enrichment.md) · [accessibility](docs/accessibility.md) · [mcp](docs/mcp.md) · [adding a converter](docs/adding-a-converter.md) · [adding a util](docs/adding-a-util.md)
 
 ### Conversion
 

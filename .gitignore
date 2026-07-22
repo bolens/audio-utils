@@ -20,3 +20,8 @@
 
 # Test fixture cache (rebuilt on demand by tests/fixtures.sh)
 tests/.cache/
+
+# Optional MCP npm deps + machine-local Cursor MCP config
+mcp/npm/node_modules/
+.cursor/mcp.json
+.cursor/mcp.json.bak
