@@ -4,9 +4,10 @@
 # Usage:
 #   find-audio-dirs.sh --ext wav [ROOT ...]
 #   find-audio-dirs.sh -e aiff -e aif ~/Music
+#   find-audio-dirs.sh --preset portable ~/Music
 #
 # Roots (first match wins):
-#   1. Remaining command-line arguments after --ext
+#   1. Remaining command-line arguments after options
 #   2. AUDIO_UTILS_ROOTS (space-separated; WAV2FLAC_ROOTS alias)
 #   3. $XDG_CONFIG_HOME/audio-utils/config
 #
@@ -29,8 +30,10 @@ FIND_BIN=$(au_find_bin)
 usage() {
   cat >&2 <<'EOF'
 Usage: find-audio-dirs.sh --ext EXT [-e EXT ...] [ROOT ...]
+       find-audio-dirs.sh --preset portable|portable-pcm|pcm|lossy [ROOT ...]
 
   --ext EXT, -e EXT   File extension without dot (repeatable; e.g. aiff aif)
+  --preset NAME       Use a shared extension cluster (see lib/media/audio_exts.sh)
   --version           Print version and exit
   -h, --help          Show this help
 
@@ -46,6 +49,16 @@ while (($# > 0)); do
     -e|--ext)
       (($# >= 2)) || { echo "Error: $1 needs a value" >&2; exit 2; }
       EXTS+=("$2")
+      shift 2
+      ;;
+    --preset)
+      (($# >= 2)) || { echo "Error: --preset needs portable|portable-pcm|pcm|lossy" >&2; exit 2; }
+      _preset_list=$(au_audio_exts_for_preset "$2") || {
+        echo "Error: unknown --preset '$2' (portable|portable-pcm|pcm|lossy)" >&2
+        exit 2
+      }
+      # shellcheck disable=SC2206
+      EXTS+=($_preset_list)
       shift 2
       ;;
     --version)
@@ -74,7 +87,7 @@ while (($# > 0)); do
 done
 
 if ((${#EXTS[@]} == 0)); then
-  echo "Error: --ext is required" >&2
+  echo "Error: --ext or --preset is required" >&2
   usage
   exit 2
 fi

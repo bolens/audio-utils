@@ -28,6 +28,7 @@ The manual steps below describe what the generator produces.
    - For in-place / no-output tools: `AU_DEST_EXT` may equal `AU_SOURCE_EXT` (driver still requires it)
    - Set `AU_CLEANUP_SKIP=1` when `-D` must be a no-op
    - Locate the repo root with the walk-up idiom and source `lib/plugin_init.sh` (see any peer plugin — tools work at any nesting depth)
+   - For multi-format tools, prefer shared clusters from [`lib/media/audio_exts.sh`](../lib/media/audio_exts.sh) (`AU_AUDIO_EXTS_DEFAULT` / `_PCM` / `_LOSSY`) and `find-audio-dirs.sh --preset portable|portable-pcm|pcm|lossy` instead of inventing another extension list
    - Define `plugin_require_deps` and `convert_one` (or put `convert_one` in `lib/convert.sh` — auto-sourced)
    - Reject destructive flags in `plugin_after_flags` when the tool is read-only
 3. Thin CLI (same as converters):

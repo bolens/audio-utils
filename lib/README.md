@@ -10,7 +10,7 @@ All real logic lives here; per-tool directories carry only a thin CLI, a
 | `lib/` (root) | `load.sh`, `plugin_init.sh`, `tool.mk` | Never — these are fixed anchors that tools locate by walking up the tree. |
 | `core/` | log, compat, xdg, config, version, util, tmpdir, progress, disk, delete, success_log | It is generic plumbing with no audio knowledge (logging, paths, config, temp dirs, deletion safety, success/failure logs). |
 | `cli/` | cli, driver, worker, convert_all, run_parallel, find-audio-dirs | It is part of the shared CLI/driver stack: option parsing, queueing, parallel workers, directory discovery. |
-| `media/` | probe, tags, audio_meta, pcm_flac, cue, playlist, lossless | It inspects or manipulates audio files/metadata but is not a conversion pipeline (ffprobe wrappers, tag copy, CUE/playlist parsing, FLAC integrity). |
+| `media/` | probe, tags, audio_meta, audio_exts, pcm_flac, cue, playlist, lossless | It inspects or manipulates audio files/metadata but is not a conversion pipeline (ffprobe wrappers, tag copy, CUE/playlist parsing, FLAC integrity). |
 | `pipeline/` | pcm_to_flac, pcm_to_flac_hooks, pcm_remux, lossy, lossy_hooks, tak, dvd, cdda, bluray | It implements a conversion pipeline or format/disc-specific encode logic shared by converters. |
 
 ## Loading
