@@ -7,4 +7,4 @@ while [[ ! -f "$AU_ROOT/lib/plugin_init.sh" ]]; do
   AU_ROOT=$(dirname "$AU_ROOT")
 done
 exec "${AU_ROOT}/lib/cli/find-audio-dirs.sh" \
-  --ext flac -e wav -e aiff -e aif -e mp3 -e opus -e m4a -e ogg -e oga "$@"
+  --ext flac -e wav -e aiff -e aif -e caf -e mp3 -e opus -e m4a -e ogg -e oga "$@"

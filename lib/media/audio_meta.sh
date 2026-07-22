@@ -1,9 +1,14 @@
 #!/usr/bin/env bash
 # Multi-format tag / cover helpers (ffprobe + ffmpeg; metaflac for FLAC).
 
-# Space-separated extensions for portable + archive audio (documentation / reuse).
+# Space-separated extensions for portable + archive audio.
+# Prefer this list (or a documented subset) when adding multi-format utils —
+# do not invent a fourth hard-coded portable cluster.
 # shellcheck disable=SC2034
 AU_AUDIO_EXTS_DEFAULT="flac mp3 opus m4a ogg oga wma mpc spx aac"
+# PCM containers commonly paired with the portable set:
+# shellcheck disable=SC2034
+AU_AUDIO_EXTS_PCM="wav aiff aif caf"
 
 # Get a metadata tag via ffprobe (format tags). Empty if missing.
 audio_meta_get() {

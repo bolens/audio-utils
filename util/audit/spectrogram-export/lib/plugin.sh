@@ -3,7 +3,7 @@
 
 AU_TOOL_NAME="${AU_TOOL_NAME:-spectrogram-export}"
 AU_SOURCE_EXT=flac
-AU_SOURCE_EXTS="flac wav aiff aif mp3 opus m4a ogg oga"
+AU_SOURCE_EXTS="flac wav aiff aif caf mp3 opus m4a ogg oga"
 AU_DEST_EXT=png
 AU_DISK_FACTOR=0
 AU_WORKDIR_PREFIX=specexp
