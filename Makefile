@@ -17,7 +17,8 @@ RUN_PARALLEL = $(CURDIR)/lib/cli/run_parallel.sh
 
 TEST_SCRIPTS := tests/run.sh tests/harness.sh tests/fixtures.sh \
 	$(sort $(wildcard tests/*/*.test.sh)) \
-	$(sort $(wildcard scripts/*.sh))
+	$(sort $(wildcard scripts/*.sh)) \
+	$(sort $(wildcard .githooks/*))
 
 .PHONY: help check check-lib check-conversion check-util check-tools \
 	check-tests test test-functional test-all test-ci clean-tests coverage new-util \

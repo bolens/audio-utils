@@ -113,4 +113,29 @@ test_preset_library_includes_sidecar_exts() {
   assert_grep "Art Only" "$out"
 }
 
+test_preset_portable_pcm_archive_and_pcm() {
+  _mk_tree
+  mkdir -p "$T/lib/Archive Only"
+  : >"$T/lib/Archive Only/track.wv"
+  local out
+  out=$("$_FIND" --preset portable-pcm-archive "$T/lib")
+  assert_grep "Archive Only" "$out"
+  out=$("$_FIND" --preset pcm "$T/lib")
+  assert_grep "Album Two/CD1" "$out"
+  assert_grep "Album One" "$out"
+  assert_not_grep "Archive Only" "$out"
+  out=$("$_FIND" --preset portable "$T/lib")
+  assert_not_grep "Album One" "$out"  # wav-only
+  assert_not_grep "Archive Only" "$out"
+}
+
+test_preset_library_junk() {
+  _mk_tree
+  mkdir -p "$T/lib/Junk Only"
+  : >"$T/lib/Junk Only/Thumbs.db"
+  local out
+  out=$("$_FIND" --preset library-junk "$T/lib")
+  assert_grep "Junk Only" "$out"
+}
+
 run_tests

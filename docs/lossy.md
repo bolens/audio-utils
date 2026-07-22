@@ -49,8 +49,8 @@ Or numeric `0`–`10` (e.g. `5.5`). Env: `AUDIO_UTILS_MPC_QUALITY` / `FLAC2MPC_Q
 
 ## Lossy → FLAC (`lossy-to-flac`)
 
-Decodes MP3 / AAC / Opus / Vorbis / WMA / MPC into FLAC for library normalization.
-**Does not restore quality.** Skips ALAC-in-`.m4a` (use `alac-to-flac`).
+Decodes MP3 / AAC / Opus / Vorbis / WMA / MPC / Speex (`.spx`) into FLAC for library
+normalization. **Does not restore quality.** Skips ALAC-in-`.m4a` (use `alac-to-flac`).
 
 ## Resample / downmix
 

@@ -20,6 +20,7 @@ Default path style when writing: **relative** to the playlist’s directory (por
 | [`util/playlist/playlist-normalize/`](../util/playlist/playlist-normalize/) | Rewrite format and/or `--relative` / `--absolute`; optional `--dedupe` |
 | [`util/playlist/playlist-generate/`](../util/playlist/playlist-generate/) | One `.m3u` per audio directory (`<dirname>.m3u` beside tracks) |
 | [`util/playlist/playlist-dedupe/`](../util/playlist/playlist-dedupe/) | Drop duplicate entries (keep first); `-y` required to overwrite |
+| [`util/playlist/playlist-export/`](../util/playlist/playlist-export/) | Copy referenced tracks to `--dest` and rewrite a relative `.m3u` |
 
 ## Song identity (dedupe)
 

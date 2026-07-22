@@ -53,12 +53,14 @@ jobs:
               - '.github/workflows/ci.yml'
               - 'scripts/**'
               - '.github/actions/**'
+              - '.githooks/**'
             conversion:
               - 'conversion/**'
             util:
               - 'util/**'
             tests:
               - 'tests/**'
+              - '.githooks/**'
             code:
               - 'lib/**'
               - 'conversion/**'
@@ -68,6 +70,7 @@ jobs:
               - '.github/workflows/ci.yml'
               - 'scripts/**'
               - '.github/actions/**'
+              - '.githooks/**'
 
       - name: Plan shellcheck matrices
         id: plan
