@@ -28,6 +28,14 @@ plugin_accept_source() {
   ((n >= 1))
 }
 
+# -d deletes the container in convert.sh; -D sibling cleanup is not used here.
+plugin_after_flags() {
+  if [[ "${DELETE_EXISTING:-0}" -eq 1 ]]; then
+    echo "Error: streams-to-flac does not support -D (use -d to delete the container)" >&2
+    return 1
+  fi
+  return 0
+}
 
 plugin_export_env() {
   export DELETE_SOURCE

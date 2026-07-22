@@ -6,14 +6,15 @@
 #   find-media-dirs.sh | streams-to-flac.sh
 #
 # Options:
-#   -f FILE  -d  -D  -L FILE  -S FILE  -n  -y  -j N  -q  -v  -h  --version
+#   -f FILE  -d  -L FILE  -S FILE  -n  -y  -j N  -q  -v  -h  --version
+#   (-D cleanup is unsupported; use -d to delete the container after extract)
 #
 # Exit codes: 0 ok, 1 failures, 2 usage/deps
 
 
 set -euo pipefail
 AU_USAGE_START=2
-AU_USAGE_END=11
+AU_USAGE_END=12
 AU_ROOT=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
 while [[ ! -f "$AU_ROOT/lib/plugin_init.sh" ]]; do
   [[ "$AU_ROOT" != / ]] || { echo "audio-utils: shared lib/ not found" >&2; exit 2; }

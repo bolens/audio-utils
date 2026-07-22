@@ -11,6 +11,8 @@
 #   EXTRA_PHONY     — additional .PHONY targets
 #   HAS_CONVERT_VERBOSE / HAS_CONVERT_CLEAN / HAS_RETAG — set to 1 to enable
 #   HAS_DELETE      — set to 0 to omit convert-delete / -D targets (default 1)
+#   HAS_DELETE_EXISTING — set to 0 to omit only the -D / $(DELETE_TARGET) rules
+#                     while keeping convert-delete (-d). Defaults to HAS_DELETE.
 #   DELETE_TARGET   — make target name for -D (default delete-sources)
 
 # -x follows sources for symbol resolution; omit -a so each tool does not
@@ -21,6 +23,7 @@ ARGS ?=
 ROOTS ?= $(AUDIO_UTILS_ROOTS)
 DELETE_TARGET ?= delete-sources
 HAS_DELETE ?= 1
+HAS_DELETE_EXISTING ?= $(HAS_DELETE)
 
 .PHONY: help check test dry-run convert convert-quiet clean clean-tmp \
 	$(EXTRA_PHONY)
@@ -28,7 +31,10 @@ HAS_DELETE ?= 1
 help:
 	@echo -n "$(TOOL): make check | test | convert | convert-quiet"
 ifeq ($(HAS_DELETE),1)
-	@echo -n " | convert-delete | $(DELETE_TARGET)"
+	@echo -n " | convert-delete"
+endif
+ifeq ($(HAS_DELETE_EXISTING),1)
+	@echo -n " | $(DELETE_TARGET)"
 endif
 	@echo
 	@echo "  make dry-run / clean / clean-tmp"
@@ -66,10 +72,13 @@ convert-quiet:
 	$(CONVERT) -q $(ARGS)
 
 ifeq ($(HAS_DELETE),1)
-.PHONY: convert-delete $(DELETE_TARGET) $(DELETE_TARGET)-dry
+.PHONY: convert-delete
 convert-delete:
 	$(CONVERT) -d $(ARGS)
+endif
 
+ifeq ($(HAS_DELETE_EXISTING),1)
+.PHONY: $(DELETE_TARGET) $(DELETE_TARGET)-dry
 $(DELETE_TARGET)-dry:
 	$(CONVERT) -D -n $(ARGS)
 

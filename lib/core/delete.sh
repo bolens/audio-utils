@@ -3,7 +3,8 @@
 #
 # Requires: AU_DEST_EXT
 # Optional:
-#   AU_CLEANUP_SKIP=1          — no-op (cue / streams / disc extractors)
+#   AU_CLEANUP_SKIP=1          — no-op for -D (cue / disc extractors; streams
+#                                still honors -d for container delete)
 #   plugin_sibling_ok SRC DEST — verify sibling; default = dest has audio stream
 #
 # Tools may override delete_one_existing entirely if needed.
