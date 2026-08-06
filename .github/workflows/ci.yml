@@ -40,11 +40,11 @@ jobs:
     steps:
       # Needed for push events; PRs can use the GitHub API without a checkout.
       - name: Checkout
-        uses: actions/checkout@v7
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
 
       - name: Path filter
         if: github.event_name != 'schedule'
-        uses: dorny/paths-filter@v4
+        uses: dorny/paths-filter@ceb8a2b8f2d89434be7ff52d3de7ec3738c5cc9d # v4
         id: filter
         with:
           list-files: json
@@ -159,7 +159,7 @@ jobs:
     timeout-minutes: 10
     steps:
       - name: Checkout
-        uses: actions/checkout@v7
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
 
       - name: Install shellcheck
         uses: ./.github/actions/install-shellcheck
@@ -181,7 +181,7 @@ jobs:
         include: ${{ fromJSON(needs.changes.outputs.conversion_matrix) }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v7
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
 
       - name: Install shellcheck
         uses: ./.github/actions/install-shellcheck
@@ -218,7 +218,7 @@ jobs:
         include: ${{ fromJSON(needs.changes.outputs.util_matrix) }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v7
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
 
       - name: Install shellcheck
         uses: ./.github/actions/install-shellcheck
@@ -251,7 +251,7 @@ jobs:
     container: fedora:latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v7
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
 
       - name: Install ShellCheck
         run: dnf install -y ShellCheck make findutils
@@ -268,7 +268,7 @@ jobs:
     timeout-minutes: 15
     steps:
       - name: Checkout
-        uses: actions/checkout@v7
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
 
       - name: Install dependencies
         run: sudo apt-get update && sudo apt-get install -y ffmpeg flac
@@ -298,10 +298,10 @@ jobs:
         working-directory: mcp/npm
     steps:
       - name: Checkout
-        uses: actions/checkout@v7
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
 
       - name: Use minimum supported Node
-        uses: actions/setup-node@v6
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
         with:
           node-version: 20
           cache: npm
@@ -324,7 +324,7 @@ jobs:
     timeout-minutes: 5
     steps:
       - name: Checkout
-        uses: actions/checkout@v7
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
 
       - name: Check local Markdown links
         run: make check-docs
@@ -348,7 +348,7 @@ jobs:
         ffmpeg: [apt, latest]
     steps:
       - name: Checkout
-        uses: actions/checkout@v7
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
 
       - name: Install dependencies
         run: |
@@ -408,7 +408,7 @@ jobs:
         run: echo "ffmpeg=$(ffmpeg -version | head -1 | awk '{print $3}')" >>"$GITHUB_OUTPUT"
 
       - name: Cache test fixtures
-        uses: actions/cache@v6
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
         with:
           path: tests/.cache
           key: fixtures-${{ hashFiles('tests/fixtures.sh') }}-ffmpeg-${{ steps.ffver.outputs.ffmpeg }}
