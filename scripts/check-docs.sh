@@ -8,7 +8,10 @@ fail=0
 anchor_exists() {
   local file=$1 wanted=$2 heading slug
   wanted=${wanted,,}
-  grep -qE "(id|name)=[\"']${wanted//./\\.}[\"']" "$file" && return 0
+  grep -qF "id=\"$wanted\"" "$file" && return 0
+  grep -qF "id='$wanted'" "$file" && return 0
+  grep -qF "name=\"$wanted\"" "$file" && return 0
+  grep -qF "name='$wanted'" "$file" && return 0
   while IFS= read -r heading; do
     heading=${heading##\# }
     heading=${heading#"${heading%%[!#]*}"}
