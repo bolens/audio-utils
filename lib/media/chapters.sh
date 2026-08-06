@@ -80,7 +80,7 @@ chapters_write_ffmetadata() {
       # Escape special ffmetadata chars: = ; # \
       title=${title//\\/\\\\}
       title=${title//=/\\=}
-      title=${title//;/\';}
+      title=${title//;/\\;}
       title=${title//#/\\#}
       printf '%s\n' '[CHAPTER]'
       printf '%s\n' 'TIMEBASE=1/1000'
