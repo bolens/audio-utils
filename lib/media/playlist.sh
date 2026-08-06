@@ -509,7 +509,8 @@ playlist_list_audio_in_dir() {
       find_expr+=( -o -iname "*.${e}" )
     fi
   done
-  LC_ALL=C find -P "$dir" -maxdepth 1 -type f \( "${find_expr[@]}" \) | LC_ALL=C sort
+  LC_ALL=C find -P "$dir" -maxdepth 1 -type f \( "${find_expr[@]}" \) -print0 |
+    LC_ALL=C sort -z
 }
 
 # Build TSV entries from audio files in DIR (path identity dedupe).
@@ -518,7 +519,7 @@ playlist_entries_from_dir() {
   local dir=$1
   local f title artist dur key
   local -A seen=()
-  while IFS= read -r f; do
+  while IFS= read -r -d '' f; do
     [[ -n "$f" ]] || continue
     key=$(playlist_canon_path "$f")
     [[ -n "${seen[$key]:-}" ]] && continue

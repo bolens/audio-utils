@@ -94,7 +94,7 @@ audio_utils_finalize_run_logs() {
 }
 
 audio_utils_run() {
-  local DIR_FILE="" FAIL_LOG_DEFAULT=1 SUCCESS_LOG_DEFAULT=1
+  local DIR_FILE="" DIRS0=0 FAIL_LOG_DEFAULT=1 SUCCESS_LOG_DEFAULT=1
   local opt OPTARG OPTIND
   local -a DIRS=() ALL_SRCS=() args
   local -A DIR_CHECKED=()
@@ -135,6 +135,11 @@ audio_utils_run() {
         ;;
       --help)
         audio_utils_driver_usage 0
+        ;;
+      --dirs0)
+        DIRS0=1
+        shift
+        continue
         ;;
       *)
         AU_CONSUMED=0
@@ -202,7 +207,11 @@ audio_utils_run() {
 
   if [[ ! -t 0 ]]; then
     local -a stdin_dirs=()
-    mapfile -t stdin_dirs
+    if ((DIRS0)); then
+      au_mapfile0 stdin_dirs
+    else
+      mapfile -t stdin_dirs
+    fi
     DIRS+=("${stdin_dirs[@]}")
   fi
 
@@ -307,8 +316,9 @@ audio_utils_run() {
       fi
     done
 
-    mapfile -t srcs < <(
-      LC_ALL=C find -P "$dir" -maxdepth 1 -type f \( "${find_expr[@]}" \) | LC_ALL=C sort
+    au_mapfile0 srcs < <(
+      LC_ALL=C find -P "$dir" -maxdepth 1 -type f \( "${find_expr[@]}" \) -print0 |
+        LC_ALL=C sort -z
     )
 
     if declare -F plugin_accept_source >/dev/null 2>&1; then

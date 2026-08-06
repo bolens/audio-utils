@@ -143,4 +143,13 @@ test_version_flag() {
   assert_grep "flac-verify" "$T/out"
 }
 
+test_clean_tmp_uses_roots_file_with_spaces() {
+  require_cmd make find xargs
+  mkdir -p "$T/My Music/album/.wav2flac.stale"
+  printf '%s\n' "$T/My Music" >"$T/roots"
+  AUDIO_UTILS_ROOTS_FILE="$T/roots" \
+    make -s -C "$AU_REPO_ROOT/conversion/wav-to-flac" clean-tmp >"$T/out"
+  assert_no_file "$T/My Music/album/.wav2flac.stale"
+}
+
 run_tests

@@ -37,7 +37,7 @@ _extract_media_streams() {
       fail=1
       continue
     fi
-    mapfile -t enc_out <"${tmpdir}/enc.out"
+    au_mapfile0 enc_out "${tmpdir}/enc.out"
     mv -f -- "${enc_out[0]}" "$flac_out"
     log_info "verified: $flac_out"
     log_success "$src" "$flac_out" "${enc_out[2]}" "$(file_sha256 "$flac_out")" "converted;stream=$i"

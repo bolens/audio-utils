@@ -6,6 +6,11 @@
 
 Override the find binary if needed: `AUDIO_UTILS_FIND=gfind` (must still support GNU `-printf`).
 
+Library roots may be passed as quoted positional arguments. For persistent
+roots containing spaces, set `AUDIO_UTILS_ROOTS_FILE` to a file containing one
+literal path per line. It takes precedence over the legacy, space-separated
+`AUDIO_UTILS_ROOTS` value.
+
 ## Core binaries → packages
 
 | Binary / need | Arch / CachyOS | Debian / Ubuntu | Fedora |
@@ -45,6 +50,11 @@ On Fedora, enable [RPM Fusion](https://rpmfusion.org/) before installing `ffmpeg
 | `mediainfo` | `mediainfo` | `mediainfo` | `mediainfo` |
 | `makemkvcon` | often AUR (`makemkv`) | third-party | third-party |
 | `wine` (Takc `.exe`) | `wine` | `wine` | `wine` |
+
+`scripts/keyfinder-cli.sh` builds reviewed, pinned commits of libkeyfinder and
+keyfinder-cli. Intentional upgrades may override the full commit IDs with
+`AUDIO_UTILS_LIBKEYFINDER_REV` and `AUDIO_UTILS_KEYFINDER_CLI_REV`; successful
+installs record both revisions for `keyfinder-status`.
 
 ## Tool extras
 

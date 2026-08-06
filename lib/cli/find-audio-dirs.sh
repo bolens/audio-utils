@@ -8,7 +8,8 @@
 #
 # Roots (first match wins):
 #   1. Remaining command-line arguments after options
-#   2. AUDIO_UTILS_ROOTS (space-separated; WAV2FLAC_ROOTS alias)
+#   2. AUDIO_UTILS_ROOTS_FILE (one root per line)
+#   3. AUDIO_UTILS_ROOTS (space-separated; WAV2FLAC_ROOTS alias)
 #   3. $XDG_CONFIG_HOME/audio-utils/config
 #
 # Does not follow symlinks (-P). Output sorted with LC_ALL=C.
@@ -25,6 +26,7 @@ audio_utils_load_config
 
 EXTS=()
 ROOTS=()
+PRINT0=0
 FIND_BIN=$(au_find_bin)
 
 usage() {
@@ -36,6 +38,7 @@ Usage: find-audio-dirs.sh --ext EXT [-e EXT ...] [ROOT ...]
   --preset NAME       Shared cluster: portable|portable-pcm|pcm|lossy|
                       audiobook|portable-pcm-archive|library|library-junk|
                       viz|playlist (see lib/media/audio_exts.sh)
+  --print0            NUL-delimit output (safe for all filenames)
   --version           Print version and exit
   -h, --help          Show this help
 
@@ -64,6 +67,10 @@ while (($# > 0)); do
       # shellcheck disable=SC2206
       EXTS+=($_preset_list)
       shift 2
+      ;;
+    --print0)
+      PRINT0=1
+      shift
       ;;
     --version)
       audio_utils_print_version "find-audio-dirs"
@@ -106,22 +113,20 @@ done
 EXTS=("${_norm[@]}")
 
 if ((${#ROOTS[@]} == 0)); then
-  raw="${AUDIO_UTILS_ROOTS:-${WAV2FLAC_ROOTS:-}}"
-  if [[ -z "$raw" ]]; then
+  if ! audio_utils_roots_from_env ROOTS; then
     cat >&2 <<EOF
 Error: no search roots given.
 
-Pass directories as arguments, set AUDIO_UTILS_ROOTS, or add to
+Pass directories as arguments, set AUDIO_UTILS_ROOTS_FILE / AUDIO_UTILS_ROOTS,
+or add to
   $(audio_utils_config_path)
 
   find-audio-dirs.sh --ext wav ~/Music ~/Downloads
-  AUDIO_UTILS_ROOTS="\$HOME/Music" find-audio-dirs.sh --ext wav
+  AUDIO_UTILS_ROOTS_FILE="\$HOME/.config/audio-utils/roots" find-audio-dirs.sh --ext wav
 
 EOF
     exit 2
   fi
-  # shellcheck disable=SC2206
-  ROOTS=($raw)
 fi
 
 missing_count=0
@@ -156,6 +161,11 @@ done
 
 # List unique parent dirs of every matching file, sorted (C locale).
 set +o pipefail
-LC_ALL=C "$FIND_BIN" -P "${ROOTS[@]}" -type f \( "${find_expr[@]}" \) -printf '%h\n' 2>/dev/null \
-  | LC_ALL=C sort -u
+if ((PRINT0)); then
+  LC_ALL=C "$FIND_BIN" -P "${ROOTS[@]}" -type f \( "${find_expr[@]}" \) -printf '%h\0' 2>/dev/null \
+    | LC_ALL=C sort -zu
+else
+  LC_ALL=C "$FIND_BIN" -P "${ROOTS[@]}" -type f \( "${find_expr[@]}" \) -printf '%h\n' 2>/dev/null \
+    | LC_ALL=C sort -u
+fi
 set -o pipefail

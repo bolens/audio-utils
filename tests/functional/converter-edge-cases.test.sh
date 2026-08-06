@@ -43,6 +43,20 @@ test_unicode_and_metachar_filenames_survive_conversion() {
   assert_grep "Café Nöise" "$T/s.csv"
 }
 
+test_newline_filename_survives_conversion() {
+  require_cmd flac metaflac ffmpeg ffprobe flock
+  local src name
+  src=$(fixture wav_sine)
+  mkdir -p "$T/album"
+  name=$'01 - line\nbreak.wav'
+  cp "$src/sine.wav" "$T/album/$name"
+
+  run_tool conversion/wav-to-flac/wav-to-flac.sh -j 1 "$T/album"
+  assert_eq "$(tool_rc)" 0
+  assert_file "$T/album/${name%.wav}.flac"
+  assert_audio_md5_eq "$T/album/$name" "$T/album/${name%.wav}.flac"
+}
+
 test_unicode_filenames_survive_lossy_encode() {
   require_cmd flac metaflac ffmpeg ffprobe flock
   require_ffmpeg_encoder libmp3lame

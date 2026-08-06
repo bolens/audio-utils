@@ -2,7 +2,8 @@
 # Load optional XDG config without overriding existing environment.
 #
 # File: ${XDG_CONFIG_HOME:-$HOME/.config}/audio-utils/config
-# Format: KEY=value (shell-style). Comments (#) and blank lines allowed.
+# Format: KEY=value. Matching outer quotes, comments (#), and blank lines are
+# supported. A # always starts a comment, including inside a quoted value.
 # Only AUDIO_UTILS_* and WAV2FLAC_ROOTS keys are accepted.
 
 audio_utils_xdg_config_home() {

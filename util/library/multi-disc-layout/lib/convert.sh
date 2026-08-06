@@ -13,7 +13,7 @@ _multidisc_album_dir() {
 
 _multidisc_list_album_flacs() {
   local album=$1
-  LC_ALL=C find -P "$album" -maxdepth 2 -type f -iname '*.flac' | LC_ALL=C sort
+  LC_ALL=C find -P "$album" -maxdepth 2 -type f -iname '*.flac' -print0 | LC_ALL=C sort -z
 }
 
 _multidisc_disc_num() {
@@ -37,7 +37,7 @@ _multidisc_process_album() {
   local -a files=()
   local f disc tot max_disc=1 multi=0 dest dest_dir name issues=0
 
-  mapfile -t files < <(_multidisc_list_album_flacs "$album")
+  au_mapfile0 files < <(_multidisc_list_album_flacs "$album")
   if ((${#files[@]} == 0)); then
     return 0
   fi

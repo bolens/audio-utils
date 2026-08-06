@@ -13,8 +13,8 @@ _aba_list_audio() {
       find_args+=( -o -iname "*.${ext}" )
     fi
   done
-  find_args+=( \) )
-  LC_ALL=C find "${find_args[@]}" | LC_ALL=C sort
+  find_args+=( \) -print0 )
+  LC_ALL=C find "${find_args[@]}" | LC_ALL=C sort -z
 }
 
 # Print semicolon-joined issues (empty = clean). Arg: path to .m4b OR directory.
@@ -60,7 +60,7 @@ _aba_audit_unit() {
         ;;
     esac
   else
-    mapfile -t files < <(_aba_list_audio "$unit")
+    au_mapfile0 files < <(_aba_list_audio "$unit")
     # Prefer treating a lone .m4b in the dir as the book unit
     local m4b_only=()
     for f in "${files[@]}"; do
@@ -169,7 +169,7 @@ convert_one() {
   if [[ -f "$unit" ]]; then
     n=1
   else
-    n=$(_aba_list_audio "$unit" | wc -l | tr -d ' ')
+    n=$(_aba_list_audio "$unit" | tr -cd '\0' | wc -c | tr -d ' ')
   fi
 
   if [[ -n "$issues" ]]; then

@@ -32,6 +32,7 @@ export function spawnBashMcp(opts = {}) {
  */
 export class BashMcpSession {
   constructor() {
+    this._deadError = null;
     this.child = spawn(serverScriptPath(), [], {
       stdio: ['pipe', 'pipe', 'inherit'],
       env: process.env,
@@ -41,12 +42,22 @@ export class BashMcpSession {
     /** @type {Promise<void>} */
     this._chain = Promise.resolve();
     this.child.stdout.on('data', (chunk) => this._onData(chunk));
-    this.child.on('exit', (code) => {
-      for (const w of this._waiters) {
-        w.reject(new Error(`bash MCP exited (${code})`));
-      }
-      this._waiters = [];
+    this.child.on('error', (error) => this._markDead(error));
+    this.child.on('exit', (code, signal) => {
+      this._markDead(new Error(`bash MCP exited (${signal || code})`));
     });
+    this.child.stdin.on('error', (error) => this._markDead(error));
+  }
+
+  _markDead(error) {
+    if (this._deadError) return;
+    this._deadError = error;
+    for (const waiter of this._waiters) waiter.reject(error);
+    this._waiters = [];
+  }
+
+  get isAlive() {
+    return !this._deadError && this.child.exitCode === null && !this.child.killed;
   }
 
   _onData(chunk) {
@@ -77,17 +88,29 @@ export class BashMcpSession {
   }
 
   _writeFrame(message) {
+    if (this._deadError) throw this._deadError;
     const body = JSON.stringify(message);
     const frame = `Content-Length: ${Buffer.byteLength(body)}\r\n\r\n${body}`;
-    this.child.stdin.write(frame);
+    this.child.stdin.write(frame, (error) => {
+      if (error) this._markDead(error);
+    });
   }
 
   /** @param {object} message */
   request(message) {
     const run = () =>
       new Promise((resolve, reject) => {
+        if (this._deadError) {
+          reject(this._deadError);
+          return;
+        }
         this._waiters.push({ resolve, reject });
-        this._writeFrame(message);
+        try {
+          this._writeFrame(message);
+        } catch (error) {
+          this._waiters.pop();
+          reject(error);
+        }
       });
     const p = this._chain.then(run, run);
     this._chain = p.then(
@@ -102,7 +125,12 @@ export class BashMcpSession {
     const run = () => {
       this._writeFrame(message);
     };
-    this._chain = this._chain.then(run, run);
+    const promise = this._chain.then(run, run);
+    this._chain = promise.then(
+      () => undefined,
+      () => undefined,
+    );
+    return promise;
   }
 
   close() {

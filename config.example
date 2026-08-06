@@ -11,6 +11,14 @@
 
 AUDIO_UTILS_ROOTS="$HOME/Music $HOME/Downloads"
 
+# For roots containing spaces, use a separate file with one literal path per
+# line. This takes precedence over AUDIO_UTILS_ROOTS:
+# AUDIO_UTILS_ROOTS_FILE="$HOME/.config/audio-utils/roots"
+#
+# Example roots file:
+# /home/me/Music
+# /media/me/My Music
+
 # WAV2FLAC_ROOTS="$HOME/Music"
 
 # GNU find binary if not named `find` (must support -printf):
@@ -55,6 +63,9 @@ AUDIO_UTILS_ROOTS="$HOME/Music $HOME/Downloads"
 
 # --- Environment-only settings (NOT read from this file; export in your shell) ---
 # Tool-specific quality aliases:      export FLAC2MP3_QUALITY=v0
+# Intentional keyfinder source upgrades (full commit IDs):
+#   export AUDIO_UTILS_LIBKEYFINDER_REV=941e517ebf853c2153a8b9d6efcc0c729199aa0b
+#   export AUDIO_UTILS_KEYFINDER_CLI_REV=8958d9219fda8a48952da365d19752e43ee81f63
 # Fail instead of resample/downmix:   export LOSSY_NO_RESAMPLE=1
 # Enrichment (util/audio/tags-lookup; the only networked tool — see docs/enrichment.md):
 #   export ACOUSTID_CLIENT_KEY=your-key

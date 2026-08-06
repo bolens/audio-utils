@@ -56,6 +56,28 @@ test_roots_from_env_when_no_args() {
   assert_grep "Album One" "$out"
 }
 
+test_roots_file_preserves_spaces() {
+  mkdir -p "$T/My Music/album"
+  : >"$T/My Music/album/song.flac"
+  printf '%s\n' "$T/My Music" >"$T/roots"
+  local out
+  out=$(AUDIO_UTILS_ROOTS_FILE="$T/roots" "$_FIND" --ext flac)
+  assert_grep "$T/My Music/album" "$out"
+}
+
+test_print0_preserves_newline_paths() {
+  local dir=$'album\nlive'
+  mkdir -p "$T/$dir"
+  : >"$T/$dir/song.flac"
+  local -a found=()
+  local item
+  while IFS= read -r -d '' item; do
+    found+=("$item")
+  done < <("$_FIND" --print0 --ext flac "$T")
+  assert_eq "${#found[@]}" "1"
+  assert_eq "${found[0]}" "$T/$dir"
+}
+
 test_symlinked_dirs_not_followed() {
   _mk_tree
   mkdir -p "$T/outside"

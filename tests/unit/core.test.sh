@@ -103,6 +103,25 @@ test_roots_from_env_splits_words() {
   assert_eq "$rc" 1 "empty env must return 1"
 }
 
+test_roots_file_preserves_spaces_and_precedes_env() {
+  _load_util
+  printf '%s\n' "$T/My Music" "$T/Other Library" >"$T/roots"
+  AUDIO_UTILS_ROOTS_FILE="$T/roots"
+  AUDIO_UTILS_ROOTS="/ignored"
+  local -a roots=()
+  audio_utils_roots_from_env roots
+  assert_eq "${#roots[@]}" "2"
+  assert_eq "${roots[0]}" "$T/My Music"
+  assert_eq "${roots[1]}" "$T/Other Library"
+}
+
+test_roots_file_missing_fails() {
+  _load_util
+  AUDIO_UTILS_ROOTS_FILE="$T/missing"
+  local -a roots=()
+  assert_exit 1 audio_utils_roots_from_env roots
+}
+
 test_resolve_roots_prefers_args_over_env() {
   _load_util
   local -a roots=()

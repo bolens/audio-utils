@@ -14,8 +14,8 @@ _aa_list_audio() {
       find_args+=( -o -iname "*.${ext}" )
     fi
   done
-  find_args+=( \) )
-  LC_ALL=C find "${find_args[@]}" | LC_ALL=C sort
+  find_args+=( \) -print0 )
+  LC_ALL=C find "${find_args[@]}" | LC_ALL=C sort -z
 }
 
 # Audit DIR; print semicolon-joined issues to stdout (empty line = clean).
@@ -27,7 +27,7 @@ _aa_audit_dir() {
   local -A seen=() disc_nums=() disc_totals=()
   local missing_album=0 missing_track=0 dup_track=0 total_bad=0
 
-  mapfile -t files < <(_aa_list_audio "$dir")
+  au_mapfile0 files < <(_aa_list_audio "$dir")
   if ((${#files[@]} == 0)); then
     printf '\n'
     return 0
@@ -158,7 +158,7 @@ convert_one() {
   ) 9>"$lock"
 
   issues=$(head -n1 -- "$result_f" 2>/dev/null || true)
-  n=$(_aa_list_audio "$dir" | wc -l | tr -d ' ')
+  n=$(_aa_list_audio "$dir" | tr -cd '\0' | wc -c | tr -d ' ')
 
   if [[ -n "$issues" ]]; then
     log_fail "$dir" "album audit issues" "$issues"

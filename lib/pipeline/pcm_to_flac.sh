@@ -160,7 +160,7 @@ pcm_to_flac_convert_one() {
     cleanup
     return 1
   fi
-  prep=$(tail -n1 "${tmpdir}/prep.path")
+  IFS= read -r -d '' prep <"${tmpdir}/prep.path"
   if [[ ! -f "$prep" ]]; then
     log_fail "$src" "prepare/remux failed (missing prep)" "got=${prep:-empty} tmpdir=$tmpdir"
     cleanup
@@ -172,7 +172,7 @@ pcm_to_flac_convert_one() {
     cleanup
     return 1
   fi
-  mapfile -t enc_out <"${tmpdir}/enc.out"
+  au_mapfile0 enc_out "${tmpdir}/enc.out"
   if ((${#enc_out[@]} < 4)); then
     log_fail "$src" "encode/verify failed (incomplete)" "tmpdir=$tmpdir"
     cleanup

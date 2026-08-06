@@ -32,6 +32,19 @@ test_convert_all_converts_every_wav_dir_under_roots() {
   assert_file "$T/library/artist/album two/b.flac"
 }
 
+test_convert_all_preserves_newline_directory() {
+  require_cmd flac metaflac ffmpeg ffprobe flock
+  local src dir
+  src=$(fixture wav_sine)
+  dir=$'Album\nLive'
+  mkdir -p "$T/root/$dir"
+  cp "$src/sine.wav" "$T/root/$dir/track.wav"
+
+  AUDIO_UTILS_ROOTS="$T/root" run_tool "$_CONVERT_ALL"
+  assert_eq "$(tool_rc)" "0" "rc ($(tool_out))"
+  assert_file "$T/root/$dir/track.flac"
+}
+
 test_convert_all_passes_flags_through_to_converter() {
   require_cmd flac metaflac ffmpeg ffprobe flock
   local src

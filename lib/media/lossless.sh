@@ -79,7 +79,7 @@ to_flac_convert_one() {
       return 1
     fi
   fi
-  prep=$(tail -n1 "${tmpdir}/prep.path")
+  IFS= read -r -d '' prep <"${tmpdir}/prep.path"
   [[ -f "$prep" ]] || { log_fail "$src" "missing prep"; cleanup; return 1; }
 
   if ! encode_flac_verified "$prep" "$tmpdir" "$src" >"${tmpdir}/enc.out"; then
@@ -87,7 +87,7 @@ to_flac_convert_one() {
     cleanup
     return 1
   fi
-  mapfile -t enc_out <"${tmpdir}/enc.out"
+  au_mapfile0 enc_out "${tmpdir}/enc.out"
   md5_flac=${enc_out[2]}
   hash1=${enc_out[3]}
 
@@ -237,7 +237,7 @@ flac_to_pcm_convert_one() {
     cleanup
     return 1
   fi
-  pcm=$(tail -n1 "${tmpdir}/decode.path")
+  IFS= read -r -d '' pcm <"${tmpdir}/decode.path"
   [[ -f "$pcm" ]] || { log_fail "$flac" "decode missing output"; cleanup; return 1; }
 
   if ! tag_pcm_from_flac "$flac" "$pcm" "$tagged"; then
@@ -294,7 +294,7 @@ extract_audio_stream_to_flac() {
     log_fail "$src" "encode stream a:$idx failed"
     return 1
   fi
-  mapfile -t enc_out <"${tmpdir}/enc.out"
+  au_mapfile0 enc_out "${tmpdir}/enc.out"
   md5_flac=${enc_out[2]}
 
   if [[ "${AU_STREAM_TAG:-0}" -eq 1 ]]; then
