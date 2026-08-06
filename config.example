@@ -11,6 +11,14 @@
 
 AUDIO_UTILS_ROOTS="$HOME/Music $HOME/Downloads"
 
+# For roots containing spaces, use a separate file with one literal path per
+# line. This takes precedence over AUDIO_UTILS_ROOTS:
+# AUDIO_UTILS_ROOTS_FILE="$HOME/.config/audio-utils/roots"
+#
+# Example roots file:
+# /home/me/Music
+# /media/me/My Music
+
 # WAV2FLAC_ROOTS="$HOME/Music"
 
 # GNU find binary if not named `find` (must support -printf):

@@ -6,6 +6,11 @@
 
 Override the find binary if needed: `AUDIO_UTILS_FIND=gfind` (must still support GNU `-printf`).
 
+Library roots may be passed as quoted positional arguments. For persistent
+roots containing spaces, set `AUDIO_UTILS_ROOTS_FILE` to a file containing one
+literal path per line. It takes precedence over the legacy, space-separated
+`AUDIO_UTILS_ROOTS` value.
+
 ## Core binaries → packages
 
 | Binary / need | Arch / CachyOS | Debian / Ubuntu | Fedora |

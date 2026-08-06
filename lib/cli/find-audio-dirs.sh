@@ -8,7 +8,8 @@
 #
 # Roots (first match wins):
 #   1. Remaining command-line arguments after options
-#   2. AUDIO_UTILS_ROOTS (space-separated; WAV2FLAC_ROOTS alias)
+#   2. AUDIO_UTILS_ROOTS_FILE (one root per line)
+#   3. AUDIO_UTILS_ROOTS (space-separated; WAV2FLAC_ROOTS alias)
 #   3. $XDG_CONFIG_HOME/audio-utils/config
 #
 # Does not follow symlinks (-P). Output sorted with LC_ALL=C.
@@ -106,22 +107,20 @@ done
 EXTS=("${_norm[@]}")
 
 if ((${#ROOTS[@]} == 0)); then
-  raw="${AUDIO_UTILS_ROOTS:-${WAV2FLAC_ROOTS:-}}"
-  if [[ -z "$raw" ]]; then
+  if ! audio_utils_roots_from_env ROOTS; then
     cat >&2 <<EOF
 Error: no search roots given.
 
-Pass directories as arguments, set AUDIO_UTILS_ROOTS, or add to
+Pass directories as arguments, set AUDIO_UTILS_ROOTS_FILE / AUDIO_UTILS_ROOTS,
+or add to
   $(audio_utils_config_path)
 
   find-audio-dirs.sh --ext wav ~/Music ~/Downloads
-  AUDIO_UTILS_ROOTS="\$HOME/Music" find-audio-dirs.sh --ext wav
+  AUDIO_UTILS_ROOTS_FILE="\$HOME/.config/audio-utils/roots" find-audio-dirs.sh --ext wav
 
 EOF
     exit 2
   fi
-  # shellcheck disable=SC2206
-  ROOTS=($raw)
 fi
 
 missing_count=0

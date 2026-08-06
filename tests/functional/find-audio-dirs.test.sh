@@ -56,6 +56,15 @@ test_roots_from_env_when_no_args() {
   assert_grep "Album One" "$out"
 }
 
+test_roots_file_preserves_spaces() {
+  mkdir -p "$T/My Music/album"
+  : >"$T/My Music/album/song.flac"
+  printf '%s\n' "$T/My Music" >"$T/roots"
+  local out
+  out=$(AUDIO_UTILS_ROOTS_FILE="$T/roots" "$_FIND" --ext flac)
+  assert_grep "$T/My Music/album" "$out"
+}
+
 test_symlinked_dirs_not_followed() {
   _mk_tree
   mkdir -p "$T/outside"

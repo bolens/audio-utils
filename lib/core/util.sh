@@ -26,19 +26,34 @@ require_cmds() {
   fi
 }
 
-# Populate array name passed as $1 from AUDIO_UTILS_ROOTS / WAV2FLAC_ROOTS.
+# Populate array name passed as $1 from AUDIO_UTILS_ROOTS_FILE, or the legacy
+# space-separated AUDIO_UTILS_ROOTS / WAV2FLAC_ROOTS values.
 # Returns 0 if at least one root was set.
 audio_utils_roots_from_env() {
   local -n _out=$1
   local raw="${AUDIO_UTILS_ROOTS:-${WAV2FLAC_ROOTS:-}}"
+  local roots_file="${AUDIO_UTILS_ROOTS_FILE:-}"
+  local line
   _out=()
+  if [[ -n "$roots_file" ]]; then
+    [[ -f "$roots_file" ]] || {
+      echo "Error: AUDIO_UTILS_ROOTS_FILE not found: $roots_file" >&2
+      return 1
+    }
+    while IFS= read -r line || [[ -n "$line" ]]; do
+      line="${line%$'\r'}"
+      [[ -n "$line" ]] && _out+=("$line")
+    done <"$roots_file"
+    ((${#_out[@]} > 0))
+    return
+  fi
   [[ -n "$raw" ]] || return 1
   # shellcheck disable=SC2206
   _out=($raw)
   ((${#_out[@]} > 0))
 }
 
-# Resolve roots from "$@" or AUDIO_UTILS_ROOTS; print error and return 2 if empty.
+# Resolve roots from "$@", AUDIO_UTILS_ROOTS_FILE, or AUDIO_UTILS_ROOTS.
 # Usage: audio_utils_resolve_roots ROOTS_ARRAY_NAME "$@"
 audio_utils_resolve_roots() {
   local -n _roots=$1
@@ -46,7 +61,7 @@ audio_utils_resolve_roots() {
   _roots=("$@")
   if ((${#_roots[@]} == 0)); then
     audio_utils_roots_from_env _roots || {
-      echo "Error: pass roots or set AUDIO_UTILS_ROOTS" >&2
+      echo "Error: pass roots or set AUDIO_UTILS_ROOTS_FILE / AUDIO_UTILS_ROOTS" >&2
       return 2
     }
   fi
