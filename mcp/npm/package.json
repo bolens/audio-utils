@@ -13,7 +13,8 @@
     "node": ">=18"
   },
   "scripts": {
-    "check": "node --check bin/http.js && node --check bin/stdio.js && node --check bin/install-cursor.js && node --check lib/bash.js",
+    "check": "node --check bin/http.js && node --check bin/stdio.js && node --check bin/install-cursor.js && node --check bin/refuse-pack.js && node --check lib/bash.js",
+    "prepack": "node bin/refuse-pack.js",
     "test": "npm run check && node --test test/*.test.js"
   },
   "dependencies": {
