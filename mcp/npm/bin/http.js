@@ -177,13 +177,17 @@ function touchSession(id) {
   session.timer.unref();
 }
 
+function sessionCount() {
+  return streamableSessions.size + sseTransports.size + pendingSessions;
+}
+
 app.post('/mcp', asyncRoute(async (req, res) => {
   const sessionId = req.headers['mcp-session-id'];
   const requestSessionId = sessionId ? String(sessionId) : '';
   let session = requestSessionId ? streamableSessions.get(requestSessionId) : undefined;
   let pending = false;
   if (!session && !sessionId && isInitializeRequest(req.body)) {
-    if (streamableSessions.size + pendingSessions >= sessionLimit) {
+    if (sessionCount() >= sessionLimit) {
       res.status(503).json({
         jsonrpc: '2.0',
         error: { code: -32000, message: 'MCP session capacity reached' },
@@ -261,6 +265,10 @@ app.delete('/mcp', asyncRoute(async (req, res) => {
 }));
 
 app.get('/sse', asyncRoute(async (req, res) => {
+  if (sessionCount() >= sessionLimit) {
+    res.status(503).send('MCP session capacity reached');
+    return;
+  }
   const server = createProxyServer();
   const transport = new SSEServerTransport('/message', res);
   sseTransports.set(transport.sessionId, transport);
@@ -288,14 +296,25 @@ app.get('/health', (_req, res) => {
     ok,
     server: 'audio-utils-mcp-http',
     version: readVersion(),
-    sessions: streamableSessions.size,
+    sessions: streamableSessions.size + sseTransports.size,
+    pendingSessions,
   });
 });
 
 app.use((error, _req, res, _next) => {
   console.error(error);
   if (!res.headersSent) {
-    res.status(500).json({ error: 'Internal MCP gateway error' });
+    const candidate = Number(error.status || error.statusCode);
+    const status = candidate >= 400 && candidate < 500 ? candidate : 500;
+    if (error instanceof SyntaxError && status === 400) {
+      res.status(400).json({
+        jsonrpc: '2.0',
+        error: { code: -32700, message: 'Parse error' },
+        id: null,
+      });
+      return;
+    }
+    res.status(status).json({ error: status === 500 ? 'Internal MCP gateway error' : error.message });
   }
 });
 

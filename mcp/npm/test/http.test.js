@@ -123,6 +123,38 @@ test('rejects untrusted hosts and browser origins', async () => {
   );
 });
 
+test('applies the shared capacity limit to legacy SSE', async () => {
+  const streams = await Promise.all([
+    fetch(`${baseUrl}/sse`),
+    fetch(`${baseUrl}/sse`),
+  ]);
+  try {
+    const rejected = await fetch(`${baseUrl}/sse`);
+    assert.equal(rejected.status, 503);
+    const health = await (await fetch(`${baseUrl}/health`)).json();
+    assert.equal(health.sessions, 2);
+  } finally {
+    await Promise.all(streams.map((response) => response.body.cancel()));
+  }
+});
+
+test('preserves JSON parser client errors', async () => {
+  const malformed = await fetch(`${baseUrl}/mcp`, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: '{broken',
+  });
+  assert.equal(malformed.status, 400);
+  assert.equal((await malformed.json()).error.code, -32700);
+
+  const oversized = await fetch(`${baseUrl}/mcp`, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ payload: 'x'.repeat(4 * 1024 * 1024) }),
+  });
+  assert.equal(oversized.status, 413);
+});
+
 test('expires abandoned Streamable HTTP sessions', async () => {
   const gateway = await spawnGateway({
     AUDIO_UTILS_MCP_MAX_SESSIONS: '1',
