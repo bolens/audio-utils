@@ -18,6 +18,7 @@ import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/
 import { SSEServerTransport } from '@modelcontextprotocol/sdk/server/sse.js';
 import {
   CallToolRequestSchema,
+  isInitializeRequest,
   ListToolsRequestSchema,
 } from '@modelcontextprotocol/sdk/types.js';
 import { BashMcpSession } from '../lib/bash.js';
@@ -28,6 +29,9 @@ import { fileURLToPath } from 'node:url';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const host = process.env.AUDIO_UTILS_MCP_HOST || '127.0.0.1';
 const port = Number(process.env.AUDIO_UTILS_MCP_PORT || 8765);
+if (!Number.isInteger(port) || port < 1 || port > 65535) {
+  throw new Error('AUDIO_UTILS_MCP_PORT must be an integer from 1 to 65535');
+}
 
 function readVersion() {
   try {
@@ -39,22 +43,31 @@ function readVersion() {
 }
 
 const bash = new BashMcpSession();
-let initialized = false;
+let initializePromise;
 
 async function ensureInitialized() {
-  if (initialized) return;
-  await bash.request({
-    jsonrpc: '2.0',
-    id: 0,
-    method: 'initialize',
-    params: {
-      protocolVersion: '2024-11-05',
-      capabilities: {},
-      clientInfo: { name: 'audio-utils-mcp-http', version: readVersion() },
-    },
-  });
-  bash.notify({ jsonrpc: '2.0', method: 'notifications/initialized' });
-  initialized = true;
+  if (!initializePromise) {
+    initializePromise = (async () => {
+      const response = await bash.request({
+        jsonrpc: '2.0',
+        id: 0,
+        method: 'initialize',
+        params: {
+          protocolVersion: '2024-11-05',
+          capabilities: {},
+          clientInfo: { name: 'audio-utils-mcp-http', version: readVersion() },
+        },
+      });
+      if (response.error) {
+        throw new Error(response.error.message || 'Bash MCP initialization failed');
+      }
+      bash.notify({ jsonrpc: '2.0', method: 'notifications/initialized' });
+    })().catch((error) => {
+      initializePromise = undefined;
+      throw error;
+    });
+  }
+  await initializePromise;
 }
 
 function createProxyServer() {
@@ -96,24 +109,65 @@ function createProxyServer() {
 
 const app = express();
 app.use(express.json({ limit: '4mb' }));
+const asyncRoute = (handler) => (req, res, next) => {
+  Promise.resolve(handler(req, res, next)).catch(next);
+};
 
 /** @type {Map<string, SSEServerTransport>} */
 const sseTransports = new Map();
+/** @type {Map<string, {transport: StreamableHTTPServerTransport, server: Server}>} */
+const streamableSessions = new Map();
 
-app.all('/mcp', async (req, res) => {
-  const server = createProxyServer();
-  const transport = new StreamableHTTPServerTransport({
-    sessionIdGenerator: () => randomUUID(),
-  });
-  res.on('close', () => {
-    transport.close().catch(() => {});
-    server.close().catch(() => {});
-  });
-  await server.connect(transport);
-  await transport.handleRequest(req, res, req.body);
-});
+app.post('/mcp', asyncRoute(async (req, res) => {
+  const sessionId = req.headers['mcp-session-id'];
+  let session = sessionId ? streamableSessions.get(String(sessionId)) : undefined;
+  if (!session && !sessionId && isInitializeRequest(req.body)) {
+    const server = createProxyServer();
+    let transport;
+    transport = new StreamableHTTPServerTransport({
+      sessionIdGenerator: () => randomUUID(),
+      onsessioninitialized: (id) => {
+        streamableSessions.set(id, { transport, server });
+      },
+    });
+    transport.onclose = () => {
+      const id = transport.sessionId;
+      if (id) streamableSessions.delete(id);
+      server.close().catch(() => {});
+    };
+    session = { transport, server };
+    await server.connect(transport);
+  }
+  if (!session) {
+    res.status(400).json({
+      jsonrpc: '2.0',
+      error: { code: -32000, message: 'Bad Request: No valid session ID provided' },
+      id: null,
+    });
+    return;
+  }
+  await session.transport.handleRequest(req, res, req.body);
+}));
 
-app.get('/sse', async (req, res) => {
+app.get('/mcp', asyncRoute(async (req, res) => {
+  const session = streamableSessions.get(String(req.headers['mcp-session-id'] || ''));
+  if (!session) {
+    res.status(400).send('Invalid or missing session ID');
+    return;
+  }
+  await session.transport.handleRequest(req, res);
+}));
+
+app.delete('/mcp', asyncRoute(async (req, res) => {
+  const session = streamableSessions.get(String(req.headers['mcp-session-id'] || ''));
+  if (!session) {
+    res.status(400).send('Invalid or missing session ID');
+    return;
+  }
+  await session.transport.handleRequest(req, res);
+}));
+
+app.get('/sse', asyncRoute(async (req, res) => {
   const server = createProxyServer();
   const transport = new SSEServerTransport('/message', res);
   sseTransports.set(transport.sessionId, transport);
@@ -123,9 +177,9 @@ app.get('/sse', async (req, res) => {
     server.close().catch(() => {});
   });
   await server.connect(transport);
-});
+}));
 
-app.post('/message', async (req, res) => {
+app.post('/message', asyncRoute(async (req, res) => {
   const sessionId = req.query.sessionId;
   const transport = sseTransports.get(String(sessionId || ''));
   if (!transport) {
@@ -133,22 +187,35 @@ app.post('/message', async (req, res) => {
     return;
   }
   await transport.handlePostMessage(req, res, req.body);
-});
+}));
 
 app.get('/health', (_req, res) => {
   res.json({ ok: true, server: 'audio-utils-mcp-http', version: readVersion() });
 });
 
+app.use((error, _req, res, _next) => {
+  console.error(error);
+  if (!res.headersSent) {
+    res.status(500).json({ error: 'Internal MCP gateway error' });
+  }
+});
+
 const httpServer = app.listen(port, host, () => {
+  if (host !== '127.0.0.1' && host !== '::1' && host !== 'localhost') {
+    console.error('warning: MCP gateway is listening beyond loopback without built-in authentication');
+  }
   console.error(
     `audio-utils-mcp-http listening on http://${host}:${port} (/mcp streamable, /sse legacy)`,
   );
 });
 
-function shutdown() {
+async function shutdown() {
+  await Promise.allSettled([
+    ...[...streamableSessions.values()].map(({ transport }) => transport.close()),
+    ...[...sseTransports.values()].map((transport) => transport.close()),
+  ]);
   bash.close();
-  httpServer.close();
-  process.exit(0);
+  httpServer.close(() => process.exit(0));
 }
-process.on('SIGINT', shutdown);
-process.on('SIGTERM', shutdown);
+process.on('SIGINT', () => void shutdown());
+process.on('SIGTERM', () => void shutdown());
