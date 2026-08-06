@@ -300,6 +300,13 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v7
 
+      - name: Use minimum supported Node
+        uses: actions/setup-node@v6
+        with:
+          node-version: 18
+          cache: npm
+          cache-dependency-path: mcp/npm/package-lock.json
+
       - name: Install locked dependencies
         run: npm ci
 
