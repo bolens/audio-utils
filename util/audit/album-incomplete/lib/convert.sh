@@ -13,8 +13,8 @@ _ai_list_audio() {
       find_args+=( -o -iname "*.${ext}" )
     fi
   done
-  find_args+=( \) )
-  LC_ALL=C find "${find_args[@]}" | LC_ALL=C sort
+  find_args+=( \) -print0 )
+  LC_ALL=C find "${find_args[@]}" | LC_ALL=C sort -z
 }
 
 # Print semicolon-joined issues (empty = complete).
@@ -26,7 +26,7 @@ _ai_audit_dir() {
   local missing_track=0 total_discs="" max_disc=1 file_count=0
   local median short_n=0 long_n=0 ratio
 
-  mapfile -t files < <(_ai_list_audio "$dir")
+  au_mapfile0 files < <(_ai_list_audio "$dir")
   file_count=${#files[@]}
   if ((file_count == 0)); then
     printf '\n'
@@ -173,7 +173,7 @@ convert_one() {
   ) 9>"$lock"
 
   issues=$(head -n1 -- "$result_f" 2>/dev/null || true)
-  n=$(_ai_list_audio "$dir" | wc -l | tr -d ' ')
+  n=$(_ai_list_audio "$dir" | tr -cd '\0' | wc -c | tr -d ' ')
 
   if [[ -n "$issues" ]]; then
     log_fail "$dir" "album incomplete" "$issues"

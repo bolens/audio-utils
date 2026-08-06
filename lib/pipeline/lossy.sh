@@ -105,7 +105,7 @@ require_libmp3lame() {
 # Prepare SRC for lossy FAMILY encode.
 # If rate/channels unsupported: when LOSSY_NO_RESAMPLE=1 return 1; else
 # resample and/or downmix to stereo, log_note, write prep under TMPDIR.
-# Prints prep path on stdout (may be SRC when already ok).
+# Prints the prep path as a NUL-delimited record (may be SRC when already ok).
 lossy_prepare_source() {
   local src="$1" tmpdir="$2" family="${3,,}"
   local ch rate need_ch=0 need_rate=0 target_rate prep err
@@ -122,7 +122,7 @@ lossy_prepare_source() {
   fi
 
   if ((need_ch == 0 && need_rate == 0)); then
-    printf '%s\n' "$src"
+    printf '%s\0' "$src"
     return 0
   fi
 
@@ -155,7 +155,7 @@ lossy_prepare_source() {
     return 1
   fi
 
-  printf '%s\n' "$prep"
+  printf '%s\0' "$prep"
 }
 
 # --- quality profiles -------------------------------------------------------
@@ -407,7 +407,7 @@ lossy_convert_one() {
     cleanup
     return 1
   fi
-  prep=$(tail -n1 "${tmpdir}/prep.path")
+  IFS= read -r -d '' prep <"${tmpdir}/prep.path"
   [[ -f "$prep" ]] || { log_fail "$flac" "missing prep"; cleanup; return 1; }
 
   if ! lossy_encode "$prep" "$enc_out"; then

@@ -88,7 +88,7 @@ convert_one() {
       fail=1
       continue
     fi
-    mapfile -t enc_out <"${tmpdir}/enc.out"
+    au_mapfile0 enc_out "${tmpdir}/enc.out"
 
     if ! _cue_tag_flac "${enc_out[0]}" "${tmpdir}/tagged.flac" "${title:-}" "${perf:-}" "$idx"; then
       log_fail "$cue" "tag failed track=$idx"

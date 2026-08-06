@@ -26,10 +26,28 @@ require_cmds() {
   fi
 }
 
+# Read a NUL-delimited stream into the array named by $1 (Bash 4.3-compatible).
+au_mapfile0() {
+  # shellcheck disable=SC2178 # nameref target is explicitly an array name
+  local -n _out=$1
+  local input="${2:-}" item
+  _out=()
+  if [[ -n "$input" ]]; then
+    while IFS= read -r -d '' item; do
+      _out+=("$item")
+    done <"$input"
+    return
+  fi
+  while IFS= read -r -d '' item; do
+    _out+=("$item")
+  done
+}
+
 # Populate array name passed as $1 from AUDIO_UTILS_ROOTS_FILE, or the legacy
 # space-separated AUDIO_UTILS_ROOTS / WAV2FLAC_ROOTS values.
 # Returns 0 if at least one root was set.
 audio_utils_roots_from_env() {
+  # shellcheck disable=SC2178 # nameref target is explicitly an array name
   local -n _out=$1
   local raw="${AUDIO_UTILS_ROOTS:-${WAV2FLAC_ROOTS:-}}"
   local roots_file="${AUDIO_UTILS_ROOTS_FILE:-}"

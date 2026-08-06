@@ -49,7 +49,7 @@ convert_one() {
     cleanup
     return 1
   fi
-  mapfile -t enc_out <"${tmpdir}/enc.out"
+  au_mapfile0 enc_out "${tmpdir}/enc.out"
   md5_flac=${enc_out[2]}
 
   # Tag track number

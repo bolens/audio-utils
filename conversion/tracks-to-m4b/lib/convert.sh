@@ -13,8 +13,8 @@ _t2m_list_audio() {
       find_args+=( -o -iname "*.${ext}" )
     fi
   done
-  find_args+=( \) )
-  LC_ALL=C find "${find_args[@]}" | LC_ALL=C sort
+  find_args+=( \) -print0 )
+  LC_ALL=C find "${find_args[@]}" | LC_ALL=C sort -z
 }
 
 _t2m_title_of() {
@@ -36,7 +36,7 @@ _t2m_build() {
   local idx=0 sha notes codec=${M4B_CODEC:-aac} q=${M4B_QUALITY:-96}
   local escaped
 
-  mapfile -t files < <(_t2m_list_audio "$dir")
+  au_mapfile0 files < <(_t2m_list_audio "$dir")
   # Drop any .m4b sitting among chapter sources
   local -a tracks=()
   for f in "${files[@]}"; do
@@ -187,7 +187,7 @@ convert_one() {
     return 0
   fi
 
-  n=$(_t2m_list_audio "$dir" | wc -l | tr -d ' ')
+  n=$(_t2m_list_audio "$dir" | tr -cd '\0' | wc -c | tr -d ' ')
   if [[ "${DRY_RUN:-0}" -eq 1 ]]; then
     log_progress "would tracks-to-m4b: $dir ($n tracks, codec=${M4B_CODEC:-aac})"
     return 0

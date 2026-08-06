@@ -67,7 +67,7 @@ convert_one() {
     cleanup
     return 1
   fi
-  prep=$(tail -n1 "${tmpdir}/prep.path")
+  IFS= read -r -d '' prep <"${tmpdir}/prep.path"
   [[ -f "$prep" ]] || { log_fail "$flac" "missing prep"; cleanup; return 1; }
 
   if ! ffmpeg -v error -y -i "$prep" -map 0:a:0 -c:a pcm_s16le "$wav" 2>"${tmpdir}/wav.err"; then

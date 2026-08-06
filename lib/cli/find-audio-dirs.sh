@@ -26,6 +26,7 @@ audio_utils_load_config
 
 EXTS=()
 ROOTS=()
+PRINT0=0
 FIND_BIN=$(au_find_bin)
 
 usage() {
@@ -37,6 +38,7 @@ Usage: find-audio-dirs.sh --ext EXT [-e EXT ...] [ROOT ...]
   --preset NAME       Shared cluster: portable|portable-pcm|pcm|lossy|
                       audiobook|portable-pcm-archive|library|library-junk|
                       viz|playlist (see lib/media/audio_exts.sh)
+  --print0            NUL-delimit output (safe for all filenames)
   --version           Print version and exit
   -h, --help          Show this help
 
@@ -65,6 +67,10 @@ while (($# > 0)); do
       # shellcheck disable=SC2206
       EXTS+=($_preset_list)
       shift 2
+      ;;
+    --print0)
+      PRINT0=1
+      shift
       ;;
     --version)
       audio_utils_print_version "find-audio-dirs"
@@ -155,6 +161,11 @@ done
 
 # List unique parent dirs of every matching file, sorted (C locale).
 set +o pipefail
-LC_ALL=C "$FIND_BIN" -P "${ROOTS[@]}" -type f \( "${find_expr[@]}" \) -printf '%h\n' 2>/dev/null \
-  | LC_ALL=C sort -u
+if ((PRINT0)); then
+  LC_ALL=C "$FIND_BIN" -P "${ROOTS[@]}" -type f \( "${find_expr[@]}" \) -printf '%h\0' 2>/dev/null \
+    | LC_ALL=C sort -zu
+else
+  LC_ALL=C "$FIND_BIN" -P "${ROOTS[@]}" -type f \( "${find_expr[@]}" \) -printf '%h\n' 2>/dev/null \
+    | LC_ALL=C sort -u
+fi
 set -o pipefail

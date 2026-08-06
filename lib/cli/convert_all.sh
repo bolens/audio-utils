@@ -34,7 +34,7 @@ audio_utils_convert_all() {
   # shellcheck disable=SC2064
   trap "rm -f -- '$list'" EXIT
 
-  if ! "$find_script" >"$list"; then
+  if ! "$find_script" --print0 >"$list"; then
     return 2
   fi
 
@@ -43,5 +43,5 @@ audio_utils_convert_all() {
     return 0
   fi
 
-  "$convert_script" "$@" <"$list"
+  "$convert_script" --dirs0 "$@" <"$list"
 }

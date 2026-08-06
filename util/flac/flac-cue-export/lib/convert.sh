@@ -6,7 +6,7 @@ _cueexp_dir_key() {
 }
 
 _cueexp_list_flacs() {
-  LC_ALL=C find -P "$1" -maxdepth 1 -type f -iname '*.flac' | LC_ALL=C sort
+  LC_ALL=C find -P "$1" -maxdepth 1 -type f -iname '*.flac' -print0 | LC_ALL=C sort -z
 }
 
 _cueexp_sec_to_msf() {
@@ -38,7 +38,7 @@ _cueexp_build_album() {
     return 0
   fi
 
-  mapfile -t flacs < <(_cueexp_list_flacs "$dir")
+  au_mapfile0 flacs < <(_cueexp_list_flacs "$dir")
   if ((${#flacs[@]} < 2)); then
     printf 'skip-lt2\n' >"$done_f"
     return 0

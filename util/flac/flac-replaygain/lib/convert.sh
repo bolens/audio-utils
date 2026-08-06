@@ -13,7 +13,7 @@ _rg_has_track_gain() {
 
 _rg_list_flacs() {
   local dir=$1
-  LC_ALL=C find -P "$dir" -maxdepth 1 -type f -iname '*.flac' | LC_ALL=C sort
+  LC_ALL=C find -P "$dir" -maxdepth 1 -type f -iname '*.flac' -print0 | LC_ALL=C sort -z
 }
 
 _rg_run_rsgain() {
@@ -59,7 +59,7 @@ _rg_album_locked() {
     return 0
   fi
 
-  mapfile -t flacs < <(_rg_list_flacs "$dir")
+  au_mapfile0 flacs < <(_rg_list_flacs "$dir")
   if ((${#flacs[@]} == 0)); then
     printf 'empty\n' >"$done_f"
     return 0

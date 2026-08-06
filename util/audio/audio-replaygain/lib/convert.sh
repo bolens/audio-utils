@@ -23,8 +23,8 @@ _rg_list_audio() {
       find_args+=( -o -iname "*.${ext}" )
     fi
   done
-  find_args+=( \) )
-  LC_ALL=C find "${find_args[@]}" | LC_ALL=C sort
+  find_args+=( \) -print0 )
+  LC_ALL=C find "${find_args[@]}" | LC_ALL=C sort -z
 }
 
 _rg_run_rsgain() {
@@ -54,7 +54,7 @@ _rg_album_locked() {
   local all_have=1 f
 
   [[ -f "$done_f" ]] && return 0
-  mapfile -t files < <(_rg_list_audio "$dir")
+  au_mapfile0 files < <(_rg_list_audio "$dir")
   if ((${#files[@]} == 0)); then
     printf 'empty\n' >"$done_f"; return 0
   fi

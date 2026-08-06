@@ -9,7 +9,7 @@ flac_ok() {
 
 # Dual remux to target PCM codec; verify hashes + sample counts.
 # Args: src tmpdir target_codec [ffmpeg -af args...]
-# Prints prep path on stdout (always .wav temps for FLAC friendliness).
+# Prints the prep path as a NUL-delimited record on stdout.
 remux_verified() {
   local wav="$1" tmpdir="$2" target_codec="$3"
   shift 3
@@ -71,7 +71,7 @@ remux_verified() {
   fi
 
   log_verbose "verified remux: $target_codec samples=$samples_prep audio_md5=$md5_1"
-  printf '%s\n' "$prep1"
+  printf '%s\0' "$prep1"
 }
 
 # Float PCM → 24-bit with peak/scale + s24↔f32 identity checks.
@@ -101,7 +101,7 @@ prepare_float() {
     fi
   fi
 
-  prep=$(tail -n1 "${tmpdir}/remux.path")
+  IFS= read -r -d '' prep <"${tmpdir}/remux.path"
 
   rt_f="$tmpdir/prep-rt-f32.wav"
   prep_rt="$tmpdir/prep-rt-s24.wav"
@@ -144,7 +144,7 @@ prepare_float() {
   fi
 
   log_verbose "verified float prep: peak=$peak_prep"
-  printf '%s\n' "$prep"
+  printf '%s\0' "$prep"
 }
 
 # Normalize endianness to little-endian for FLAC friendliness
@@ -358,7 +358,7 @@ decode_flac_verified() {
   fi
 
   log_verbose "verified decode: $target_codec audio_md5=$md5_1"
-  printf '%s\n' "$out1"
+  printf '%s\0' "$out1"
 }
 
 # Copy tags + cover from FLAC onto PCM container without changing audio MD5.
@@ -483,8 +483,8 @@ remux_pcm_container() {
 # Dual-encode FLAC from prep PCM; verify SHA + round-trip + e2e MD5.
 # Sets globals via echoing nothing; returns 0 and leaves flac1 verified untagged
 # in tmpdir/pass1.flac. Caller tags and moves.
-# Prints: path to verified untagged flac on stdout; decoded wav path as second line
-# for clean-replace use.
+# Prints four NUL-delimited records: verified FLAC path, decoded WAV path,
+# audio MD5, and file SHA-256.
 encode_flac_verified() {
   local src="$1" tmpdir="$2" label="${3:-source}"
   local flac1 flac2 flac3 decoded decode_err hash1 hash2 hash3 md5_flac md5_decoded md5_src
@@ -552,10 +552,10 @@ encode_flac_verified() {
     return 1
   fi
 
-  printf '%s\n' "$flac1"
-  printf '%s\n' "$decoded"
-  printf '%s\n' "$md5_flac"
-  printf '%s\n' "$hash1"
+  printf '%s\0' "$flac1"
+  printf '%s\0' "$decoded"
+  printf '%s\0' "$md5_flac"
+  printf '%s\0' "$hash1"
 }
 
 # Encode FLAC → compressed lossless (alac/wavpack/ape/tta) via ffmpeg; verify PCM MD5.
