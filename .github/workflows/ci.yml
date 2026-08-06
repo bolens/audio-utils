@@ -30,6 +30,8 @@ jobs:
       conversion: ${{ github.event_name == 'schedule' && 'true' || steps.filter.outputs.conversion }}
       util: ${{ github.event_name == 'schedule' && 'true' || steps.filter.outputs.util }}
       tests: ${{ github.event_name == 'schedule' && 'true' || steps.filter.outputs.tests }}
+      mcp: ${{ github.event_name == 'schedule' && 'true' || steps.filter.outputs.mcp }}
+      docs: ${{ github.event_name == 'schedule' && 'true' || steps.filter.outputs.docs }}
       code: ${{ github.event_name == 'schedule' && 'true' || steps.filter.outputs.code }}
       conversion_tools: ${{ steps.plan.outputs.conversion_tools }}
       util_tools: ${{ steps.plan.outputs.util_tools }}
@@ -61,11 +63,19 @@ jobs:
             tests:
               - 'tests/**'
               - '.githooks/**'
+            mcp:
+              - 'mcp/**'
+              - 'VERSION'
+            docs:
+              - '**/*.md'
+              - 'scripts/check-docs.sh'
             code:
               - 'lib/**'
               - 'conversion/**'
               - 'util/**'
               - 'tests/**'
+              - 'mcp/**'
+              - 'VERSION'
               - 'Makefile'
               - '.github/workflows/ci.yml'
               - 'scripts/**'
@@ -277,6 +287,41 @@ jobs:
       - name: Coverage audit
         run: make coverage
 
+  test-mcp-node:
+    name: tests (MCP Node gateway)
+    needs: changes
+    if: needs.changes.outputs.mcp == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: mcp/npm
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Install locked dependencies
+        run: npm ci
+
+      - name: Audit production dependencies
+        run: npm audit --omit=dev
+
+      - name: Check and test gateway
+        run: npm test
+
+  check-docs:
+    name: docs (local links)
+    needs: changes
+    if: needs.changes.outputs.docs == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Check local Markdown links
+        run: make check-docs
+
   # Functional tests: heavier fixtures/codecs, sharded across runners and
   # run against both ffmpeg ends we support: the distro's (oldest we care
   # about) and the current upstream release (matches dev machines). Version
@@ -440,6 +485,8 @@ jobs:
       - shellcheck-util
       - shellcheck-fedora
       - test-unit-smoke
+      - test-mcp-node
+      - check-docs
       - test-functional
     if: always()
     runs-on: ubuntu-latest
@@ -454,6 +501,8 @@ jobs:
             "${{ needs.shellcheck-util.result }}"
             "${{ needs.shellcheck-fedora.result }}"
             "${{ needs.test-unit-smoke.result }}"
+            "${{ needs.test-mcp-node.result }}"
+            "${{ needs.check-docs.result }}"
             "${{ needs.test-functional.result }}"
           )
           for r in "${results[@]}"; do

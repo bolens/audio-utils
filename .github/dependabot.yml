@@ -7,3 +7,10 @@ updates:
     groups:
       actions:
         patterns: ["*"]
+  - package-ecosystem: npm
+    directory: /mcp/npm
+    schedule:
+      interval: weekly
+    groups:
+      mcp-node:
+        patterns: ["*"]
