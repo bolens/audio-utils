@@ -18,6 +18,7 @@ Index of topic docs. **Tool lists** (every converter/util path) live only in the
 | [accessibility.md](accessibility.md) | Plain-text CLI posture (screen readers, no ANSI, logs) |
 | [mcp.md](mcp.md) | MCP stdio server, Cursor install, optional HTTP/SSE npm gateway |
 | [third-party.md](third-party.md) | Third-party software notices and licenses (APE SDK, Shorten, Takc) |
+| [releasing.md](releasing.md) | Maintainer release playbook |
 | [adding-a-converter.md](adding-a-converter.md) | Converter plugin contract |
 | [adding-a-util.md](adding-a-util.md) | Non-conversion util contract |
 

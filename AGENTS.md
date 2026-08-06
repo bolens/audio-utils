@@ -25,6 +25,7 @@ Read the nearest relevant docs before changing a contract:
 - New utility: `docs/adding-a-util.md`
 - Tests: `tests/README.md`
 - Platform and dependencies: `docs/requirements.md`
+- Releases: `docs/releasing.md`
 
 ## Core rules
 
