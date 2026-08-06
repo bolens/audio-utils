@@ -10,7 +10,7 @@
     "audio-utils-mcp-install-cursor": "./bin/install-cursor.js"
   },
   "engines": {
-    "node": ">=18"
+    "node": ">=20"
   },
   "scripts": {
     "check": "node --check bin/http.js && node --check bin/stdio.js && node --check bin/install-cursor.js && node --check bin/refuse-pack.js && node --check lib/bash.js",

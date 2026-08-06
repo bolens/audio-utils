@@ -64,7 +64,7 @@ Speaks MCP JSON-RPC with `Content-Length` framing on stdout; logs on stderr.
 
 ## Optional npm package
 
-In-repo, private (`mcp/npm/`). Requires Node ≥ 18.
+In-repo, private (`mcp/npm/`). Requires Node ≥ 20.
 
 ```bash
 cd mcp/npm && npm install

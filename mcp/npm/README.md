@@ -1,6 +1,6 @@
 # audio-utils-mcp (optional)
 
-Node ≥ 18 launcher and HTTP/SSE gateway for the dep-free Bash MCP server in
+Node ≥ 20 launcher and HTTP/SSE gateway for the dep-free Bash MCP server in
 [`../server.sh`](../server.sh). See [docs/mcp.md](../../docs/mcp.md).
 
 This private package is deliberately checkout-local: its launchers depend on
