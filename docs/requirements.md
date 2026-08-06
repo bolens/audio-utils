@@ -51,6 +51,11 @@ On Fedora, enable [RPM Fusion](https://rpmfusion.org/) before installing `ffmpeg
 | `makemkvcon` | often AUR (`makemkv`) | third-party | third-party |
 | `wine` (Takc `.exe`) | `wine` | `wine` | `wine` |
 
+`scripts/keyfinder-cli.sh` builds reviewed, pinned commits of libkeyfinder and
+keyfinder-cli. Intentional upgrades may override the full commit IDs with
+`AUDIO_UTILS_LIBKEYFINDER_REV` and `AUDIO_UTILS_KEYFINDER_CLI_REV`; successful
+installs record both revisions for `keyfinder-status`.
+
 ## Tool extras
 
 | Tool / feature | Extra dependency |
