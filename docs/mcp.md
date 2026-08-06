@@ -79,11 +79,21 @@ AUDIO_UTILS_MCP_PORT=8765 ./bin/http.js
 |-----|---------|
 | `AUDIO_UTILS_MCP_HOST` | `127.0.0.1` |
 | `AUDIO_UTILS_MCP_PORT` | `8765` |
+| `AUDIO_UTILS_MCP_ALLOWED_HOSTS` | Bound host and loopback aliases |
+| `AUDIO_UTILS_MCP_ALLOWED_ORIGINS` | Empty (browser origins rejected) |
+| `AUDIO_UTILS_MCP_MAX_SESSIONS` | `64` |
+| `AUDIO_UTILS_MCP_SESSION_IDLE_MS` | `900000` (15 minutes) |
 
 The port must be an integer from 1 through 65535. The default loopback bind is
 intentional: the gateway has no built-in authentication and exposes tools that
 can read or modify files. Put authentication and transport security in front of
 it before binding to a non-loopback interface.
+
+`AUDIO_UTILS_MCP_ALLOWED_HOSTS` and `AUDIO_UTILS_MCP_ALLOWED_ORIGINS` are
+comma-separated exact values. Configure them explicitly when a reverse proxy
+changes the `Host` header or a browser-based client sends `Origin`. Streamable
+HTTP sessions are capped and expired after inactivity; open SSE streams are
+not considered idle.
 
 | Endpoint | Role |
 |----------|------|

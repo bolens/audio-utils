@@ -32,6 +32,28 @@ const port = Number(process.env.AUDIO_UTILS_MCP_PORT || 8765);
 if (!Number.isInteger(port) || port < 1 || port > 65535) {
   throw new Error('AUDIO_UTILS_MCP_PORT must be an integer from 1 to 65535');
 }
+const sessionLimit = Number(process.env.AUDIO_UTILS_MCP_MAX_SESSIONS || 64);
+const sessionIdleMs = Number(process.env.AUDIO_UTILS_MCP_SESSION_IDLE_MS || 900_000);
+if (!Number.isInteger(sessionLimit) || sessionLimit < 1) {
+  throw new Error('AUDIO_UTILS_MCP_MAX_SESSIONS must be a positive integer');
+}
+if (!Number.isInteger(sessionIdleMs) || sessionIdleMs < 100) {
+  throw new Error('AUDIO_UTILS_MCP_SESSION_IDLE_MS must be an integer of at least 100');
+}
+
+function csvEnv(name) {
+  return (process.env[name] || '').split(',').map((value) => value.trim()).filter(Boolean);
+}
+
+const configuredHosts = csvEnv('AUDIO_UTILS_MCP_ALLOWED_HOSTS');
+const allowedHosts = new Set(configuredHosts.length ? configuredHosts : [host, `${host}:${port}`]);
+if (!configuredHosts.length && ['127.0.0.1', '::1', 'localhost'].includes(host)) {
+  for (const loopback of ['127.0.0.1', 'localhost', '[::1]']) {
+    allowedHosts.add(loopback);
+    allowedHosts.add(`${loopback}:${port}`);
+  }
+}
+const allowedOrigins = new Set(csvEnv('AUDIO_UTILS_MCP_ALLOWED_ORIGINS'));
 
 function readVersion() {
   try {
@@ -61,7 +83,7 @@ async function ensureInitialized() {
       if (response.error) {
         throw new Error(response.error.message || 'Bash MCP initialization failed');
       }
-      bash.notify({ jsonrpc: '2.0', method: 'notifications/initialized' });
+      await bash.notify({ jsonrpc: '2.0', method: 'notifications/initialized' });
     })().catch((error) => {
       initializePromise = undefined;
       throw error;
@@ -108,6 +130,19 @@ function createProxyServer() {
 }
 
 const app = express();
+app.use((req, res, next) => {
+  const requestHost = req.headers.host || '';
+  if (!allowedHosts.has(requestHost)) {
+    res.status(403).json({ error: 'Host not allowed' });
+    return;
+  }
+  const origin = req.headers.origin;
+  if (origin && !allowedOrigins.has(origin)) {
+    res.status(403).json({ error: 'Origin not allowed' });
+    return;
+  }
+  next();
+});
 app.use(express.json({ limit: '4mb' }));
 const asyncRoute = (handler) => (req, res, next) => {
   Promise.resolve(handler(req, res, next)).catch(next);
@@ -115,28 +150,73 @@ const asyncRoute = (handler) => (req, res, next) => {
 
 /** @type {Map<string, SSEServerTransport>} */
 const sseTransports = new Map();
-/** @type {Map<string, {transport: StreamableHTTPServerTransport, server: Server}>} */
+/** @type {Map<string, {transport: StreamableHTTPServerTransport, server: Server, timer?: NodeJS.Timeout}>} */
 const streamableSessions = new Map();
+let pendingSessions = 0;
+
+function forgetSession(id) {
+  const session = streamableSessions.get(id);
+  if (!session) return;
+  if (session.timer) clearTimeout(session.timer);
+  streamableSessions.delete(id);
+}
+
+function expireSession(id) {
+  const session = streamableSessions.get(id);
+  if (!session) return;
+  forgetSession(id);
+  session.transport.close().catch(() => {});
+  session.server.close().catch(() => {});
+}
+
+function touchSession(id) {
+  const session = streamableSessions.get(id);
+  if (!session) return;
+  if (session.timer) clearTimeout(session.timer);
+  session.timer = setTimeout(() => expireSession(id), sessionIdleMs);
+  session.timer.unref();
+}
 
 app.post('/mcp', asyncRoute(async (req, res) => {
   const sessionId = req.headers['mcp-session-id'];
-  let session = sessionId ? streamableSessions.get(String(sessionId)) : undefined;
+  const requestSessionId = sessionId ? String(sessionId) : '';
+  let session = requestSessionId ? streamableSessions.get(requestSessionId) : undefined;
+  let pending = false;
   if (!session && !sessionId && isInitializeRequest(req.body)) {
+    if (streamableSessions.size + pendingSessions >= sessionLimit) {
+      res.status(503).json({
+        jsonrpc: '2.0',
+        error: { code: -32000, message: 'MCP session capacity reached' },
+        id: null,
+      });
+      return;
+    }
+    pendingSessions += 1;
+    pending = true;
     const server = createProxyServer();
     let transport;
     transport = new StreamableHTTPServerTransport({
       sessionIdGenerator: () => randomUUID(),
       onsessioninitialized: (id) => {
         streamableSessions.set(id, { transport, server });
+        touchSession(id);
       },
     });
     transport.onclose = () => {
       const id = transport.sessionId;
-      if (id) streamableSessions.delete(id);
+      if (id) forgetSession(id);
       server.close().catch(() => {});
     };
     session = { transport, server };
-    await server.connect(transport);
+    try {
+      await server.connect(transport);
+    } catch (error) {
+      pendingSessions -= 1;
+      pending = false;
+      transport.close().catch(() => {});
+      server.close().catch(() => {});
+      throw error;
+    }
   }
   if (!session) {
     res.status(400).json({
@@ -146,7 +226,16 @@ app.post('/mcp', asyncRoute(async (req, res) => {
     });
     return;
   }
-  await session.transport.handleRequest(req, res, req.body);
+  if (requestSessionId && session.timer) {
+    clearTimeout(session.timer);
+    session.timer = undefined;
+  }
+  try {
+    await session.transport.handleRequest(req, res, req.body);
+  } finally {
+    if (pending) pendingSessions -= 1;
+    if (requestSessionId) touchSession(requestSessionId);
+  }
 }));
 
 app.get('/mcp', asyncRoute(async (req, res) => {
@@ -155,6 +244,10 @@ app.get('/mcp', asyncRoute(async (req, res) => {
     res.status(400).send('Invalid or missing session ID');
     return;
   }
+  const id = String(req.headers['mcp-session-id']);
+  if (session.timer) clearTimeout(session.timer);
+  session.timer = undefined;
+  res.on('close', () => touchSession(id));
   await session.transport.handleRequest(req, res);
 }));
 
@@ -190,7 +283,13 @@ app.post('/message', asyncRoute(async (req, res) => {
 }));
 
 app.get('/health', (_req, res) => {
-  res.json({ ok: true, server: 'audio-utils-mcp-http', version: readVersion() });
+  const ok = bash.isAlive;
+  res.status(ok ? 200 : 503).json({
+    ok,
+    server: 'audio-utils-mcp-http',
+    version: readVersion(),
+    sessions: streamableSessions.size,
+  });
 });
 
 app.use((error, _req, res, _next) => {
