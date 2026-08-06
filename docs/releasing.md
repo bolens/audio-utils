@@ -27,6 +27,10 @@ published separately.
    make coverage
    ```
 
+   `make check` includes immutable dependency enforcement: every external
+   GitHub Action must use a full 40-character commit SHA. Keep the release tag
+   in a trailing comment so Dependabot updates remain readable.
+
 4. Commit the version and playbook updates, push the branch, and open a PR
    summarizing user-visible changes and validation.
 
