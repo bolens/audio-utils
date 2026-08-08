@@ -231,6 +231,22 @@ test_playlist_smart_genre_filter() {
   fi
 }
 
+test_playlist_smart_validates_bpm_range() {
+  require_cmd flock awk
+  mkdir -p "$T/empty"
+
+  run_tool util/playlist/playlist-smart/playlist-smart.sh \
+    --out "$T/inverted.m3u" --bpm-min 140 --bpm-max 120 "$T/empty"
+  assert_eq "$(tool_rc)" 2 "inverted BPM range must fail"
+  assert_grep "bpm-min must be <=" "$T/out"
+  assert_no_file "$T/inverted.m3u"
+
+  run_tool util/playlist/playlist-smart/playlist-smart.sh \
+    --out="$T/exact.m3u" --bpm-min=120.5 --bpm-max=120.5 "$T/empty"
+  assert_eq "$(tool_rc)" 0 "equal BPM bounds must be valid"
+  assert_no_file "$T/exact.m3u" "empty match set must not create playlist"
+}
+
 # --- silence-split -----------------------------------------------------------
 
 test_silence_split_two_tones() {

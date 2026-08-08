@@ -113,6 +113,12 @@ plugin_after_flags() {
     echo "Error: --rg-max must be numeric (got ${PLSMART_RG_MAX})" >&2
     return 1
   fi
+  if [[ -n "$PLSMART_BPM_MIN" && -n "$PLSMART_BPM_MAX" ]] && \
+     ! awk -v min="$PLSMART_BPM_MIN" -v max="$PLSMART_BPM_MAX" \
+       'BEGIN { exit !(min <= max) }'; then
+    echo "Error: --bpm-min must be <= --bpm-max" >&2
+    return 1
+  fi
   export PLSMART_OUT PLSMART_GENRE PLSMART_ARTIST PLSMART_KEY \
     PLSMART_BPM_MIN PLSMART_BPM_MAX PLSMART_RG_MAX PLSMART_RELATIVE
   return 0
