@@ -176,18 +176,29 @@ audio_utils_runtime_dir() {
   return 1
 }
 
-# mktemp file under runtime dir. Optional name template (default: tmp.XXXXXX).
+_audio_utils_validate_temp_template() {
+  local template="$1"
+  if [[ ! "$template" =~ ^[A-Za-z0-9][A-Za-z0-9._-]*XXX$ ]]; then
+    echo "Error: invalid temporary-file template: $template" >&2
+    return 2
+  fi
+}
+
+# mktemp file under runtime dir. Optional basename template (default:
+# tmp.XXXXXX); it must end in at least three X characters.
 audio_utils_mktemp() {
   local template="${1:-tmp.XXXXXX}"
   local base
+  _audio_utils_validate_temp_template "$template" || return
   base=$(audio_utils_runtime_dir) || return 1
   mktemp -- "${base}/${template}"
 }
 
-# mktemp -d under runtime dir. Optional name template (default: tmp.XXXXXX).
+# mktemp -d under runtime dir. Template rules match audio_utils_mktemp.
 audio_utils_mktemp_d() {
   local template="${1:-tmp.XXXXXX}"
   local base
+  _audio_utils_validate_temp_template "$template" || return
   base=$(audio_utils_runtime_dir) || return 1
   mktemp -d -- "${base}/${template}"
 }

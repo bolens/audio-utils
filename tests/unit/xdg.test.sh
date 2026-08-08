@@ -147,6 +147,33 @@ test_mktemp_lands_in_runtime_dir() {
   esac
 }
 
+test_mktemp_helpers_reject_unsafe_templates() {
+  _load_lib
+  local fn template rc
+  for fn in audio_utils_mktemp audio_utils_mktemp_d; do
+    for template in '../escape.XXXXXX' 'nested/file.XXXXXX' '/absolute.XXXXXX' \
+      '-option.XXXXXX' '.hidden.XXXXXX' 'missing-xs' 'only.XX' \
+      $'line\nfeed.XXXXXX'; do
+      rc=0
+      "$fn" "$template" >"$T/out" 2>"$T/err" || rc=$?
+      assert_eq "$rc" 2 "$fn accepted unsafe template"
+      assert_grep "invalid temporary-file template" "$T/err"
+    done
+  done
+  assert_no_file "$T/escape.XXXXXX" "template traversal created a file"
+}
+
+test_mktemp_directory_lands_in_runtime_dir() {
+  _load_lib
+  local dir
+  dir=$(audio_utils_mktemp_d build.XXX)
+  [[ -d "$dir" ]] || fail "temporary directory not created: $dir"
+  case "$dir" in
+    "$XDG_RUNTIME_DIR/audio-utils/build."*) : ;;
+    *) fail "temporary directory outside runtime dir: $dir" ;;
+  esac
+}
+
 test_runtime_dir_rejects_symlink_candidates() {
   _load_lib
   mkdir -p "$T/attacker" "$T/runtime" "$T/cache/audio-utils"
