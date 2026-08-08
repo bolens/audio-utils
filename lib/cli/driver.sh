@@ -113,6 +113,7 @@ audio_utils_run() {
   export AUDIO_UTILS_WORKDIR_PREFIX
   CHECK_DISK_FACTOR="${AU_DISK_FACTOR:-3}"
   export CHECK_DISK_FACTOR
+  validate_disk_factor "$CHECK_DISK_FACTOR" || return 2
 
   DELETE_SOURCE=0
   DELETE_EXISTING=0

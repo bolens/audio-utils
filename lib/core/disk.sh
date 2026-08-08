@@ -5,6 +5,14 @@ bytes_avail() {
   au_bytes_avail "$1"
 }
 
+validate_disk_factor() {
+  local factor="${1:-}"
+  if [[ ! "$factor" =~ ^[0-9]+([.][0-9]+)?$ ]]; then
+    log_err "Error: disk factor must be a non-negative number (got: $factor)"
+    return 2
+  fi
+}
+
 # check_disk_space DIR FILE [FILE...]
 # Requires CHECK_DISK_FACTOR × largest FILE free (default 3).
 # Factor may be fractional (e.g. 1.5, 2).
@@ -15,6 +23,7 @@ check_disk_space() {
   local factor="${CHECK_DISK_FACTOR:-3}"
 
   ((${#} == 0)) && return 0
+  validate_disk_factor "$factor" || return
 
   for f in "$@"; do
     sz=$(file_bytes "$f")

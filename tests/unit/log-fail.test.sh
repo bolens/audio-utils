@@ -130,4 +130,30 @@ test_disk_preflight_uses_largest_file_and_factor() {
   assert_eq "$rc" 1 "30 needed, 24 free must fail"
 }
 
+test_disk_preflight_rejects_invalid_factors() {
+  _load
+  printf '12345' >"$T/src.wav"
+  local factor rc
+  for factor in -1 nope .5 1. 1e2; do
+    rc=0
+    CHECK_DISK_FACTOR=$factor check_disk_space "$T" "$T/src.wav" \
+      >"$T/out" 2>&1 || rc=$?
+    assert_eq "$rc" 2 "invalid factor: $factor"
+    assert_grep "disk factor must be" "$T/out"
+  done
+}
+
+test_disk_preflight_accepts_zero_and_fraction() {
+  _load
+  printf '1234567890' >"$T/src.wav"
+  au_bytes_avail() { echo 1; }
+  CHECK_DISK_FACTOR=0 check_disk_space "$T" "$T/src.wav" \
+    || fail "zero factor must be accepted"
+
+  local rc=0
+  CHECK_DISK_FACTOR=0.2 check_disk_space "$T" "$T/src.wav" \
+    2>/dev/null || rc=$?
+  assert_eq "$rc" 1 "fractional factor must be applied"
+}
+
 run_tests
