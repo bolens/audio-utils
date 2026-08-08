@@ -181,6 +181,9 @@ mcp_json_parse_string() {
         *) return 1 ;;
       esac
     else
+      if [[ "$c" == [[:cntrl:]] ]]; then
+        return 1
+      fi
       out+=$c
     fi
     ((i++)) || true
@@ -198,7 +201,22 @@ mcp_json_get_string() {
   rest=$(mcp_json_after_key "$1" "$2") || return 1
   rest=${rest##+([[:space:]])}
   [[ "${rest:0:1}" == '"' ]] || return 1
-  mcp_json_parse_string "$rest"
+  local -i i=1 n=${#rest} esc=0
+  local c
+  while ((i < n)); do
+    c=${rest:i:1}
+    if ((esc)); then
+      esc=0
+    elif [[ "$c" == \\ ]]; then
+      esc=1
+    elif [[ "$c" == '"' ]]; then
+      mcp_json_token_delimited "${rest:i+1}" || return 1
+      mcp_json_parse_string "${rest:0:i+1}"
+      return
+    fi
+    ((i++)) || true
+  done
+  return 1
 }
 
 mcp_json_get_bool() {

@@ -106,6 +106,19 @@ test_mcp_json_rejects_invalid_escapes() {
   done
 }
 
+test_mcp_json_rejects_raw_controls_and_string_suffixes() {
+  _load_mcp
+  local value
+  for value in $'"line\nbreak"' $'"raw\ttab"' $'"raw\rreturn"' $'"raw\x01byte"'; do
+    if mcp_json_parse_string "$value" >/dev/null; then
+      fail "accepted raw control byte"
+    fi
+  done
+  assert_eq "$(mcp_json_get_string '{"name":"ok"}' name)" ok
+  assert_exit 1 mcp_json_get_string '{"name":"ok"junk}' name
+  assert_exit 1 mcp_json_get_string '{"name":"ok"0}' name
+}
+
 test_mcp_json_string_array() {
   _load_mcp
   local obj='{"paths":["/a","-leading","line\nfeed","M\u00fasica"],"x":1}'
