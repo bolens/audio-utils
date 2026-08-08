@@ -109,6 +109,34 @@ test_dedupe_entries_keeps_first() {
   assert_eq "$(wc -l <<<"$out")" "2"
 }
 
+test_title_key_normalizes_case_and_whitespace() {
+  _load_lib
+  assert_eq "$(playlist_normalize_title_key $'  The\tArtist ' $' Song   Name\n')" \
+    $'the artist\tsong name'
+  shopt -u extglob
+  _playlist_normalize_text 'a  b' >/dev/null
+  if shopt -q extglob; then
+    fail "normalization leaked extglob into caller"
+  fi
+}
+
+test_title_key_retains_artist_title_boundary() {
+  _load_lib
+  local first second
+  first=$(playlist_normalize_title_key 'A B' 'C')
+  second=$(playlist_normalize_title_key 'A' 'B C')
+  [[ "$first" != "$second" ]] || fail "artist/title boundary collapsed"
+}
+
+test_title_dedupe_collapses_whitespace_variants() {
+  _load_lib
+  local out
+  out=$(printf 'a.flac\x1fSong   Name\x1f10\nb.flac\x1fsong\tname\x1f11\n' \
+    | playlist_dedupe_entries title)
+  assert_eq "$(wc -l <<<"$out")" 1
+  assert_grep '^a.flac' "$out" "first variant retained"
+}
+
 test_parse_m3u_crlf_and_trailing_line_without_newline() {
   _load_lib
   mkdir -p "$T/music"

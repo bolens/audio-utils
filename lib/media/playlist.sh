@@ -421,15 +421,26 @@ _playlist_write_xspf() {
   mv -f -- "$tmp" "$out"
 }
 
-# Normalize artist+title for soft dedupe.
-playlist_normalize_title_key() {
-  local artist=$1 title=$2
-  local s
-  s=$(printf '%s\t%s' "${artist,,}" "${title,,}")
-  s=${s//[[:space:]]+/ }
+# Normalize one metadata field for soft dedupe.
+_playlist_normalize_text() {
+  local s=${1,,} restore_extglob=0
+  if ! shopt -q extglob; then
+    shopt -s extglob
+    restore_extglob=1
+  fi
+  s=${s//+([[:space:]])/ }
   s=${s#"${s%%[![:space:]]*}"}
   s=${s%"${s##*[![:space:]]}"}
-  printf '%s\n' "$s"
+  ((restore_extglob == 0)) || shopt -u extglob
+  printf '%s' "$s"
+}
+
+# Normalize artist+title for soft dedupe while retaining a field separator.
+playlist_normalize_title_key() {
+  local artist title
+  artist=$(_playlist_normalize_text "$1")
+  title=$(_playlist_normalize_text "$2")
+  printf '%s\t%s\n' "$artist" "$title"
 }
 
 # Build dedupe key for one entry.
