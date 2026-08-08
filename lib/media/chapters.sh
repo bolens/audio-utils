@@ -64,31 +64,45 @@ chapters_count() {
 # TIMEBASE is 1/1000 (milliseconds).
 chapters_write_ffmetadata() {
   local out=$1
-  local line idx start end title start_ms end_ms
-  {
-    printf '%s\n' ';FFMETADATA1'
-    while IFS= read -r line || [[ -n "$line" ]]; do
-      [[ -n "$line" ]] || continue
-      IFS='|' read -r idx start end title <<<"$line"
-      [[ -n "$start" ]] || continue
-      start_ms=$(awk -v s="$start" 'BEGIN { printf "%d", (s * 1000) + 0.5 }')
-      if [[ -n "$end" ]]; then
-        end_ms=$(awk -v s="$end" 'BEGIN { printf "%d", (s * 1000) + 0.5 }')
-      else
-        end_ms=$start_ms
-      fi
-      # Escape special ffmetadata chars: = ; # \
-      title=${title//\\/\\\\}
-      title=${title//=/\\=}
-      title=${title//;/\\;}
-      title=${title//#/\\#}
+  local line idx start end title start_ms end_ms tmp
+  tmp=$(mktemp --tmpdir="$(dirname -- "$out")" .chapters.XXXXXX) || return 1
+  printf '%s\n' ';FFMETADATA1' >"$tmp"
+  while IFS= read -r line || [[ -n "$line" ]]; do
+    [[ -n "$line" ]] || continue
+    IFS='|' read -r idx start end title <<<"$line"
+    if [[ ! "$start" =~ ^[0-9]+([.][0-9]+)?$ ]] ||
+      { [[ -n "$end" ]] && [[ ! "$end" =~ ^[0-9]+([.][0-9]+)?$ ]]; }; then
+      rm -f -- "$tmp"
+      return 1
+    fi
+    if [[ -n "$end" ]] && ! awk -v start="$start" -v end="$end" \
+      'BEGIN { exit !(end > start) }'; then
+      rm -f -- "$tmp"
+      return 1
+    fi
+    start_ms=$(awk -v s="$start" 'BEGIN { printf "%d", (s * 1000) + 0.5 }')
+    if [[ -n "$end" ]]; then
+      end_ms=$(awk -v s="$end" 'BEGIN { printf "%d", (s * 1000) + 0.5 }')
+    else
+      end_ms=$start_ms
+    fi
+    # Escape special ffmetadata chars: = ; # \
+    title=${title//\\/\\\\}
+    title=${title//=/\\=}
+    title=${title//;/\\;}
+    title=${title//#/\\#}
+    {
       printf '%s\n' '[CHAPTER]'
       printf '%s\n' 'TIMEBASE=1/1000'
       printf 'START=%s\n' "$start_ms"
       printf 'END=%s\n' "$end_ms"
       printf 'title=%s\n' "$title"
-    done
-  } >"$out"
+    } >>"$tmp"
+  done
+  if ! mv -f -- "$tmp" "$out"; then
+    rm -f -- "$tmp"
+    return 1
+  fi
 }
 
 # Extract chapters from media to an ffmetadata file. Returns 1 if none.
@@ -135,6 +149,7 @@ chapters_from_durations() {
     dur=${line%%|*}
     title=${line#*|}
     [[ "$dur" =~ ^[0-9]+([.][0-9]+)?$ ]] || continue
+    awk -v dur="$dur" 'BEGIN { exit !(dur > 0) }' || continue
     end=$(awk -v a="$start" -v b="$dur" 'BEGIN { printf "%.8f", a + b }')
     ((++idx))
     printf '%d|%s|%s|%s\n' "$idx" "$start" "$end" "$title"

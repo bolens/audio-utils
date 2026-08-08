@@ -35,10 +35,28 @@ test_chapters_from_durations_accumulates_and_skips_invalid_rows() {
   got=$(chapters_from_durations <<'EOF'
 1.25|Intro
 invalid|Ignored
+0|Zero
+0.0|Also Zero
 2|Main
 EOF
 )
   assert_eq "$got" $'1|0|1.25000000|Intro\n2|1.25000000|3.25000000|Main'
+}
+
+test_chapters_write_ffmetadata_rejects_invalid_times_atomically() {
+  _load_chapters
+  local row
+  for row in '-1|2' 'nope|2' '2|1' '2|2' '1|bad'; do
+    printf 'keep me\n' >"$T/chapters.ffmeta"
+    if printf '1|%s|Bad\n' "$row" \
+      | chapters_write_ffmetadata "$T/chapters.ffmeta"; then
+      fail "accepted invalid chapter times: $row"
+    fi
+    assert_eq "$(cat "$T/chapters.ffmeta")" "keep me" "destination preserved"
+  done
+  if find "$T" -maxdepth 1 -name '.chapters.*' -print -quit | grep -q .; then
+    fail "failed chapter write leaked a temporary file"
+  fi
 }
 
 test_chapters_write_ffmetadata_rounds_and_escapes() {
