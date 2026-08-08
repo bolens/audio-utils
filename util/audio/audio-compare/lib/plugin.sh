@@ -79,6 +79,10 @@ plugin_after_flags() {
       return 1
       ;;
   esac
+  if [[ ! "$COMPARE_PEAK_EPS" =~ ^[0-9]+([.][0-9]+)?$ ]]; then
+    echo "Error: --peak-eps must be a non-negative number (got: $COMPARE_PEAK_EPS)" >&2
+    return 1
+  fi
   export COMPARE_AGAINST COMPARE_MODE COMPARE_PEAK_EPS
   return 0
 }

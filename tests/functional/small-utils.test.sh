@@ -44,6 +44,23 @@ test_audio_compare_md5_match_and_mismatch() {
   assert_eq "$(tool_rc)" 1 "mismatch rc ($(tool_out | tail -3))"
 }
 
+test_audio_compare_validates_peak_epsilon() {
+  mkdir -p "$T/main" "$T/against"
+  export AUDIO_UTILS_ROOTS="$T/main"
+  local value rc
+  for value in -0.1 nope .1 1. 1e-3 0.1junk; do
+    run_tool util/audio/audio-compare/audio-compare.sh \
+      --against="$T/against" --mode=peak --peak-eps="$value" "$T/main"
+    rc=$(tool_rc)
+    assert_eq "$rc" 2 "accepted --peak-eps=$value"
+    assert_grep "peak-eps must be" "$T/out"
+  done
+
+  run_tool util/audio/audio-compare/audio-compare.sh \
+    --against "$T/against" --mode peak --peak-eps 0 "$T/main"
+  assert_eq "$(tool_rc)" 0 "zero epsilon boundary ($(tool_out | tail -3))"
+}
+
 test_flac_resample_report_and_apply() {
   require_cmd flac metaflac ffmpeg ffprobe flock
   local rate
