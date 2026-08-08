@@ -12,13 +12,15 @@ audio_utils_xdg_config_home() {
   elif [[ -n "${HOME:-}" ]]; then
     printf '%s\n' "${HOME}/.config"
   else
-    printf '%s\n' "${TMPDIR:-/tmp}"
+    return 1
   fi
 }
 
 # Preferred config path (does not create).
 audio_utils_config_path() {
-  printf '%s\n' "$(audio_utils_xdg_config_home)/audio-utils/config"
+  local home
+  home=$(audio_utils_xdg_config_home) || return 1
+  printf '%s\n' "$home/audio-utils/config"
 }
 
 # Strip matching single/double quotes from a value.
@@ -54,7 +56,7 @@ _audio_utils_expand_value() {
 # Load config file. Existing env vars win. Returns 0 even if file missing.
 audio_utils_load_config() {
   local conf line key val
-  conf=$(audio_utils_config_path)
+  conf=$(audio_utils_config_path) || return 0
   [[ -f "$conf" ]] || return 0
 
   while IFS= read -r line || [[ -n "$line" ]]; do
