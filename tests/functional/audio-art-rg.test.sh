@@ -112,4 +112,20 @@ test_audio_replaygain_dry_run_writes_no_tags() {
     || fail "dry run must not tag"
 }
 
+test_audio_replaygain_skips_broken_preferred_backend() {
+  require_cmd flac metaflac ffmpeg ffprobe flock
+  mkdir -p "$T/bin" "$T/empty"
+  printf '#!/usr/bin/env bash\nexit 127\n' >"$T/bin/rsgain"
+  # shellcheck disable=SC2016  # $T expands when the generated shim runs
+  printf '#!/usr/bin/env bash\n: >"${T:?}/loudgain-probed"\nexit 0\n' \
+    >"$T/bin/loudgain"
+  chmod +x "$T/bin/rsgain" "$T/bin/loudgain"
+
+  PATH="$T/bin:$PATH" run_tool \
+    util/audio/audio-replaygain/audio-replaygain.sh -n -v "$T/empty"
+
+  assert_eq "$(tool_rc)" 0 "fallback backend rc ($(tool_out | tail -3))"
+  assert_file "$T/loudgain-probed" "fallback backend was not probed"
+}
+
 run_tests

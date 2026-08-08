@@ -25,6 +25,13 @@ source "$_AU_ROOT/lib/plugin_init.sh"
 RG_TRACK_ONLY="${RG_TRACK_ONLY:-0}"
 RG_BACKEND="${RG_BACKEND:-}"
 
+_rg_backend_usable() {
+  local backend=$1 rc=0
+  command -v "$backend" >/dev/null 2>&1 || return 1
+  "$backend" --version >/dev/null 2>&1 || rc=$?
+  [[ "$rc" -ne 126 && "$rc" -ne 127 ]]
+}
+
 plugin_parse_opt() {
   case "$1" in
     T) RG_TRACK_ONLY=1; export RG_TRACK_ONLY; return 0 ;;
@@ -46,12 +53,12 @@ plugin_after_flags() {
     echo "Error: audio-replaygain does not support -d/-D" >&2
     return 1
   fi
-  if command -v rsgain >/dev/null 2>&1; then
+  if _rg_backend_usable rsgain; then
     RG_BACKEND=rsgain
-  elif command -v loudgain >/dev/null 2>&1; then
+  elif _rg_backend_usable loudgain; then
     RG_BACKEND=loudgain
   else
-    echo "Error: need rsgain (preferred) or loudgain in PATH" >&2
+    echo "Error: need a runnable rsgain (preferred) or loudgain in PATH" >&2
     return 1
   fi
   export RG_BACKEND

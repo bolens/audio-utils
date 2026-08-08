@@ -24,6 +24,13 @@ source "$_AU_ROOT/lib/plugin_init.sh"
 
 KEY_NOTATION="${KEY_NOTATION:-standard}"
 
+_akey_backend_usable() {
+  local rc=0
+  command -v keyfinder-cli >/dev/null 2>&1 || return 1
+  keyfinder-cli --help >/dev/null 2>&1 || rc=$?
+  [[ "$rc" -ne 126 && "$rc" -ne 127 ]]
+}
+
 plugin_parse_opt() {
   case "$1" in
     C) KEY_NOTATION=camelot; export KEY_NOTATION; return 0 ;;
@@ -45,8 +52,8 @@ plugin_after_flags() {
     echo "Error: audio-key does not support -d/-D" >&2
     return 1
   fi
-  if ! command -v keyfinder-cli >/dev/null 2>&1; then
-    echo "Error: need keyfinder-cli in PATH" >&2
+  if ! _akey_backend_usable; then
+    echo "Error: need a runnable keyfinder-cli in PATH" >&2
     return 1
   fi
   return 0

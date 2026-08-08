@@ -129,4 +129,16 @@ test_audio_key_skips_already_tagged_without_overwrite() {
     "INITIALKEY=11B" "existing key must survive without -y"
 }
 
+test_audio_key_rejects_broken_backend_preflight() {
+  require_cmd flac metaflac ffmpeg ffprobe flock
+  mkdir -p "$T/bin" "$T/empty"
+  printf '#!/usr/bin/env bash\nexit 127\n' >"$T/bin/keyfinder-cli"
+  chmod +x "$T/bin/keyfinder-cli"
+
+  PATH="$T/bin:$PATH" run_tool util/audio/audio-key/audio-key.sh "$T/empty"
+
+  assert_eq "$(tool_rc)" 1 "broken backend must fail preflight"
+  assert_grep 'runnable keyfinder-cli' "$T/out"
+}
+
 run_tests
