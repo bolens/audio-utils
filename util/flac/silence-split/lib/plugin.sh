@@ -69,11 +69,18 @@ plugin_after_flags() {
     echo "Error: silence-split does not support -D" >&2
     return 1
   fi
-  if ! awk -v s="${SS_SILENCE_SEC}" 'BEGIN { exit !(s+0 > 0) }'; then
+  if [[ ! "$SS_SILENCE_SEC" =~ ^[0-9]+([.][0-9]+)?$ ]] || \
+     ! awk -v s="$SS_SILENCE_SEC" 'BEGIN { exit !(s > 0) }'; then
     echo "Error: --silence-sec must be > 0" >&2
     return 1
   fi
-  if ! awk -v s="${SS_MIN_TRACK}" 'BEGIN { exit !(s+0 > 0) }'; then
+  if [[ ! "$SS_SILENCE_DB" =~ ^-?[0-9]+([.][0-9]+)?$ ]] || \
+     ! awk -v s="$SS_SILENCE_DB" 'BEGIN { exit !(s <= 0) }'; then
+    echo "Error: --silence-db must be numeric and <= 0" >&2
+    return 1
+  fi
+  if [[ ! "$SS_MIN_TRACK" =~ ^[0-9]+([.][0-9]+)?$ ]] || \
+     ! awk -v s="$SS_MIN_TRACK" 'BEGIN { exit !(s > 0) }'; then
     echo "Error: --min-track must be > 0" >&2
     return 1
   fi

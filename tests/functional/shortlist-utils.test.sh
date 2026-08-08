@@ -231,6 +231,40 @@ test_silence_split_two_tones() {
   assert_file "$T/live/set - 02.flac"
 }
 
+test_silence_tools_reject_malformed_numbers() {
+  mkdir -p "$T/empty"
+  local tool flag value rc
+  while IFS='|' read -r tool flag value; do
+    run_tool "util/flac/$tool/$tool.sh" "$flag=$value" "$T/empty"
+    rc=$(tool_rc)
+    assert_eq "$rc" 2 "$tool accepted $flag=$value"
+    assert_grep "Error:" "$T/out"
+  done <<'EOF'
+silence-split|--silence-sec|1oops
+silence-split|--silence-db|-50dB
+silence-split|--silence-db|1
+silence-split|--min-track|.5
+silence-trim|--silence-sec|1.
+silence-trim|--silence-db|nope
+silence-trim|--silence-db|1
+silence-trim|--pad-sec|-0.1
+silence-trim|--min-keep|1e2
+EOF
+}
+
+test_silence_tools_accept_numeric_boundaries() {
+  require_cmd flac metaflac ffmpeg ffprobe flock awk
+  mkdir -p "$T/empty"
+
+  run_tool util/flac/silence-trim/silence-trim.sh \
+    --silence-sec=0.1 --silence-db=0 --pad-sec=0 --min-keep=0.1 "$T/empty"
+  assert_eq "$(tool_rc)" 0 "silence-trim numeric boundary"
+
+  run_tool util/flac/silence-split/silence-split.sh \
+    --silence-sec=0.1 --silence-db=0 --min-track=0.1 "$T/empty"
+  assert_eq "$(tool_rc)" 0 "silence-split numeric boundary"
+}
+
 # --- silence-trim ------------------------------------------------------------
 
 test_silence_trim_report_and_apply() {
