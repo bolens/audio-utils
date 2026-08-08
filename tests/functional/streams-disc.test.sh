@@ -99,9 +99,16 @@ test_disc_inventory_counts_units_and_dedupes_video_ts() {
 
 # --- audio-key --------------------------------------------------------------------
 
+_require_runnable_keyfinder() {
+  local rc=0
+  require_cmd keyfinder-cli
+  keyfinder-cli --help >/dev/null 2>&1 || rc=$?
+  [[ "$rc" -ne 126 && "$rc" -ne 127 ]] || skip "keyfinder-cli is not runnable"
+}
+
 test_audio_key_tags_initialkey_on_flac() {
   require_cmd flac metaflac ffmpeg ffprobe flock
-  require_cmd keyfinder-cli
+  _require_runnable_keyfinder
   local src
   src=$(fixture flac_tagged)
   mkdir -p "$T/album"
@@ -116,7 +123,7 @@ test_audio_key_tags_initialkey_on_flac() {
 
 test_audio_key_skips_already_tagged_without_overwrite() {
   require_cmd flac metaflac ffmpeg ffprobe flock
-  require_cmd keyfinder-cli
+  _require_runnable_keyfinder
   local src
   src=$(fixture flac_tagged)
   mkdir -p "$T/album"

@@ -14,6 +14,11 @@ _MBID="12345678-9abc-def0-1234-56789abcdef0"
 _require_lookup_deps() {
   command -v fpcalc >/dev/null 2>&1 || skip "no fpcalc (chromaprint)"
   command -v python3 >/dev/null 2>&1 || skip "no python3 for mock server"
+  python3 - <<'PY' >/dev/null 2>&1 || skip "loopback sockets unavailable"
+import socket
+with socket.socket() as sock:
+    sock.bind(("127.0.0.1", 0))
+PY
 }
 
 # Start a one-shot HTTP server that answers a single GET with the given JSON
