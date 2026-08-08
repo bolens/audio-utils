@@ -9,6 +9,9 @@ make test-all
 make test K=playlist      # narrow by filename pattern
 ```
 
+A `K` filter that matches no test file or function exits `2`; this prevents a
+mistyped focused check from being reported as a successful zero-test run.
+
 Layout:
 
 | Dir | Role |
