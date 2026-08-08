@@ -46,6 +46,10 @@ plugin_after_flags() {
     echo "Error: lossy-audit is read-only; -y is not supported" >&2
     return 1
   fi
+  if [[ ! "$LOSSY_MIN_KBPS" =~ ^[1-9][0-9]*$ ]]; then
+    echo "Error: --min-kbps must be a positive integer (got: $LOSSY_MIN_KBPS)" >&2
+    return 1
+  fi
   return 0
 }
 

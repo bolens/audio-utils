@@ -101,4 +101,37 @@ test_lossy_audit_flags_missing_cover_and_low_bitrate() {
   assert_eq "$(tool_rc)" 1 "bitrate floor rc ($(tool_out | tail -3))"
 }
 
+test_audit_numeric_options_reject_malformed_values() {
+  mkdir -p "$T/empty"
+  local tool option rc
+  while IFS='|' read -r tool option; do
+    run_tool "util/audit/$tool/$tool.sh" "$option" "$T/empty"
+    rc=$(tool_rc)
+    assert_eq "$rc" 2 "$tool accepted $option"
+    assert_grep "Error:" "$T/out"
+  done <<'EOF'
+lossy-audit|--min-kbps=0
+lossy-audit|--min-kbps=-1
+lossy-audit|--min-kbps=128oops
+lossy-audit|--min-kbps=1.5
+silence-detect|--silence-sec=0
+silence-detect|--silence-sec=1oops
+silence-detect|--silence-sec=.5
+silence-detect|--silence-db=-50dB
+silence-detect|--silence-db=1
+EOF
+}
+
+test_audit_numeric_options_accept_boundaries() {
+  require_cmd ffmpeg ffprobe flock awk
+  mkdir -p "$T/empty"
+
+  run_tool util/audit/lossy-audit/lossy-audit.sh --min-kbps=1 "$T/empty"
+  assert_eq "$(tool_rc)" 0 "lossy-audit minimum bitrate boundary"
+
+  run_tool util/audit/silence-detect/silence-detect.sh \
+    --silence-sec=0.1 --silence-db=0 "$T/empty"
+  assert_eq "$(tool_rc)" 0 "silence-detect numeric boundaries"
+}
+
 run_tests
