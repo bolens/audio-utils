@@ -896,7 +896,7 @@ mcp_handle_tools_call() {
 mcp_dispatch() {
   # $1 = request JSON. Prints response JSON (or empty for notifications).
   local req=$1
-  local method id_json result err_msg
+  local method id_json result err_msg err_file
 
   method=$(mcp_json_get_string "$req" method) || {
     id_json=$(mcp_id_json "$req")
@@ -922,15 +922,18 @@ mcp_dispatch() {
       mcp_ok_response "$id_json" "$result"
       ;;
     tools/call)
-      if result=$(mcp_handle_tools_call "$req" 2>"${TMPDIR:-/tmp}/mcp-err.$$"); then
+      err_file=$(mktemp "${TMPDIR:-/tmp}/mcp-err.XXXXXX") || {
+        mcp_error_response "$id_json" -32603 "Internal error: cannot create error log"
+        return 0
+      }
+      if result=$(mcp_handle_tools_call "$req" 2>"$err_file"); then
         mcp_ok_response "$id_json" "$result"
       else
-        err_msg=$(cat "${TMPDIR:-/tmp}/mcp-err.$$" 2>/dev/null || echo "tools/call failed")
-        rm -f "${TMPDIR:-/tmp}/mcp-err.$$"
+        err_msg=$(cat -- "$err_file" 2>/dev/null || echo "tools/call failed")
         # Tool errors as MCP error, or as isError result — use error for safety rejects
         mcp_error_response "$id_json" -32000 "$err_msg"
       fi
-      rm -f "${TMPDIR:-/tmp}/mcp-err.$$"
+      rm -f -- "$err_file"
       ;;
     *)
       mcp_error_response "$id_json" -32601 "Method not found: $method"

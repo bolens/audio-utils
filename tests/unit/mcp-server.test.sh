@@ -184,6 +184,23 @@ test_mcp_safety_destructive_and_network() {
   mcp_check_run_safety tags-lookup false true --
 }
 
+test_mcp_dispatch_uses_private_error_file() {
+  _load_mcp
+  local predictable="$TMPDIR/mcp-err.$$" victim="$T/victim" response
+  printf 'keep me' >"$victim"
+  ln -s -- "$victim" "$predictable"
+
+  response=$(mcp_dispatch \
+    '{"jsonrpc":"2.0","id":9,"method":"tools/call","params":{}}')
+
+  assert_eq "$(cat -- "$victim")" "keep me" "predictable error path was followed"
+  assert_grep '"code":-32000' "$response"
+  [[ -L "$predictable" ]] || fail "unrelated predictable path was removed"
+  if compgen -G "$TMPDIR/mcp-err.??????" >/dev/null; then
+    fail "private MCP error file leaked"
+  fi
+}
+
 test_mcp_framing_roundtrip_helpers() {
   _load_mcp
   local body='{"jsonrpc":"2.0","id":1,"result":{"ok":true}}'
