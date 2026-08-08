@@ -38,6 +38,31 @@ test_state_dir_creates_directory() {
   assert_eq "$d" "$XDG_STATE_HOME/audio-utils/mytool"
 }
 
+test_state_and_cache_reject_unsafe_namespaces() {
+  _load_lib
+  local name fn rc
+  for fn in audio_utils_state_dir_path audio_utils_state_dir audio_utils_cache_dir; do
+    for name in '../escape' 'nested/tool' '/absolute' '.hidden' '-option' \
+      'has space' $'line\nfeed'; do
+      rc=0
+      "$fn" "$name" >"$T/out" 2>"$T/err" || rc=$?
+      assert_eq "$rc" 2 "$fn accepted unsafe namespace"
+      assert_grep "invalid audio-utils namespace" "$T/err"
+    done
+  done
+  assert_no_file "$T/escape" "namespace traversal created a path"
+}
+
+test_state_and_cache_accept_tool_name_components() {
+  _load_lib
+  local state cache
+  state=$(audio_utils_state_dir_path flac-verify)
+  cache=$(audio_utils_cache_dir tool_1.2)
+  assert_eq "$state" "$XDG_STATE_HOME/audio-utils/flac-verify"
+  assert_eq "$cache" "$XDG_CACHE_HOME/audio-utils/tool_1.2"
+  [[ -d "$cache" ]] || fail "cache directory not created"
+}
+
 test_state_dir_falls_back_to_cache_when_unwritable() {
   # chmod cannot revoke root's write access (e.g. plain docker runs).
   [[ "$EUID" -ne 0 ]] || skip "running as root; unwritable dirs impossible"

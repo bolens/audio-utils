@@ -68,11 +68,23 @@ _audio_utils_first_writable_dir() {
   return 1
 }
 
+_audio_utils_namespace_suffix() {
+  local name="${1:-}"
+  if [[ -z "$name" ]]; then
+    return 0
+  fi
+  if [[ ! "$name" =~ ^[A-Za-z0-9][A-Za-z0-9._-]*$ ]]; then
+    echo "Error: invalid audio-utils namespace: $name" >&2
+    return 2
+  fi
+  printf '/%s' "$name"
+}
+
 # Preferred state path WITHOUT creating directories (lazy).
 audio_utils_state_dir_path() {
   local tool="${1:-}"
-  local suffix=""
-  [[ -n "$tool" ]] && suffix="/${tool}"
+  local suffix
+  suffix=$(_audio_utils_namespace_suffix "$tool") || return
   printf '%s\n' "$(audio_utils_xdg_state_home)/audio-utils${suffix}"
 }
 
@@ -80,8 +92,8 @@ audio_utils_state_dir_path() {
 # Prints path; creates directory. Falls back to cache/runtime/tmp if needed.
 audio_utils_state_dir() {
   local tool="${1:-}"
-  local suffix="" cand
-  [[ -n "$tool" ]] && suffix="/${tool}"
+  local suffix cand
+  suffix=$(_audio_utils_namespace_suffix "$tool") || return
 
   cand=$(_audio_utils_first_writable_dir "" \
     "$(audio_utils_xdg_state_home)/audio-utils${suffix}" \
@@ -109,8 +121,8 @@ audio_utils_ensure_log_file() {
 # Cache root for non-essential data.
 audio_utils_cache_dir() {
   local tool="${1:-}"
-  local suffix="" cand
-  [[ -n "$tool" ]] && suffix="/${tool}"
+  local suffix cand
+  suffix=$(_audio_utils_namespace_suffix "$tool") || return
 
   cand=$(_audio_utils_first_writable_dir "" \
     "$(audio_utils_xdg_cache_home)/audio-utils${suffix}" \
