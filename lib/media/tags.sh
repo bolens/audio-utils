@@ -32,6 +32,18 @@ flac_has_picture() {
 
 # Zero-pad track number; preserve optional /TOTAL.
 # "1" → "01", "1/12" → "01/12", "01" unchanged, "A" unchanged.
+_flac_tag_pad_track_num() {
+  local num=$1
+  while [[ ${#num} -gt 1 && "$num" == 0* ]]; do
+    num=${num#0}
+  done
+  if [[ ${#num} -eq 1 ]]; then
+    printf '0%s' "$num"
+  else
+    printf '%s' "$num"
+  fi
+}
+
 flac_tag_normalize_track() {
   local v total num
   v=$(flac_tag_trim "$1")
@@ -45,14 +57,14 @@ flac_tag_normalize_track() {
     num=$(flac_tag_trim "$num")
     total=$(flac_tag_trim "$total")
     if [[ "$num" =~ ^[0-9]+$ ]]; then
-      printf '%02d/%s' "$((10#$num))" "$total"
+      printf '%s/%s' "$(_flac_tag_pad_track_num "$num")" "$total"
       return 0
     fi
     printf '%s' "$v"
     return 0
   fi
   if [[ "$v" =~ ^[0-9]+$ ]]; then
-    printf '%02d' "$((10#$v))"
+    _flac_tag_pad_track_num "$v"
     return 0
   fi
   printf '%s' "$v"
@@ -70,8 +82,12 @@ flac_tag_normalize_date() {
     printf '%s' "$v"
     return 0
   fi
-  if [[ "$v" =~ ^[0-9]{4}-[0-9]{2}-[0-9]{2} ]]; then
+  if [[ "$v" =~ ^[0-9]{4}-[0-9]{2}-[0-9]{2}([Tt]|[[:space:]]) ]]; then
     printf '%s' "${v:0:10}"
+    return 0
+  fi
+  if [[ "$v" =~ ^[0-9]{4}-[0-9]{2}-[0-9]{2}$ ]]; then
+    printf '%s' "$v"
     return 0
   fi
   if [[ "$v" =~ ^[0-9]{4}-[0-9]{2}$ ]]; then
