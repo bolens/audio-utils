@@ -39,6 +39,20 @@ _audio_utils_ensure_dir() {
   [[ -d "$dir" && -w "$dir" ]]
 }
 
+# Ensure a runtime dir is owned by this user and cannot be a symlink. Runtime
+# files may contain command arguments and status, so a merely writable path is
+# not sufficient when falling back to a shared temporary parent.
+_audio_utils_ensure_private_dir() {
+  local dir="$1" owner
+  [[ ! -L "$dir" ]] || return 1
+  mkdir -p -- "$dir" || return 1
+  [[ -d "$dir" && ! -L "$dir" ]] || return 1
+  owner=$(stat -c %u -- "$dir") || return 1
+  [[ "$owner" -eq "$EUID" ]] || return 1
+  chmod 700 -- "$dir" || return 1
+  [[ -w "$dir" ]]
+}
+
 # Try candidates in order; print first writable path. Args: mode(or empty) dirs...
 _audio_utils_first_writable_dir() {
   local mode="$1"
@@ -108,11 +122,17 @@ audio_utils_cache_dir() {
 # Prefer XDG_RUNTIME_DIR; fall back to cache/runtime then TMPDIR.
 audio_utils_runtime_dir() {
   local cand
-  cand=$(_audio_utils_first_writable_dir 700 \
+  for cand in \
     "${XDG_RUNTIME_DIR:+${XDG_RUNTIME_DIR}/audio-utils}" \
     "$(audio_utils_xdg_cache_home)/audio-utils/runtime" \
-    "${TMPDIR:-/tmp}/audio-utils-runtime-$$") || return 1
-  printf '%s\n' "$cand"
+    "${TMPDIR:-/tmp}/audio-utils-runtime-${EUID}"; do
+    [[ -n "$cand" ]] || continue
+    if _audio_utils_ensure_private_dir "$cand"; then
+      printf '%s\n' "$cand"
+      return 0
+    fi
+  done
+  return 1
 }
 
 # mktemp file under runtime dir. Optional name template (default: tmp.XXXXXX).

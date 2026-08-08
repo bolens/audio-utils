@@ -79,4 +79,33 @@ test_mktemp_lands_in_runtime_dir() {
   esac
 }
 
+test_runtime_dir_rejects_symlink_candidates() {
+  _load_lib
+  mkdir -p "$T/attacker" "$T/runtime" "$T/cache/audio-utils"
+  ln -s -- "$T/attacker" "$T/runtime/audio-utils"
+  ln -s -- "$T/attacker" "$T/cache/audio-utils/runtime"
+
+  local out mode
+  out=$(XDG_RUNTIME_DIR="$T/runtime" XDG_CACHE_HOME="$T/cache" TMPDIR="$T/tmp" \
+    audio_utils_runtime_dir)
+
+  assert_eq "$out" "$T/tmp/audio-utils-runtime-${EUID}"
+  [[ ! -e "$T/attacker/tmp.XXXXXX" ]] || fail "symlink candidate was used"
+  mode=$(stat -c %a -- "$out")
+  assert_eq "$mode" 700 "fallback runtime directory must be private"
+}
+
+test_runtime_dir_rejects_symlink_fallback() {
+  _load_lib
+  mkdir -p "$T/attacker" "$T/tmp"
+  ln -s -- "$T/attacker" "$T/tmp/audio-utils-runtime-${EUID}"
+
+  if XDG_RUNTIME_DIR="/proc/audio-utils-test-runtime" \
+    XDG_CACHE_HOME="/proc/audio-utils-test-cache" TMPDIR="$T/tmp" \
+    audio_utils_runtime_dir >"$T/out" 2>/dev/null; then
+    fail "symlink fallback was accepted"
+  fi
+  [[ -L "$T/tmp/audio-utils-runtime-${EUID}" ]] || fail "fallback symlink changed"
+}
+
 run_tests
