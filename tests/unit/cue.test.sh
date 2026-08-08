@@ -24,6 +24,37 @@ test_msf_rejects_malformed() {
   _load_lib
   assert_exit 1 cue_msf_to_sec "123"
   assert_exit 1 cue_msf_to_sec "00:02"
+  assert_exit 1 cue_msf_to_sec "aa:bb:cc"
+  assert_exit 1 cue_msf_to_sec "00:60:00"
+  assert_exit 1 cue_msf_to_sec "00:00:75"
+  assert_exit 1 cue_msf_to_sec "00:00:00:00"
+  assert_exit 1 cue_msf_to_sec "00:00:00:"
+  assert_exit 1 cue_msf_to_sec "-1:00:00"
+  assert_exit 1 cue_msf_to_sec "00:1:00"
+}
+
+test_list_tracks_rejects_non_increasing_indexes() {
+  _load_lib
+  local variant
+  for variant in duplicate backwards; do
+    mkdir -p "$T/$variant"
+    if [[ "$variant" == duplicate ]]; then
+      printf -v second_time '%s' '00:02:00'
+    else
+      printf -v second_time '%s' '00:01:00'
+    fi
+    cat >"$T/$variant/album.cue" <<EOF
+FILE "image.flac" WAVE
+  TRACK 01 AUDIO
+    INDEX 01 00:02:00
+  TRACK 02 AUDIO
+    INDEX 01 $second_time
+EOF
+    if cue_list_tracks "$T/$variant/album.cue" >"$T/out" 2>"$T/err"; then
+      fail "$variant INDEX sequence accepted"
+    fi
+    assert_grep 'non-increasing INDEX 01' "$T/err"
+  done
 }
 
 test_unquote() {
