@@ -60,8 +60,8 @@ plugin_after_flags() {
   fi
   local m
   for m in "$PERMS_FILE_MODE" "$PERMS_DIR_MODE"; do
-    if ! [[ "$m" =~ ^[0-7]{3,4}$ ]]; then
-      echo "Error: mode must be octal (got: $m)" >&2
+    if ! [[ "$m" =~ ^0?[0-7]{3}$ ]]; then
+      echo "Error: mode must be ordinary NNN octal without special bits (got: $m)" >&2
       return 1
     fi
   done

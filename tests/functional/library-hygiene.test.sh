@@ -62,6 +62,28 @@ test_perms_normalize_report_then_apply() {
   assert_eq "$(tool_rc)" 0 "clean after apply"
 }
 
+test_perms_normalize_rejects_special_and_bad_modes() {
+  mkdir -p "$T/empty"
+  local flag mode rc
+  for flag in --file-mode --dir-mode; do
+    for mode in 4755 2755 1777 7555 888 symbolic; do
+      run_tool util/library/perms-normalize/perms-normalize.sh \
+        "$flag=$mode" "$T/empty"
+      rc=$(tool_rc)
+      assert_eq "$rc" 2 "accepted $flag=$mode"
+      assert_grep "without special bits" "$T/out"
+    done
+  done
+}
+
+test_perms_normalize_accepts_optional_leading_zero() {
+  require_cmd flock stat chmod
+  mkdir -p "$T/empty"
+  run_tool util/library/perms-normalize/perms-normalize.sh \
+    --file-mode 0640 --dir-mode 0750 "$T/empty"
+  assert_eq "$(tool_rc)" 0 "leading-zero modes ($(tool_out | tail -3))"
+}
+
 _stage_mirror() {
   local src
   src=$(fixture album)
