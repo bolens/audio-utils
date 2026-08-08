@@ -66,4 +66,29 @@ test_disc_finder_rejects_unknown_options() {
     --bogus 2>/dev/null
 }
 
+test_bluray_convert_all_preserves_newline_directory() {
+  require_cmd flac ffmpeg ffprobe
+  local dir=$'Concert\nLive/BDMV'
+  mkdir -p "$T/root/$dir"
+  AUDIO_UTILS_ROOTS="$T/root" run_tool \
+    conversion/bluray-to-flac/convert-all.sh -n
+  assert_eq "$(tool_rc)" "0" "rc ($(tool_out))"
+  assert_grep "Concert" "$T/out"
+  assert_grep "Live/BDMV" "$T/out"
+}
+
+test_custom_disc_clis_validate_option_values() {
+  local tool flag
+  for tool in dvd-to-flac bluray-to-flac; do
+    for flag in -f -L -S -j; do
+      assert_exit 2 "$AU_REPO_ROOT/conversion/$tool/$tool.sh" \
+        "$flag" 2>/dev/null
+    done
+    assert_exit 2 "$AU_REPO_ROOT/conversion/$tool/$tool.sh" \
+      -j 0 2>/dev/null
+    assert_exit 0 "$AU_REPO_ROOT/conversion/$tool/$tool.sh" \
+      --dirs0 --help 2>/dev/null
+  done
+}
+
 run_tests

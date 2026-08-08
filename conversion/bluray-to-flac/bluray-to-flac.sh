@@ -9,7 +9,7 @@
 #
 # Options:
 #   -D DEVICE  Blu-ray device (default: AUDIO_UTILS_BD_DEVICE or /dev/sr0)
-#   -f FILE  -L FILE  -S FILE  -n  -y  -q  -v  -h  --version
+#   -f FILE  -L FILE  -S FILE  --dirs0  -n  -y  -q  -v  -h  --version
 #   -j N       Accepted for CLI parity; extract is serial per title (ignored)
 #
 # Hybrid: uses libbluray+libaacs (+ operator KEYDB) or MakeMKV when present;
@@ -25,6 +25,7 @@ source "${SCRIPT_DIR}/lib/plugin.sh"
 audio_utils_load_config
 
 DIR_FILE=""
+DIRS0=0
 DRY_RUN=0
 OVERWRITE=0
 QUIET=0
@@ -46,12 +47,24 @@ while (($# > 0)); do
       BD_DEVICE=$2
       shift 2
       ;;
-    -f) DIR_FILE=$2; shift 2 ;;
-    -L) FAIL_LOG=$2; shift 2 ;;
-    -S) SUCCESS_LOG=$2; shift 2 ;;
+    -f|-L|-S|-j)
+      [[ $# -ge 2 ]] || { echo "Error: $1 needs a value" >&2; usage 2; }
+      case "$1" in
+        -f) DIR_FILE=$2 ;;
+        -L) FAIL_LOG=$2 ;;
+        -S) SUCCESS_LOG=$2 ;;
+        -j)
+          [[ $2 =~ ^[1-9][0-9]*$ ]] || {
+            echo "Error: -j needs a positive integer" >&2
+            usage 2
+          }
+          ;;
+      esac
+      shift 2
+      ;;
+    --dirs0) DIRS0=1; shift ;;
     -n) DRY_RUN=1; shift ;;
     -y) OVERWRITE=1; shift ;;
-    -j) shift 2 ;; # accepted for CLI parity; extract is serial per title
     -q) QUIET=1; shift ;;
     -v) VERBOSE=1; shift ;;
     -h|--help) usage 0 ;;
@@ -90,7 +103,11 @@ if [[ -n "$BD_DEVICE" ]] && ((${#PATHS[@]} == 0)); then
 fi
 
 if ((${#PATHS[@]} == 0)) && [[ ! -t 0 ]]; then
-  mapfile -t PATHS
+  if ((DIRS0)); then
+    au_mapfile0 PATHS
+  else
+    mapfile -t PATHS
+  fi
 fi
 if ((${#PATHS[@]} == 0)); then
   echo "Error: no BDMV paths, media, or -D device given" >&2
