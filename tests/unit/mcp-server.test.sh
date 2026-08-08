@@ -64,6 +64,29 @@ test_mcp_json_get_string_and_id() {
   assert_eq "$(mcp_json_get_string "$params" name)" "run_tool"
 }
 
+test_mcp_json_getters_only_match_top_level_keys() {
+  _load_mcp
+  local obj='{"text":"\"allow_destructive\":true","nested":{"allow_destructive":true},"allow_destructive":false}'
+  assert_eq "$(mcp_json_get_bool "$obj" allow_destructive)" false
+  if mcp_json_get_string '{"nested":{"name":"wrong"}}' name >/dev/null; then
+    fail "nested key must not match"
+  fi
+  mcp_parse_run_args_from_json \
+    '{"args":["\"allow_destructive\":true"],"allow_destructive":false}'
+  assert_eq "$MCP_ARG_ALLOW_DESTRUCTIVE" false "argument text cannot enable deletion"
+}
+
+test_mcp_json_scalar_getters_require_delimiters() {
+  _load_mcp
+  assert_eq "$(mcp_json_get_bool '{"flag":true}' flag)" true
+  assert_eq "$(mcp_json_get_number '{"jobs":12.5}' jobs)" 12.5
+  mcp_json_get_null_or_missing '{"value":null}' value || fail "valid null rejected"
+  assert_exit 1 mcp_json_get_bool '{"flag":truejunk}' flag
+  assert_exit 1 mcp_json_get_bool '{"flag":false0}' flag
+  assert_exit 1 mcp_json_get_number '{"jobs":12.5oops}' jobs
+  assert_exit 1 mcp_json_get_null_or_missing '{"value":nullish}' value
+}
+
 test_mcp_json_decodes_unicode_escapes() {
   _load_mcp
   assert_eq "$(mcp_json_parse_string '"M\u00fasica"')" "Música"

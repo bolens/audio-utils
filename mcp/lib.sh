@@ -73,19 +73,61 @@ mcp_json_skip_ws() {
   printf '%s' "$s"
 }
 
-# Find value text after `"key":` in $1 (haystack). Writes value start offset to
-# nameref $3 via remaining suffix in stdout starting at the value.
+# Find a top-level object member and print the text after its colon. Strings and
+# nested objects/arrays are skipped so key-shaped argument text cannot spoof a
+# protocol field.
 mcp_json_after_key() {
-  local haystack=$1 key=$2
-  local pat="\"${key}\"[[:space:]]*:[[:space:]]*"
-  if [[ "$haystack" =~ $pat ]]; then
-    local matched=${BASH_REMATCH[0]}
-    local idx=${haystack%%"$matched"*}
-    local start=$((${#idx} + ${#matched}))
-    printf '%s' "${haystack:start}"
-    return 0
-  fi
+  local s=$1 key=$2 c parsed
+  local -i i=0 n=${#s} object_depth=0 array_depth=0 j esc
+  while ((i < n)); do
+    c=${s:i:1}
+    case "$c" in
+      '{') ((object_depth++)) || true ;;
+      '}') ((object_depth--)) || true ;;
+      '[') ((array_depth++)) || true ;;
+      ']') ((array_depth--)) || true ;;
+      '"')
+        j=$((i + 1))
+        esc=0
+        while ((j < n)); do
+          c=${s:j:1}
+          if ((esc)); then
+            esc=0
+          elif [[ "$c" == \\ ]]; then
+            esc=1
+          elif [[ "$c" == '"' ]]; then
+            break
+          fi
+          ((j++)) || true
+        done
+        ((j < n)) || return 1
+        if ((object_depth == 1 && array_depth == 0)); then
+          local -i k=$((j + 1))
+          while ((k < n)) && [[ "${s:k:1}" == [[:space:]] ]]; do
+            ((k++)) || true
+          done
+          if [[ "${s:k:1}" == ':' ]]; then
+            parsed=$(mcp_json_parse_string "${s:i:j-i+1}") || return 1
+            if [[ "$parsed" == "$key" ]]; then
+              ((k++)) || true
+              while ((k < n)) && [[ "${s:k:1}" == [[:space:]] ]]; do
+                ((k++)) || true
+              done
+              printf '%s' "${s:k}"
+              return 0
+            fi
+          fi
+        fi
+        i=$j
+        ;;
+    esac
+    ((i++)) || true
+  done
   return 1
+}
+
+mcp_json_token_delimited() {
+  [[ -z "$1" || "${1:0:1}" == [[:space:],\}\]] ]]
 }
 
 mcp_json_parse_string() {
@@ -163,10 +205,14 @@ mcp_json_get_bool() {
   local rest
   rest=$(mcp_json_after_key "$1" "$2") || return 1
   rest=${rest##+([[:space:]])}
-  case "$rest" in
-    true*) printf 'true'; return 0 ;;
-    false*) printf 'false'; return 0 ;;
-  esac
+  if [[ "${rest:0:4}" == true ]] && mcp_json_token_delimited "${rest:4}"; then
+    printf 'true'
+    return 0
+  fi
+  if [[ "${rest:0:5}" == false ]] && mcp_json_token_delimited "${rest:5}"; then
+    printf 'false'
+    return 0
+  fi
   return 1
 }
 
@@ -175,8 +221,11 @@ mcp_json_get_number() {
   rest=$(mcp_json_after_key "$1" "$2") || return 1
   rest=${rest##+([[:space:]])}
   if [[ "$rest" =~ ^(-?[0-9]+(\.[0-9]+)?) ]]; then
-    printf '%s' "${BASH_REMATCH[1]}"
-    return 0
+    local number=${BASH_REMATCH[1]}
+    if mcp_json_token_delimited "${rest:${#number}}"; then
+      printf '%s' "$number"
+      return 0
+    fi
   fi
   return 1
 }
@@ -186,7 +235,7 @@ mcp_json_get_null_or_missing() {
   local rest
   rest=$(mcp_json_after_key "$1" "$2") || return 0
   rest=${rest##+([[:space:]])}
-  [[ "$rest" == null* ]] && return 0
+  [[ "${rest:0:4}" == null ]] && mcp_json_token_delimited "${rest:4}" && return 0
   return 1
 }
 
