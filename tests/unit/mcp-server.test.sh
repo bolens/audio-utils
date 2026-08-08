@@ -180,6 +180,31 @@ test_mcp_framing_roundtrip_helpers() {
   assert_eq "$msg" "$body"
 }
 
+test_mcp_framing_preserves_bytes_and_boundaries() {
+  _load_mcp
+  local first=$'{"name":"Música"}\n' second='{"id":2}' message=
+  {
+    _frame "$first"
+    _frame "$second"
+  } >"$T/frames"
+  exec 3<"$T/frames"
+  mcp_read_message message <&3
+  assert_eq "$message" "$first" "trailing newline preserved"
+  mcp_read_message message <&3
+  assert_eq "$message" "$second" "UTF-8 length did not consume next frame"
+  exec 3<&-
+}
+
+test_mcp_framing_rejects_truncated_body() {
+  _load_mcp
+  printf 'Content-Length: 10\r\n\r\nshort' >"$T/truncated"
+  local message=unchanged
+  if mcp_read_message message <"$T/truncated"; then
+    fail "truncated frame accepted"
+  fi
+  assert_eq "$message" unchanged "partial body must not escape"
+}
+
 test_mcp_server_initialize_and_tools_list() {
   _rpc "$T/out" \
     '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2024-11-05","capabilities":{},"clientInfo":{"name":"test","version":"0"}}}' \

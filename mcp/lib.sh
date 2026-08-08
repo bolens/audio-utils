@@ -369,17 +369,11 @@ mcp_read_message() {
     return 0
   }
 
-  # Read exactly clen bytes
-  local body
-  body=$(head -c "$clen" 2>/dev/null || dd bs="$clen" count=1 2>/dev/null) || return 1
-  # head -c may return short; ensure length
-  local -i got
-  got=$(printf '%s' "$body" | wc -c)
-  if ((got < clen)); then
-    local more
-    more=$(dd bs=1 count=$((clen - got)) 2>/dev/null) || true
-    body+=$more
-  fi
+  # Bash read stores trailing newlines, unlike command substitution. The C
+  # locale makes -N count protocol bytes rather than multibyte characters.
+  local body="" LC_ALL=C
+  IFS= read -r -N "$clen" body || return 1
+  ((${#body} == clen)) || return 1
   _mcp_out=$body
   return 0
 }
