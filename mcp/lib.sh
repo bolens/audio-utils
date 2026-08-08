@@ -112,22 +112,31 @@ mcp_json_parse_string() {
         b) out+=$'\b' ;;
         f) out+=$'\f' ;;
         u)
-          # \uXXXX — take next 4 hex digits literally as codepoint if ASCII
           local hex=${s:i+1:4}
-          if [[ "$hex" =~ ^[0-9a-fA-F]{4}$ ]]; then
-            local code=$((16#$hex))
-            if ((code < 128)); then
-              printf -v c '%b' "\\x$(printf '%02x' "$code")"
-              out+=$c
-            else
-              out+="?"
-            fi
-            ((i += 4)) || true
+          [[ "$hex" =~ ^[0-9a-fA-F]{4}$ ]] || return 1
+          local code=$((16#$hex))
+          if ((code >= 0xD800 && code <= 0xDBFF)); then
+            # A high surrogate must be immediately followed by \uDC00–\uDFFF.
+            [[ "${s:i+5:2}" == '\u' ]] || return 1
+            local low_hex=${s:i+7:4}
+            [[ "$low_hex" =~ ^[0-9a-fA-F]{4}$ ]] || return 1
+            local low=$((16#$low_hex))
+            ((low >= 0xDC00 && low <= 0xDFFF)) || return 1
+            code=$((0x10000 + (code - 0xD800) * 0x400 + low - 0xDC00))
+            ((i += 10)) || true
+          elif ((code >= 0xDC00 && code <= 0xDFFF)); then
+            return 1
           else
-            out+='u'
+            ((i += 4)) || true
           fi
+          # Bash strings cannot represent NUL; reject it rather than silently
+          # changing the request. JSON-RPC tool inputs have no valid use for it.
+          ((code != 0)) || return 1
+          printf -v c '%b' "\\U$(printf '%08x' "$code")"
+          out+=$c
           ;;
-        *) out+=$c ;;
+        '"'|\\|/) out+=$c ;;
+        *) return 1 ;;
       esac
     else
       out+=$c

@@ -64,6 +64,25 @@ test_mcp_json_get_string_and_id() {
   assert_eq "$(mcp_json_get_string "$params" name)" "run_tool"
 }
 
+test_mcp_json_decodes_unicode_escapes() {
+  _load_mcp
+  assert_eq "$(mcp_json_parse_string '"M\u00fasica"')" "Música"
+  assert_eq "$(mcp_json_parse_string '"disc \ud83d\udcbf"')" "disc 💿"
+  assert_eq "$(mcp_json_get_string '{"path":"M\u00fasica\/a.flac"}' path)" \
+    "Música/a.flac"
+}
+
+test_mcp_json_rejects_invalid_escapes() {
+  _load_mcp
+  local value
+  for value in '"bad\q"' '"bad\u12xy"' '"bad\ud83d"' \
+    '"bad\ud83d\u0041"' '"bad\udcbf"' '"nul\u0000"'; do
+    if mcp_json_parse_string "$value" >/dev/null; then
+      fail "accepted invalid JSON string: $value"
+    fi
+  done
+}
+
 test_mcp_json_string_array() {
   _load_mcp
   local obj='{"paths":["/a","/b/c"],"x":1}'
