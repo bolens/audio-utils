@@ -43,13 +43,22 @@ install_cleanup_trap() {
   trap 'cleanup_registered_tmpdirs' EXIT INT TERM HUP
 }
 
+audio_utils_workdir_prefix() {
+  local prefix="${AUDIO_UTILS_WORKDIR_PREFIX:-audio-utils}"
+  if [[ ! "$prefix" =~ ^[A-Za-z0-9][A-Za-z0-9._-]*$ ]]; then
+    log_err "invalid AUDIO_UTILS_WORKDIR_PREFIX: $prefix"
+    return 2
+  fi
+  printf '%s\n' "$prefix"
+}
+
 # Prefer temp dir on same filesystem as dest for atomic mv.
 # Uses AUDIO_UTILS_WORKDIR_PREFIX (default audio-utils).
 # Fallback: XDG runtime dir (not a random world-writable /tmp root alone).
 make_workdir() {
   local dest_dir="$1"
-  local prefix="${AUDIO_UTILS_WORKDIR_PREFIX:-audio-utils}"
-  local tmp
+  local prefix tmp
+  prefix=$(audio_utils_workdir_prefix) || return
   if tmp=$(mktemp -d "${dest_dir}/.${prefix}.XXXXXX" 2>/dev/null); then
     register_tmpdir "$tmp"
     printf '%s\n' "$tmp"
@@ -63,8 +72,8 @@ make_workdir() {
 # Remove leftover .${prefix}.* workdirs under DIR (maxdepth 1).
 sweep_orphan_workdirs() {
   local dir="$1"
-  local prefix="${AUDIO_UTILS_WORKDIR_PREFIX:-audio-utils}"
-  local d count=0
+  local prefix d count=0
+  prefix=$(audio_utils_workdir_prefix) || return
   [[ -d "$dir" ]] || return 0
   while IFS= read -r -d '' d; do
     rm -rf -- "$d" 2>/dev/null || chmod -R u+w -- "$d" 2>/dev/null
@@ -78,8 +87,8 @@ sweep_orphan_workdirs() {
 
 # Recursively remove orphan .${prefix}.* under roots.
 sweep_orphans_in_roots() {
-  local prefix="${AUDIO_UTILS_WORKDIR_PREFIX:-audio-utils}"
-  local root d count=0
+  local prefix root d count=0
+  prefix=$(audio_utils_workdir_prefix) || return
   for root in "$@"; do
     [[ -d "$root" ]] || continue
     while IFS= read -r -d '' d; do
