@@ -100,7 +100,9 @@ playlist_to_relative() {
 playlist_file_uri() {
   local p=$1 abs
   abs=$(playlist_canon_path "$p")
-  # Percent-encode spaces and a few reserved chars; leave path separators.
+  # Iterate in the C locale so non-ASCII text is encoded as UTF-8 bytes rather
+  # than locale characters (URI percent escapes represent bytes).
+  local LC_ALL=C
   local enc="" i c hex
   for ((i = 0; i < ${#abs}; i++)); do
     c=${abs:i:1}
@@ -118,6 +120,7 @@ playlist_file_uri() {
 # Decode file:// URI or plain path → filesystem path.
 playlist_uri_to_path() {
   local u=$1 out="" i=0 c hex
+  local LC_ALL=C
   u=${u#$'\r'}
   u=${u%"${u##*[![:space:]]}"}
   u=${u#"${u%%[![:space:]]*}"}
@@ -142,6 +145,18 @@ playlist_uri_to_path() {
     ((i++)) || true
   done
   printf '%s\n' "$out"
+}
+
+# Decode the five predefined XML entities used by XSPF text nodes. Decode
+# &amp; last so an input such as &amp;lt; remains literal "&lt;".
+_playlist_xml_unescape() {
+  local s=$1
+  s=${s//&lt;/<}
+  s=${s//&gt;/>}
+  s=${s//&quot;/\"}
+  s=${s//&apos;/\'}
+  s=${s//&amp;/\&}
+  printf '%s' "$s"
 }
 
 # Sanitize title for entry stream (strip US/newlines).
@@ -240,6 +255,8 @@ _playlist_parse_xspf() {
   local loc title path
   while IFS=$'\x1f' read -r loc title; do
     [[ -n "$loc" ]] || continue
+    loc=$(_playlist_xml_unescape "$loc")
+    title=$(_playlist_xml_unescape "$title")
     loc=$(playlist_uri_to_path "$loc")
     path=$(playlist_resolve_entry "$basedir" "$loc") || continue
     _playlist_emit "$path" "$title" ""

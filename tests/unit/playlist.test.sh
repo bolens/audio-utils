@@ -67,6 +67,23 @@ test_file_uri_roundtrip() {
   assert_eq "$(playlist_uri_to_path "$uri")" "$T/My Music/a b.flac"
 }
 
+test_file_uri_roundtrips_utf8_and_reserved_bytes() {
+  _load_lib
+  mkdir -p "$T/Música"
+  touch "$T/Música/100% #1.flac"
+  local uri
+  uri=$(playlist_file_uri "$T/Música/100% #1.flac")
+  assert_grep '%C3%BA' "$uri" "UTF-8 bytes encoded"
+  assert_grep '100%25%20%231.flac' "$uri" "reserved bytes encoded"
+  assert_eq "$(playlist_uri_to_path "$uri")" "$T/Música/100% #1.flac"
+}
+
+test_uri_decoder_preserves_malformed_escapes() {
+  _load_lib
+  assert_eq "$(playlist_uri_to_path 'file:///music/100%/bad%2G.flac')" \
+    '/music/100%/bad%2G.flac'
+}
+
 test_parse_m3u_entries() {
   _load_lib
   mkdir -p "$T/music"
@@ -160,6 +177,27 @@ EOF
   assert_eq "$(head -1 <<<"$out" | cut -d$'\x1f' -f1)" "$T/My Music/a b.flac" \
     "percent-decoded location"
   assert_eq "$(head -1 <<<"$out" | cut -d$'\x1f' -f2)" "Spaced Song"
+}
+
+test_parse_xspf_decodes_xml_entities() {
+  _load_lib
+  mkdir -p "$T/R&B"
+  touch "$T/R&B/a.flac"
+  cat >"$T/entities.xspf" <<'EOF'
+<playlist>
+  <trackList>
+    <track>
+      <location>R&amp;B/a.flac</location>
+      <title>A &amp; B &lt;Live&gt; &quot;Mix&quot; &apos;Edit&apos;</title>
+    </track>
+  </trackList>
+</playlist>
+EOF
+  local out
+  out=$(playlist_parse "$T/entities.xspf")
+  assert_eq "$(cut -d$'\x1f' -f1 <<<"$out")" "$T/R&B/a.flac"
+  assert_eq "$(cut -d$'\x1f' -f2 <<<"$out")" \
+    "A & B <Live> \"Mix\" 'Edit'"
 }
 
 _tsv_two_entries() {
