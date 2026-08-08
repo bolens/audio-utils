@@ -191,22 +191,20 @@ mcp_json_get_null_or_missing() {
 }
 
 mcp_json_get_string_array() {
-  # Print one string element per line. Empty array → no lines, exit 0.
+  # Print NUL-delimited strings so paths containing newlines remain intact.
+  # Empty array → no output, exit 0.
   local rest elem
   rest=$(mcp_json_after_key "$1" "$2") || return 1
   rest=${rest##+([[:space:]])}
   [[ "${rest:0:1}" == '[' ]] || return 1
   rest=${rest:1}
+  rest=${rest##+([[:space:]])}
+  [[ "${rest:0:1}" == ']' ]] && return 0
   while true; do
     rest=${rest##+([[:space:]])}
-    [[ "${rest:0:1}" == ']' ]] && return 0
-    if [[ "${rest:0:1}" == ',' ]]; then
-      rest=${rest:1}
-      continue
-    fi
     [[ "${rest:0:1}" == '"' ]] || return 1
     elem=$(mcp_json_parse_string "$rest") || return 1
-    printf '%s\n' "$elem"
+    printf '%s\0' "$elem"
     # Advance past the string literal in rest
     local esc=0
     local -i i=1 n=${#rest}
@@ -229,6 +227,16 @@ mcp_json_get_string_array() {
       ((i++)) || true
     done
     rest=${rest:i}
+    rest=${rest##+([[:space:]])}
+    case "${rest:0:1}" in
+      ']') return 0 ;;
+      ',')
+        rest=${rest:1}
+        rest=${rest##+([[:space:]])}
+        [[ "${rest:0:1}" != ']' ]] || return 1
+        ;;
+      *) return 1 ;;
+    esac
   done
 }
 
@@ -628,15 +636,17 @@ mcp_parse_run_args_from_json() {
   fi
 
   if mcp_json_after_key "$args_json" paths >/dev/null 2>&1; then
-    while IFS= read -r v; do
+    mcp_json_get_string_array "$args_json" paths >/dev/null || return 1
+    while IFS= read -r -d '' v; do
       [[ -n "$v" ]] && MCP_ARG_PATHS+=("$v")
     done < <(mcp_json_get_string_array "$args_json" paths)
   fi
 
   if mcp_json_after_key "$args_json" args >/dev/null 2>&1; then
-    while IFS= read -r v; do
+    mcp_json_get_string_array "$args_json" args >/dev/null || return 1
+    while IFS= read -r -d '' v; do
       [[ -n "$v" ]] && MCP_ARG_ARGS+=("$v")
-    done < <(mcp_json_get_string_array "$args_json" args || true)
+    done < <(mcp_json_get_string_array "$args_json" args)
   fi
 
   if v=$(mcp_json_get_number "$args_json" jobs 2>/dev/null); then
@@ -779,7 +789,10 @@ mcp_handle_tools_call() {
       return 0
       ;;
     run_tool)
-      mcp_parse_run_args_from_json "$args_json"
+      mcp_parse_run_args_from_json "$args_json" || {
+        echo "invalid run_tool arguments" >&2
+        return 1
+      }
       cli_name=$MCP_ARG_NAME
       [[ -n "$cli_name" ]] || {
         echo "run_tool requires name" >&2
@@ -788,7 +801,10 @@ mcp_handle_tools_call() {
       ;;
     *)
       # Per-format tool
-      mcp_parse_run_args_from_json "$args_json"
+      mcp_parse_run_args_from_json "$args_json" || {
+        echo "invalid tool arguments" >&2
+        return 1
+      }
       cli_name=$(mcp_mcp_to_cli_name "$tool_mcp")
       ;;
   esac

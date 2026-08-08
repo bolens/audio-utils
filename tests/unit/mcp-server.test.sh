@@ -85,10 +85,39 @@ test_mcp_json_rejects_invalid_escapes() {
 
 test_mcp_json_string_array() {
   _load_mcp
-  local obj='{"paths":["/a","/b/c"],"x":1}'
-  local got
-  got=$(mcp_json_get_string_array "$obj" paths | paste -sd, -)
-  assert_eq "$got" "/a,/b/c"
+  local obj='{"paths":["/a","-leading","line\nfeed","M\u00fasica"],"x":1}'
+  local item
+  local -a got=()
+  while IFS= read -r -d '' item; do
+    got+=("$item")
+  done < <(mcp_json_get_string_array "$obj" paths)
+  assert_eq "${#got[@]}" 4
+  assert_eq "${got[0]}" "/a"
+  assert_eq "${got[1]}" "-leading"
+  assert_eq "${got[2]}" $'line\nfeed'
+  assert_eq "${got[3]}" "Música"
+}
+
+test_mcp_json_string_array_rejects_bad_separators() {
+  _load_mcp
+  local obj
+  for obj in '{"paths":["/a" "/b"]}' '{"paths":["/a",]}' \
+    '{"paths":[,"/a"]}' '{"paths":["/a",,"/b"]}'; do
+    if mcp_json_get_string_array "$obj" paths >/dev/null; then
+      fail "accepted malformed array: $obj"
+    fi
+  done
+}
+
+test_mcp_run_args_preserve_newline_paths() {
+  _load_mcp
+  mcp_parse_run_args_from_json \
+    '{"name":"flac-verify","paths":["line\nfeed.flac"],"args":["--","-x"]}'
+  assert_eq "${#MCP_ARG_PATHS[@]}" 1
+  assert_eq "${MCP_ARG_PATHS[0]}" $'line\nfeed.flac'
+  assert_eq "${#MCP_ARG_ARGS[@]}" 2
+  assert_eq "${MCP_ARG_ARGS[1]}" '-x'
+  assert_exit 1 mcp_parse_run_args_from_json '{"paths":["/a",]}'
 }
 
 test_mcp_discover_catalog() {
