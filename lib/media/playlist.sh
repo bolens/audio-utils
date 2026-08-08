@@ -96,16 +96,15 @@ playlist_to_relative() {
   esac
 }
 
-# Encode path as file:// URI (absolute).
-playlist_file_uri() {
-  local p=$1 abs
-  abs=$(playlist_canon_path "$p")
+# Percent-encode a path while preserving separators.
+_playlist_uri_encode_path() {
+  local path=$1
   # Iterate in the C locale so non-ASCII text is encoded as UTF-8 bytes rather
   # than locale characters (URI percent escapes represent bytes).
   local LC_ALL=C
   local enc="" i c hex
-  for ((i = 0; i < ${#abs}; i++)); do
-    c=${abs:i:1}
+  for ((i = 0; i < ${#path}; i++)); do
+    c=${path:i:1}
     case "$c" in
       [A-Za-z0-9._~/-]) enc+="$c" ;;
       *)
@@ -114,7 +113,14 @@ playlist_file_uri() {
         ;;
     esac
   done
-  printf 'file://%s\n' "$enc"
+  printf '%s\n' "$enc"
+}
+
+# Encode path as file:// URI (absolute).
+playlist_file_uri() {
+  local p=$1 abs
+  abs=$(playlist_canon_path "$p")
+  printf 'file://%s\n' "$(_playlist_uri_encode_path "$abs")"
 }
 
 # Decode file:// URI or plain path → filesystem path.
@@ -405,7 +411,7 @@ _playlist_write_xspf() {
         if [[ "$op" == /* ]]; then
           uri=$(playlist_file_uri "$op")
         else
-          uri=$op
+          uri=$(_playlist_uri_encode_path "$op")
         fi
       fi
       printf '    <track>\n'

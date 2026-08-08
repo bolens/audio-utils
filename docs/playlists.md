@@ -8,7 +8,7 @@ Local path playlists (not streaming service lists). Shared helpers: [`lib/media/
 |--------|------------|-------|
 | Extended M3U | `.m3u`, `.m3u8` | UTF-8 `#EXTM3U` / `#EXTINF`; `.m3u8` treated as UTF-8 M3U |
 | PLS | `.pls` | `[playlist]` `FileN` / `TitleN` / `LengthN` |
-| XSPF | `.xspf` | Track `<location>` + optional `<title>`; write uses `file://` for absolute paths |
+| XSPF | `.xspf` | Track `<location>` + optional `<title>`; URI paths are percent-encoded and absolute paths use `file://` |
 
 Default path style when writing: **relative** to the playlist’s directory (portable libraries).
 

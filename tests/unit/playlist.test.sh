@@ -279,6 +279,18 @@ test_write_xspf_escapes_xml_and_roundtrips() {
   assert_eq "$(wc -l <<<"$out")" "1" "write→parse roundtrip"
 }
 
+test_write_xspf_encodes_relative_location_uris() {
+  _load_lib
+  mkdir -p "$T/Música"
+  touch "$T/Música/100% #1.flac"
+  printf '%s\x1f\x1f\n' "$T/Música/100% #1.flac" \
+    | playlist_write xspf "$T/out.xspf" "$T" relative
+  assert_grep 'M%C3%BAsica/100%25%20%231.flac' "$T/out.xspf"
+  local out
+  out=$(playlist_parse "$T/out.xspf")
+  assert_eq "$(cut -d$'\x1f' -f1 <<<"$out")" "$T/Música/100% #1.flac"
+}
+
 test_write_rejects_unknown_format() {
   _load_lib
   if printf 'x\x1f\x1f\n' | playlist_write wpl "$T/out.wpl" "$T" relative \
