@@ -10,8 +10,12 @@ done
 # shellcheck source=../../lib/load.sh
 source "${AU_ROOT}/lib/load.sh"
 audio_utils_load_config
-audio_utils_find_simple_meta "find-bdmv-dirs" \
-  "List BDMV directories under roots." "$@"
 ROOTS=()
-audio_utils_resolve_roots ROOTS "$@" || exit $?
-find_named_dirs BDMV "${ROOTS[@]}"
+PRINT0=0
+audio_utils_parse_simple_find PRINT0 ROOTS "find-bdmv-dirs" \
+  "List BDMV directories under roots." "$@" || exit $?
+if ((PRINT0)); then
+  find_named_dirs --print0 BDMV "${ROOTS[@]}"
+else
+  find_named_dirs BDMV "${ROOTS[@]}"
+fi

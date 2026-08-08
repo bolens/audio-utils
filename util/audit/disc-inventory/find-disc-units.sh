@@ -10,12 +10,20 @@ done
 # shellcheck source=../../../lib/load.sh
 source "${AU_ROOT}/lib/load.sh"
 audio_utils_load_config
-audio_utils_find_simple_meta "find-disc-units" \
-  "List VIDEO_TS, BDMV, and cue-sheet directories under roots." "$@"
 ROOTS=()
-audio_utils_resolve_roots ROOTS "$@" || exit $?
-{
-  find_named_dirs VIDEO_TS "${ROOTS[@]}"
-  find_named_dirs BDMV "${ROOTS[@]}"
-  "${AU_ROOT}/lib/cli/find-audio-dirs.sh" --ext cue "${ROOTS[@]}"
-} | LC_ALL=C sort -u
+PRINT0=0
+audio_utils_parse_simple_find PRINT0 ROOTS "find-disc-units" \
+  "List VIDEO_TS, BDMV, and cue-sheet directories under roots." "$@" || exit $?
+if ((PRINT0)); then
+  {
+    find_named_dirs --print0 VIDEO_TS "${ROOTS[@]}"
+    find_named_dirs --print0 BDMV "${ROOTS[@]}"
+    "${AU_ROOT}/lib/cli/find-audio-dirs.sh" --print0 --ext cue "${ROOTS[@]}"
+  } | LC_ALL=C sort -zu
+else
+  {
+    find_named_dirs VIDEO_TS "${ROOTS[@]}"
+    find_named_dirs BDMV "${ROOTS[@]}"
+    "${AU_ROOT}/lib/cli/find-audio-dirs.sh" --ext cue "${ROOTS[@]}"
+  } | LC_ALL=C sort -u
+fi
