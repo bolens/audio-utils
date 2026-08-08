@@ -80,26 +80,52 @@ _audio_utils_namespace_suffix() {
   printf '/%s' "$name"
 }
 
+_audio_utils_private_fallback_path() {
+  local kind="$1" suffix="$2"
+  printf '%s/audio-utils-%s/%s%s\n' "${TMPDIR:-/tmp}" "$EUID" "$kind" "$suffix"
+}
+
+_audio_utils_private_fallback_dir() {
+  local kind="$1" suffix="$2" root dir
+  root="${TMPDIR:-/tmp}/audio-utils-${EUID}"
+  dir=$(_audio_utils_private_fallback_path "$kind" "$suffix") || return 1
+  _audio_utils_ensure_private_dir "$root" || return 1
+  _audio_utils_ensure_private_dir "$dir" || return 1
+  printf '%s\n' "$dir"
+}
+
 # Preferred state path WITHOUT creating directories (lazy).
 audio_utils_state_dir_path() {
   local tool="${1:-}"
   local suffix
   suffix=$(_audio_utils_namespace_suffix "$tool") || return
-  printf '%s\n' "$(audio_utils_xdg_state_home)/audio-utils${suffix}"
+  if [[ -n "${XDG_STATE_HOME:-}" || -n "${HOME:-}" ]]; then
+    printf '%s\n' "$(audio_utils_xdg_state_home)/audio-utils${suffix}"
+  else
+    _audio_utils_private_fallback_path state "$suffix"
+  fi
 }
 
 # Persistent per-user state (logs, run history). Optional tool subdirectory.
 # Prints path; creates directory. Falls back to cache/runtime/tmp if needed.
 audio_utils_state_dir() {
-  local tool="${1:-}"
-  local suffix cand
+  local tool="${1:-}" suffix cand
+  local -a candidates=()
   suffix=$(_audio_utils_namespace_suffix "$tool") || return
 
-  cand=$(_audio_utils_first_writable_dir "" \
-    "$(audio_utils_xdg_state_home)/audio-utils${suffix}" \
-    "$(audio_utils_xdg_cache_home)/audio-utils/state${suffix}" \
-    "${TMPDIR:-/tmp}/audio-utils-state${suffix}") || return 1
-  printf '%s\n' "$cand"
+  if [[ -n "${XDG_STATE_HOME:-}" || -n "${HOME:-}" ]]; then
+    candidates+=("$(audio_utils_xdg_state_home)/audio-utils${suffix}")
+  fi
+  if [[ -n "${XDG_CACHE_HOME:-}" || -n "${HOME:-}" ]]; then
+    candidates+=("$(audio_utils_xdg_cache_home)/audio-utils/state${suffix}")
+  fi
+  if ((${#candidates[@]})); then
+    cand=$(_audio_utils_first_writable_dir "" "${candidates[@]}") && {
+      printf '%s\n' "$cand"
+      return 0
+    }
+  fi
+  _audio_utils_private_fallback_dir state "$suffix"
 }
 
 # Ensure parent dir exists; optionally truncate; chmod 600.
@@ -120,14 +146,17 @@ audio_utils_ensure_log_file() {
 
 # Cache root for non-essential data.
 audio_utils_cache_dir() {
-  local tool="${1:-}"
-  local suffix cand
+  local tool="${1:-}" suffix cand
   suffix=$(_audio_utils_namespace_suffix "$tool") || return
 
-  cand=$(_audio_utils_first_writable_dir "" \
-    "$(audio_utils_xdg_cache_home)/audio-utils${suffix}" \
-    "${TMPDIR:-/tmp}/audio-utils-cache${suffix}") || return 1
-  printf '%s\n' "$cand"
+  if [[ -n "${XDG_CACHE_HOME:-}" || -n "${HOME:-}" ]]; then
+    cand=$(_audio_utils_first_writable_dir "" \
+      "$(audio_utils_xdg_cache_home)/audio-utils${suffix}") && {
+        printf '%s\n' "$cand"
+        return 0
+      }
+  fi
+  _audio_utils_private_fallback_dir cache "$suffix"
 }
 
 # Short-lived runtime base (status files, mktemp, registry).

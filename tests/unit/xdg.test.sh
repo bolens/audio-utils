@@ -29,6 +29,15 @@ test_state_dir_path_is_lazy() {
   assert_no_file "$XDG_STATE_HOME/audio-utils/mytool" "must not create dirs"
 }
 
+test_state_dir_path_without_home_uses_private_fallback() {
+  _load_lib
+  local out expected="$T/tmp/audio-utils-${EUID}/state/mytool"
+  out=$(unset HOME XDG_STATE_HOME XDG_CACHE_HOME; TMPDIR="$T/tmp" \
+    audio_utils_state_dir_path mytool)
+  assert_eq "$out" "$expected"
+  assert_no_file "$T/tmp/audio-utils-${EUID}" "path lookup must remain lazy"
+}
+
 test_state_dir_creates_directory() {
   _load_lib
   export XDG_STATE_HOME="$T/state"
@@ -74,6 +83,40 @@ test_state_dir_falls_back_to_cache_when_unwritable() {
   d=$(audio_utils_state_dir mytool) || { chmod 700 "$XDG_STATE_HOME"; fail "no fallback"; }
   chmod 700 "$XDG_STATE_HOME"
   assert_eq "$d" "$XDG_CACHE_HOME/audio-utils/state/mytool"
+}
+
+test_state_and_cache_tmp_fallbacks_are_private() {
+  _load_lib
+  mkdir -p "$T/tmp"
+  local state cache root="$T/tmp/audio-utils-${EUID}" mode
+  state=$(XDG_STATE_HOME="/proc/audio-utils-test-state" \
+    XDG_CACHE_HOME="/proc/audio-utils-test-cache" TMPDIR="$T/tmp" \
+    audio_utils_state_dir mytool)
+  cache=$(XDG_CACHE_HOME="/proc/audio-utils-test-cache" TMPDIR="$T/tmp" \
+    audio_utils_cache_dir mytool)
+
+  assert_eq "$state" "$root/state/mytool"
+  assert_eq "$cache" "$root/cache/mytool"
+  for mode in "$root" "$state" "$cache"; do
+    assert_eq "$(stat -c %a -- "$mode")" 700 "$mode must be private"
+  done
+}
+
+test_state_and_cache_reject_symlink_fallback_root() {
+  _load_lib
+  mkdir -p "$T/attacker" "$T/tmp"
+  ln -s -- "$T/attacker" "$T/tmp/audio-utils-${EUID}"
+  local fn
+  for fn in audio_utils_state_dir audio_utils_cache_dir; do
+    if XDG_STATE_HOME="/proc/audio-utils-test-state" \
+      XDG_CACHE_HOME="/proc/audio-utils-test-cache" TMPDIR="$T/tmp" \
+      "$fn" mytool >"$T/out" 2>/dev/null; then
+      fail "$fn accepted a symlinked fallback root"
+    fi
+  done
+  [[ -L "$T/tmp/audio-utils-${EUID}" ]] || fail "fallback symlink changed"
+  assert_eq "$(find "$T/attacker" -mindepth 1 -print -quit)" "" \
+    "symlink target must remain untouched"
 }
 
 test_ensure_log_file_creates_with_0600() {
