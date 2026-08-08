@@ -111,22 +111,43 @@ bluray_media_readable() {
   ((n >= 1))
 }
 
-# List decrypted-looking media under DIR (m2ts/mkv/mka/mp4), one path per line.
+# List decrypted-looking media under DIR (m2ts/mkv/mka/mp4).
+# Pass --print0 for NUL-delimited output.
 bluray_list_plain_media() {
+  local print0=0
+  if [[ ${1:-} == --print0 ]]; then
+    print0=1
+    shift
+  fi
   local dir="$1"
   [[ -d "$dir" ]] || return 1
-  LC_ALL=C find -P "$dir" -maxdepth 3 -type f \
-    \( -iname '*.m2ts' -o -iname '*.mkv' -o -iname '*.mka' -o -iname '*.mp4' \) \
-    2>/dev/null | LC_ALL=C sort
+  local -a args=(-P "$dir" -maxdepth 3 -type f
+    \( -iname '*.m2ts' -o -iname '*.mkv' -o -iname '*.mka' -o -iname '*.mp4' \))
+  if ((print0)); then
+    LC_ALL=C find "${args[@]}" -print0 2>/dev/null | LC_ALL=C sort -z
+  else
+    LC_ALL=C find "${args[@]}" 2>/dev/null | LC_ALL=C sort
+  fi
 }
 
-# List STREAM/*.m2ts under BDMV (or disc root).
+# List STREAM/*.m2ts under BDMV (or disc root). Pass --print0 for NUL output.
 bluray_list_stream_m2ts() {
+  local print0=0
+  if [[ ${1:-} == --print0 ]]; then
+    print0=1
+    shift
+  fi
   local bdmv stream
   bdmv=$(bluray_resolve_bdmv "$1") || return 1
   stream="${bdmv}/STREAM"
   [[ -d "$stream" ]] || return 1
-  LC_ALL=C find -P "$stream" -maxdepth 1 -type f -iname '*.m2ts' 2>/dev/null | LC_ALL=C sort
+  if ((print0)); then
+    LC_ALL=C find -P "$stream" -maxdepth 1 -type f -iname '*.m2ts' -print0 \
+      2>/dev/null | LC_ALL=C sort -z
+  else
+    LC_ALL=C find -P "$stream" -maxdepth 1 -type f -iname '*.m2ts' \
+      2>/dev/null | LC_ALL=C sort
+  fi
 }
 
 # Classify INPUT: device | bdmv | media_file | media_dir | unknown
@@ -152,7 +173,9 @@ bluray_resolve_input() {
       printf '%s\n' bdmv
       return 0
     fi
-    if bluray_list_plain_media "$path" | head -n1 | grep -q .; then
+    if LC_ALL=C find -P "$path" -maxdepth 3 -type f \
+      \( -iname '*.m2ts' -o -iname '*.mkv' -o -iname '*.mka' -o -iname '*.mp4' \) \
+      -print -quit 2>/dev/null | grep -q .; then
       printf '%s\n' media_dir
       return 0
     fi
@@ -210,7 +233,7 @@ bluray_ffmpeg_bluray_copy() {
 }
 
 # Hybrid: produce readable media under OUTDIR for SRC (device/BDMV/plain).
-# Prints paths of media files to process (one per line) on stdout.
+# Prints paths of media files to process as NUL-delimited records on stdout.
 # On encrypted disc without tooling/KEYDB: fail closed with specific hints.
 bluray_decrypt_or_copy() {
   local src="$1" outdir="$2"
@@ -227,19 +250,19 @@ bluray_decrypt_or_copy() {
   case "$kind" in
     media_file)
       if bluray_media_readable "$src"; then
-        printf '%s\n' "$src"
+        printf '%s\0' "$src"
         return 0
       fi
       log_err "Error: media not readable (encrypted or corrupt): $src"
       return 1
       ;;
     media_dir)
-      while IFS= read -r f; do
+      while IFS= read -r -d '' f; do
         if bluray_media_readable "$f"; then
-          printf '%s\n' "$f"
+          printf '%s\0' "$f"
           readable=1
         fi
-      done < <(bluray_list_plain_media "$src")
+      done < <(bluray_list_plain_media --print0 "$src")
       if ((readable)); then
         return 0
       fi
@@ -249,12 +272,12 @@ bluray_decrypt_or_copy() {
     bdmv)
       bdmv=$(bluray_resolve_bdmv "$src") || return 1
       disc=$(dirname -- "$bdmv")
-      while IFS= read -r f; do
+      while IFS= read -r -d '' f; do
         if bluray_media_readable "$f"; then
-          printf '%s\n' "$f"
+          printf '%s\0' "$f"
           readable=1
         fi
-      done < <(bluray_list_stream_m2ts "$bdmv")
+      done < <(bluray_list_stream_m2ts --print0 "$bdmv")
       if ((readable)); then
         log_note "note: using already-readable STREAM m2ts under $bdmv"
         return 0
@@ -263,7 +286,7 @@ bluray_decrypt_or_copy() {
       if bluray_require_libs && bluray_keydb_present; then
         first="${outdir}/bluray-audio.mkv"
         if bluray_ffmpeg_bluray_copy "$disc" "$first" && bluray_media_readable "$first"; then
-          printf '%s\n' "$first"
+          printf '%s\0' "$first"
           return 0
         fi
         log_note "note: ffmpeg/libbluray path failed; trying MakeMKV if available"
@@ -280,9 +303,9 @@ bluray_decrypt_or_copy() {
       fi
       if bluray_makemkv_bin >/dev/null; then
         if bluray_makemkv_backup "$disc" "$outdir"; then
-          while IFS= read -r f; do
-            bluray_media_readable "$f" && printf '%s\n' "$f"
-          done < <(bluray_list_plain_media "$outdir")
+          while IFS= read -r -d '' f; do
+            bluray_media_readable "$f" && printf '%s\0' "$f"
+          done < <(bluray_list_plain_media --print0 "$outdir")
           return 0
         fi
       fi
@@ -296,9 +319,9 @@ bluray_decrypt_or_copy() {
     device)
       if bluray_makemkv_bin >/dev/null; then
         if bluray_makemkv_backup "$src" "$outdir"; then
-          while IFS= read -r f; do
-            bluray_media_readable "$f" && printf '%s\n' "$f"
-          done < <(bluray_list_plain_media "$outdir")
+          while IFS= read -r -d '' f; do
+            bluray_media_readable "$f" && printf '%s\0' "$f"
+          done < <(bluray_list_plain_media --print0 "$outdir")
           return 0
         fi
         return 1
@@ -306,7 +329,7 @@ bluray_decrypt_or_copy() {
       if bluray_require_libs && bluray_keydb_present; then
         first="${outdir}/bluray-audio.mkv"
         if bluray_ffmpeg_bluray_copy "$src" "$first" && bluray_media_readable "$first"; then
-          printf '%s\n' "$first"
+          printf '%s\0' "$first"
           return 0
         fi
       fi

@@ -59,6 +59,19 @@ test_streams_dry_run_lists_targets() {
   assert_no_file "$T/media/show.a0.flac"
 }
 
+test_bluray_plain_media_preserves_newline_filename() {
+  require_cmd flac metaflac ffmpeg ffprobe flock
+  local name=$'Concert\nLive.mkv'
+  mkdir -p "$T/bluray-media"
+  _mk_mkv "$T/bluray-media/$name" 1
+
+  run_tool conversion/bluray-to-flac/bluray-to-flac.sh "$T/bluray-media"
+  assert_eq "$(tool_rc)" 0 "rc ($(tool_out | tail -3))"
+  assert_file "$T/bluray-media/flac/${name%.mkv}.a0.flac"
+  flac -t --totally-silent \
+    "$T/bluray-media/flac/${name%.mkv}.a0.flac" || fail "invalid FLAC"
+}
+
 # --- disc-inventory --------------------------------------------------------------
 
 test_disc_inventory_counts_units_and_dedupes_video_ts() {
