@@ -59,7 +59,8 @@ plugin_after_flags() {
     echo "Error: album-incomplete is read-only; -y is not supported" >&2
     return 1
   fi
-  if ! awk -v r="${INCOMPLETE_DUR_RATIO}" 'BEGIN { exit !(r+0 > 0 && r+0 < 1) }'; then
+  if [[ ! "$INCOMPLETE_DUR_RATIO" =~ ^[0-9]+([.][0-9]+)?$ ]] || \
+     ! awk -v r="$INCOMPLETE_DUR_RATIO" 'BEGIN { exit !(r > 0 && r < 1) }'; then
     echo "Error: --duration-ratio must be between 0 and 1 (got ${INCOMPLETE_DUR_RATIO})" >&2
     return 1
   fi

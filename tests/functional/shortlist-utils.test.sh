@@ -113,6 +113,26 @@ test_album_incomplete_discs() {
   assert_grep "incomplete-discs" "$T/failures.log"
 }
 
+test_album_incomplete_validates_duration_ratio() {
+  mkdir -p "$T/empty"
+  local value rc
+  for value in 0 1 -0.1 .35 1. 1e-1 0.35junk nope; do
+    run_tool util/audit/album-incomplete/album-incomplete.sh \
+      --duration-ratio="$value" "$T/empty"
+    rc=$(tool_rc)
+    assert_eq "$rc" 2 "accepted --duration-ratio=$value"
+    assert_grep "duration-ratio must be" "$T/out"
+  done
+
+  run_tool util/audit/album-incomplete/album-incomplete.sh \
+    --duration-ratio 0.001 "$T/empty"
+  assert_eq "$(tool_rc)" 0 "valid small ratio ($(tool_out | tail -3))"
+
+  run_tool util/audit/album-incomplete/album-incomplete.sh \
+    --duration-ratio=0.999 "$T/empty"
+  assert_eq "$(tool_rc)" 0 "valid large ratio ($(tool_out | tail -3))"
+}
+
 # --- lossy-authenticity ------------------------------------------------------
 
 test_lossy_authenticity_runs_on_mp3() {
