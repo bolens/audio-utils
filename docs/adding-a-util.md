@@ -20,6 +20,8 @@ pipelines (`pcm_to_flac`, `lossy`, `lossless`, …).
 
 Fastest path: `make new-util CATEGORY=<category> NAME=<tool>` (wraps
 [`scripts/new-tool.sh`](../scripts/new-tool.sh)) generates the full skeleton.
+Category and tool names use lowercase kebab case; `EXT` is lowercase
+alphanumeric.
 The manual steps below describe what the generator produces.
 
 1. Copy a peer under the right category (e.g. [`util/flac/flac-verify/`](../util/flac/flac-verify/) or a thin multi-ext tool like [`util/audit/cue-audit/`](../util/audit/cue-audit/)).

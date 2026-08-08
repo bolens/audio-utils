@@ -19,6 +19,7 @@ REPO_ROOT=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
 KIND="${1:-}"
 case "$KIND" in
   util)
+    (($# == 3 || $# == 4)) || die "usage: new-tool.sh util CATEGORY NAME [SRC_EXT]"
     CATEGORY="${2:-}"
     NAME="${3:-}"
     SRC_EXT="${4:-flac}"
@@ -29,6 +30,7 @@ case "$KIND" in
     LIB_UP="../../.."
     ;;
   converter)
+    (($# == 2)) || die "usage: new-tool.sh converter X-to-Y"
     NAME="${2:-}"
     [[ "$NAME" == *-to-* ]] || die "usage: new-tool.sh converter X-to-Y"
     SRC_EXT="${NAME%%-to-*}"
@@ -41,7 +43,15 @@ case "$KIND" in
     ;;
 esac
 
-[[ "$NAME" =~ ^[a-z0-9][a-z0-9-]*$ ]] || die "NAME must be lowercase-kebab: $NAME"
+[[ "$NAME" =~ ^[a-z0-9]+(-[a-z0-9]+)*$ ]] || die "NAME must be lowercase-kebab: $NAME"
+if [[ "$KIND" == util ]]; then
+  [[ "$CATEGORY" =~ ^[a-z0-9]+(-[a-z0-9]+)*$ ]] \
+    || die "CATEGORY must be lowercase-kebab: $CATEGORY"
+  [[ "$SRC_EXT" =~ ^[a-z0-9]+$ ]] || die "SRC_EXT must be lowercase alphanumeric: $SRC_EXT"
+else
+  [[ -n "$SRC_EXT" && -n "$DEST_EXT" && "$SRC_EXT" != *-to-* && "$DEST_EXT" != *-to-* ]] \
+    || die "converter NAME must contain exactly one -to-: $NAME"
+fi
 [[ ! -e "$REPO_ROOT/$TOOL_DIR" ]] || die "already exists: $TOOL_DIR"
 
 WORKDIR_PREFIX=${NAME//-/}
