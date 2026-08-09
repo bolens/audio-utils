@@ -38,8 +38,9 @@ published separately.
 
 Watch required checks with `gh pr checks --watch`. Do not merge with failing or
 pending checks. If CI needs a fix, commit it to the same branch and wait for the
-replacement run. Merge with a merge commit so the focused commits remain in
-history, then update local `main` from `origin/main`.
+replacement run. Rebase-merge the PR so the focused commits remain in history;
+the repository intentionally disables merge commits. Then update local `main`
+from `origin/main`.
 
 ## Publish
 
