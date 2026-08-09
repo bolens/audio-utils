@@ -1,0 +1,48 @@
+#!/usr/bin/env bash
+# Unit tests: tests/run.sh filtering and empty-match semantics.
+set -euo pipefail
+# shellcheck source=../harness.sh
+source "$(dirname "${BASH_SOURCE[0]}")/../harness.sh"
+
+_write_runner_fixture() {
+  local file=$1
+  cat >"$file" <<EOF
+#!/usr/bin/env bash
+set -euo pipefail
+source "$AU_REPO_ROOT/tests/harness.sh"
+test_alpha() { :; }
+test_beta() { :; }
+run_tests
+EOF
+}
+
+test_function_filter_runs_only_matching_test() {
+  _write_runner_fixture "$T/sample.test.sh"
+  local rc=0
+  "$AU_REPO_ROOT/tests/run.sh" -j 1 -k alpha "$T/sample.test.sh" \
+    >"$T/out" 2>&1 || rc=$?
+  assert_eq "$rc" 0
+  assert_grep 'pass=1 fail=0 skip=0' "$T/out"
+  assert_not_grep 'ok test_beta' "$T/out"
+}
+
+test_missing_function_filter_returns_usage_error() {
+  _write_runner_fixture "$T/sample.test.sh"
+  local rc=0
+  "$AU_REPO_ROOT/tests/run.sh" -j 1 -k does_not_exist "$T/sample.test.sh" \
+    >"$T/out" 2>&1 || rc=$?
+  assert_eq "$rc" 2
+  assert_grep 'pass=0 fail=0 skip=0' "$T/out"
+  assert_grep 'NO MATCHING TEST FUNCTIONS' "$T/out"
+}
+
+test_filename_filter_keeps_all_functions_in_matching_file() {
+  _write_runner_fixture "$T/sample.test.sh"
+  local rc=0
+  "$AU_REPO_ROOT/tests/run.sh" -j 1 -k sample "$T/sample.test.sh" \
+    >"$T/out" 2>&1 || rc=$?
+  assert_eq "$rc" 0
+  assert_grep 'pass=2 fail=0 skip=0' "$T/out"
+}
+
+run_tests

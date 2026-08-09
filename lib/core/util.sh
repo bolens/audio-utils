@@ -112,11 +112,77 @@ audio_utils_find_simple_meta() {
   done
 }
 
+# Parse options and resolve roots for simple find-* scripts.
+# Usage: audio_utils_parse_simple_find PRINT0_VAR ROOTS_VAR NAME DESC "$@"
+audio_utils_parse_simple_find() {
+  local print0_name=$1 roots_name=$2
+  local -n _print0=$print0_name
+  # shellcheck disable=SC2178 # nameref target is explicitly an array name
+  local -n _roots=$roots_name
+  local name=$3 desc=$4
+  shift 4
+  _print0=0
+  _roots=()
+  while (($# > 0)); do
+    case "$1" in
+      --print0)
+        _print0=1
+        shift
+        ;;
+      -h|--help)
+        printf 'Usage: %s [--print0] [ROOT ...]\n' "$name"
+        printf '%s\n' "$desc"
+        printf '%s\n' '  --print0  NUL-delimit output (safe for all filenames)'
+        printf 'Roots: args, else AUDIO_UTILS_ROOTS / config.\n'
+        exit 0
+        ;;
+      --version)
+        audio_utils_print_version "$name"
+        exit 0
+        ;;
+      --)
+        shift
+        _roots+=("$@")
+        break
+        ;;
+      -*)
+        echo "Error: unknown option: $1 (try -h)" >&2
+        exit 2
+        ;;
+      *)
+        _roots+=("$1")
+        shift
+        ;;
+    esac
+  done
+  audio_utils_resolve_roots "$roots_name" "${_roots[@]}"
+}
+
 # List directories named NAME (case-insensitive) under roots.
-# Usage: find_named_dirs NAME ROOT [ROOT ...]
+# Usage: find_named_dirs [--print0] NAME ROOT [ROOT ...]
 find_named_dirs() {
-  local name=$1
+  local print0=0
+  if [[ ${1:-} == --print0 ]]; then
+    print0=1
+    shift
+  fi
+  local name=${1:-}
   shift
   [[ -n "$name" && $# -gt 0 ]] || return 2
-  LC_ALL=C find -P "$@" -type d -iname "$name" 2>/dev/null | LC_ALL=C sort -u
+  local root
+  local -a roots=()
+  for root in "$@"; do
+    if [[ $root == -* ]]; then
+      roots+=("./$root")
+    else
+      roots+=("$root")
+    fi
+  done
+  if ((print0)); then
+    LC_ALL=C find -P "${roots[@]}" -type d -iname "$name" -print0 2>/dev/null |
+      LC_ALL=C sort -zu
+  else
+    LC_ALL=C find -P "${roots[@]}" -type d -iname "$name" 2>/dev/null |
+      LC_ALL=C sort -u
+  fi
 }

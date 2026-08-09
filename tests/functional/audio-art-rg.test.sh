@@ -78,10 +78,20 @@ _rg_tag() { # file
     -of default=noprint_wrappers=1:nokey=1 "$1" 2>/dev/null | head -1
 }
 
+_require_runnable_rg() {
+  local backend rc
+  for backend in rsgain loudgain; do
+    command -v "$backend" >/dev/null 2>&1 || continue
+    rc=0
+    "$backend" --version >/dev/null 2>&1 || rc=$?
+    [[ "$rc" -ne 126 && "$rc" -ne 127 ]] && return 0
+  done
+  skip "no runnable rsgain/loudgain"
+}
+
 test_audio_replaygain_tags_flac_and_mp3() {
   require_cmd flac metaflac ffmpeg ffprobe flock
-  command -v rsgain >/dev/null 2>&1 || command -v loudgain >/dev/null 2>&1 \
-    || skip "no rsgain/loudgain"
+  _require_runnable_rg
   local a b
   a=$(fixture album)
   b=$(fixture lossy)
@@ -99,8 +109,7 @@ test_audio_replaygain_tags_flac_and_mp3() {
 
 test_audio_replaygain_dry_run_writes_no_tags() {
   require_cmd flac metaflac ffmpeg ffprobe flock
-  command -v rsgain >/dev/null 2>&1 || command -v loudgain >/dev/null 2>&1 \
-    || skip "no rsgain/loudgain"
+  _require_runnable_rg
   local a
   a=$(fixture album)
   mkdir -p "$T/album"
@@ -110,6 +119,22 @@ test_audio_replaygain_dry_run_writes_no_tags() {
   assert_eq "$(tool_rc)" 0 "dry-run rc"
   [[ -z "$(_rg_tag "$T/album/01 - Track One.flac")" ]] \
     || fail "dry run must not tag"
+}
+
+test_audio_replaygain_skips_broken_preferred_backend() {
+  require_cmd flac metaflac ffmpeg ffprobe flock
+  mkdir -p "$T/bin" "$T/empty"
+  printf '#!/usr/bin/env bash\nexit 127\n' >"$T/bin/rsgain"
+  # shellcheck disable=SC2016  # $T expands when the generated shim runs
+  printf '#!/usr/bin/env bash\n: >"${T:?}/loudgain-probed"\nexit 0\n' \
+    >"$T/bin/loudgain"
+  chmod +x "$T/bin/rsgain" "$T/bin/loudgain"
+
+  PATH="$T/bin:$PATH" run_tool \
+    util/audio/audio-replaygain/audio-replaygain.sh -n -v "$T/empty"
+
+  assert_eq "$(tool_rc)" 0 "fallback backend rc ($(tool_out | tail -3))"
+  assert_file "$T/loudgain-probed" "fallback backend was not probed"
 }
 
 run_tests

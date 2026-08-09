@@ -44,6 +44,7 @@ EOF
 _ape() { # args...
   local rc=0
   XDG_DATA_HOME="$T/data" XDG_CACHE_HOME="$T/cache" \
+    CCACHE_DISABLE=1 \
     APE_CODEC_URL_BASE="file://$T" \
     APE_CODEC_RELEASES_URL="file://$T/developers.html" \
     bash "$_SCRIPT" "$@" >"$T/out" 2>&1 || rc=$?

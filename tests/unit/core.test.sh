@@ -144,6 +144,18 @@ test_find_named_dirs_case_insensitive() {
   assert_grep "Album/CD1" "$out"
 }
 
+test_find_named_dirs_print0_preserves_newlines() {
+  _load_util
+  local dir=$'disc\nlive/BDMV' item
+  local -a found=()
+  mkdir -p "$T/$dir"
+  while IFS= read -r -d '' item; do
+    found+=("$item")
+  done < <(find_named_dirs --print0 BDMV "$T")
+  assert_eq "${#found[@]}" "1"
+  assert_eq "${found[0]}" "$T/$dir"
+}
+
 # --- log.sh escaping ------------------------------------------------------------
 
 test_csv_escape_doubles_quotes() {

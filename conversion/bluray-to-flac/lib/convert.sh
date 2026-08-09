@@ -95,7 +95,7 @@ convert_one() {
     cleanup
     return 1
   fi
-  mapfile -t media <"${tmpdir}/media.list"
+  au_mapfile0 media "${tmpdir}/media.list"
   if ((${#media[@]} == 0)); then
     log_fail "$path" "no readable media after resolve"
     cleanup

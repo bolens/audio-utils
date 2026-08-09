@@ -9,7 +9,9 @@
 # Tools that cannot be tested without specific hardware, network services, or
 # proprietary encoders live in tests/coverage-exempt.tsv with a reason. They
 # are excluded from the goal denominator but always listed so the exemptions
-# themselves stay under review (stale or shadowed entries are flagged).
+# themselves stay under review. Stale paths are errors. A functional test that
+# fully retires an exemption marks that explicitly:
+#   # covers-exempt: conversion/example-tool
 #
 # Lib detection: a module counts as directly covered when its repo-relative
 # path appears anywhere in tests/ - either a real `source` line or a
@@ -85,6 +87,10 @@ _tool_covered() { # tool-name
   grep -rql -- "$1" tests/functional/ 2>/dev/null
 }
 
+_exemption_covered() { # repo-relative path
+  grep -rqlF -- "# covers-exempt: $1" tests/functional/ 2>/dev/null
+}
+
 _tool_loc() { # tool-dir
   cat "$1"/*.sh "$1"/lib/*.sh 2>/dev/null | wc -l
 }
@@ -98,8 +104,8 @@ for mk in conversion/*/Makefile util/*/*/Makefile; do
   name=${dir##*/}
   if [[ -n "${EXEMPT_REASON[$dir]:-}" ]]; then
     SEEN_EXEMPT["$dir"]=1
-    if _tool_covered "$name"; then
-      SHADOWED+=("$dir")   # exempt but a functional test names it - retire entry?
+    if _exemption_covered "$dir"; then
+      SHADOWED+=("$dir")
     fi
     EXEMPTED+=("$dir")
   elif _tool_covered "$name"; then

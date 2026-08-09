@@ -28,6 +28,7 @@ QUIET=0
 VERBOSE=0
 FAIL_LOG=""
 SUCCESS_LOG=""
+POSITIONAL_DEVICE=0
 
 usage() {
   sed -n '2,15p' "$0" | sed 's/^# \?//'
@@ -36,13 +37,24 @@ usage() {
 
 while (($# > 0)); do
   case "$1" in
-    -o) OUTDIR=$2; shift 2 ;;
-    -d) DEVICE=$2; shift 2 ;;
-    -L) FAIL_LOG=$2; shift 2 ;;
-    -S) SUCCESS_LOG=$2; shift 2 ;;
+    -o|-d|-L|-S|-j)
+      [[ $# -ge 2 ]] || { echo "Error: $1 needs a value" >&2; usage 2; }
+      case "$1" in
+        -o) OUTDIR=$2 ;;
+        -d) DEVICE=$2 ;;
+        -L) FAIL_LOG=$2 ;;
+        -S) SUCCESS_LOG=$2 ;;
+        -j)
+          [[ $2 =~ ^[1-9][0-9]*$ ]] || {
+            echo "Error: -j needs a positive integer" >&2
+            usage 2
+          }
+          ;;
+      esac
+      shift 2
+      ;;
     -n) DRY_RUN=1; shift ;;
     -y) OVERWRITE=1; shift ;;
-    -j) shift 2 ;; # accepted for CLI parity; CDDA rip is serial
     -q) QUIET=1; shift ;;
     -v) VERBOSE=1; shift ;;
     -h|--help) usage 0 ;;
@@ -52,7 +64,12 @@ while (($# > 0)); do
       usage 2
       ;;
     *)
+      ((POSITIONAL_DEVICE == 0)) || {
+        echo "Error: pass only one CD device" >&2
+        usage 2
+      }
       DEVICE=$1
+      POSITIONAL_DEVICE=1
       shift
       ;;
   esac

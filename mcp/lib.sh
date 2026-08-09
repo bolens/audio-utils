@@ -73,19 +73,61 @@ mcp_json_skip_ws() {
   printf '%s' "$s"
 }
 
-# Find value text after `"key":` in $1 (haystack). Writes value start offset to
-# nameref $3 via remaining suffix in stdout starting at the value.
+# Find a top-level object member and print the text after its colon. Strings and
+# nested objects/arrays are skipped so key-shaped argument text cannot spoof a
+# protocol field.
 mcp_json_after_key() {
-  local haystack=$1 key=$2
-  local pat="\"${key}\"[[:space:]]*:[[:space:]]*"
-  if [[ "$haystack" =~ $pat ]]; then
-    local matched=${BASH_REMATCH[0]}
-    local idx=${haystack%%"$matched"*}
-    local start=$((${#idx} + ${#matched}))
-    printf '%s' "${haystack:start}"
-    return 0
-  fi
+  local s=$1 key=$2 c parsed
+  local -i i=0 n=${#s} object_depth=0 array_depth=0 j esc
+  while ((i < n)); do
+    c=${s:i:1}
+    case "$c" in
+      '{') ((object_depth++)) || true ;;
+      '}') ((object_depth--)) || true ;;
+      '[') ((array_depth++)) || true ;;
+      ']') ((array_depth--)) || true ;;
+      '"')
+        j=$((i + 1))
+        esc=0
+        while ((j < n)); do
+          c=${s:j:1}
+          if ((esc)); then
+            esc=0
+          elif [[ "$c" == \\ ]]; then
+            esc=1
+          elif [[ "$c" == '"' ]]; then
+            break
+          fi
+          ((j++)) || true
+        done
+        ((j < n)) || return 1
+        if ((object_depth == 1 && array_depth == 0)); then
+          local -i k=$((j + 1))
+          while ((k < n)) && [[ "${s:k:1}" == [[:space:]] ]]; do
+            ((k++)) || true
+          done
+          if [[ "${s:k:1}" == ':' ]]; then
+            parsed=$(mcp_json_parse_string "${s:i:j-i+1}") || return 1
+            if [[ "$parsed" == "$key" ]]; then
+              ((k++)) || true
+              while ((k < n)) && [[ "${s:k:1}" == [[:space:]] ]]; do
+                ((k++)) || true
+              done
+              printf '%s' "${s:k}"
+              return 0
+            fi
+          fi
+        fi
+        i=$j
+        ;;
+    esac
+    ((i++)) || true
+  done
   return 1
+}
+
+mcp_json_token_delimited() {
+  [[ -z "$1" || "${1:0:1}" == [[:space:],\}\]] ]]
 }
 
 mcp_json_parse_string() {
@@ -112,24 +154,36 @@ mcp_json_parse_string() {
         b) out+=$'\b' ;;
         f) out+=$'\f' ;;
         u)
-          # \uXXXX — take next 4 hex digits literally as codepoint if ASCII
           local hex=${s:i+1:4}
-          if [[ "$hex" =~ ^[0-9a-fA-F]{4}$ ]]; then
-            local code=$((16#$hex))
-            if ((code < 128)); then
-              printf -v c '%b' "\\x$(printf '%02x' "$code")"
-              out+=$c
-            else
-              out+="?"
-            fi
-            ((i += 4)) || true
+          [[ "$hex" =~ ^[0-9a-fA-F]{4}$ ]] || return 1
+          local code=$((16#$hex))
+          if ((code >= 0xD800 && code <= 0xDBFF)); then
+            # A high surrogate must be immediately followed by \uDC00–\uDFFF.
+            [[ "${s:i+5:2}" == '\u' ]] || return 1
+            local low_hex=${s:i+7:4}
+            [[ "$low_hex" =~ ^[0-9a-fA-F]{4}$ ]] || return 1
+            local low=$((16#$low_hex))
+            ((low >= 0xDC00 && low <= 0xDFFF)) || return 1
+            code=$((0x10000 + (code - 0xD800) * 0x400 + low - 0xDC00))
+            ((i += 10)) || true
+          elif ((code >= 0xDC00 && code <= 0xDFFF)); then
+            return 1
           else
-            out+='u'
+            ((i += 4)) || true
           fi
+          # Bash strings cannot represent NUL; reject it rather than silently
+          # changing the request. JSON-RPC tool inputs have no valid use for it.
+          ((code != 0)) || return 1
+          printf -v c '%b' "\\U$(printf '%08x' "$code")"
+          out+=$c
           ;;
-        *) out+=$c ;;
+        '"'|\\|/) out+=$c ;;
+        *) return 1 ;;
       esac
     else
+      if [[ "$c" == [[:cntrl:]] ]]; then
+        return 1
+      fi
       out+=$c
     fi
     ((i++)) || true
@@ -147,17 +201,36 @@ mcp_json_get_string() {
   rest=$(mcp_json_after_key "$1" "$2") || return 1
   rest=${rest##+([[:space:]])}
   [[ "${rest:0:1}" == '"' ]] || return 1
-  mcp_json_parse_string "$rest"
+  local -i i=1 n=${#rest} esc=0
+  local c
+  while ((i < n)); do
+    c=${rest:i:1}
+    if ((esc)); then
+      esc=0
+    elif [[ "$c" == \\ ]]; then
+      esc=1
+    elif [[ "$c" == '"' ]]; then
+      mcp_json_token_delimited "${rest:i+1}" || return 1
+      mcp_json_parse_string "${rest:0:i+1}"
+      return
+    fi
+    ((i++)) || true
+  done
+  return 1
 }
 
 mcp_json_get_bool() {
   local rest
   rest=$(mcp_json_after_key "$1" "$2") || return 1
   rest=${rest##+([[:space:]])}
-  case "$rest" in
-    true*) printf 'true'; return 0 ;;
-    false*) printf 'false'; return 0 ;;
-  esac
+  if [[ "${rest:0:4}" == true ]] && mcp_json_token_delimited "${rest:4}"; then
+    printf 'true'
+    return 0
+  fi
+  if [[ "${rest:0:5}" == false ]] && mcp_json_token_delimited "${rest:5}"; then
+    printf 'false'
+    return 0
+  fi
   return 1
 }
 
@@ -166,8 +239,11 @@ mcp_json_get_number() {
   rest=$(mcp_json_after_key "$1" "$2") || return 1
   rest=${rest##+([[:space:]])}
   if [[ "$rest" =~ ^(-?[0-9]+(\.[0-9]+)?) ]]; then
-    printf '%s' "${BASH_REMATCH[1]}"
-    return 0
+    local number=${BASH_REMATCH[1]}
+    if mcp_json_token_delimited "${rest:${#number}}"; then
+      printf '%s' "$number"
+      return 0
+    fi
   fi
   return 1
 }
@@ -177,27 +253,25 @@ mcp_json_get_null_or_missing() {
   local rest
   rest=$(mcp_json_after_key "$1" "$2") || return 0
   rest=${rest##+([[:space:]])}
-  [[ "$rest" == null* ]] && return 0
+  [[ "${rest:0:4}" == null ]] && mcp_json_token_delimited "${rest:4}" && return 0
   return 1
 }
 
 mcp_json_get_string_array() {
-  # Print one string element per line. Empty array → no lines, exit 0.
+  # Print NUL-delimited strings so paths containing newlines remain intact.
+  # Empty array → no output, exit 0.
   local rest elem
   rest=$(mcp_json_after_key "$1" "$2") || return 1
   rest=${rest##+([[:space:]])}
   [[ "${rest:0:1}" == '[' ]] || return 1
   rest=${rest:1}
+  rest=${rest##+([[:space:]])}
+  [[ "${rest:0:1}" == ']' ]] && return 0
   while true; do
     rest=${rest##+([[:space:]])}
-    [[ "${rest:0:1}" == ']' ]] && return 0
-    if [[ "${rest:0:1}" == ',' ]]; then
-      rest=${rest:1}
-      continue
-    fi
     [[ "${rest:0:1}" == '"' ]] || return 1
     elem=$(mcp_json_parse_string "$rest") || return 1
-    printf '%s\n' "$elem"
+    printf '%s\0' "$elem"
     # Advance past the string literal in rest
     local esc=0
     local -i i=1 n=${#rest}
@@ -220,6 +294,16 @@ mcp_json_get_string_array() {
       ((i++)) || true
     done
     rest=${rest:i}
+    rest=${rest##+([[:space:]])}
+    case "${rest:0:1}" in
+      ']') return 0 ;;
+      ',')
+        rest=${rest:1}
+        rest=${rest##+([[:space:]])}
+        [[ "${rest:0:1}" != ']' ]] || return 1
+        ;;
+      *) return 1 ;;
+    esac
   done
 }
 
@@ -303,17 +387,11 @@ mcp_read_message() {
     return 0
   }
 
-  # Read exactly clen bytes
-  local body
-  body=$(head -c "$clen" 2>/dev/null || dd bs="$clen" count=1 2>/dev/null) || return 1
-  # head -c may return short; ensure length
-  local -i got
-  got=$(printf '%s' "$body" | wc -c)
-  if ((got < clen)); then
-    local more
-    more=$(dd bs=1 count=$((clen - got)) 2>/dev/null) || true
-    body+=$more
-  fi
+  # Bash read stores trailing newlines, unlike command substitution. The C
+  # locale makes -N count protocol bytes rather than multibyte characters.
+  local body="" LC_ALL=C
+  IFS= read -r -N "$clen" body || return 1
+  ((${#body} == clen)) || return 1
   _mcp_out=$body
   return 0
 }
@@ -619,15 +697,17 @@ mcp_parse_run_args_from_json() {
   fi
 
   if mcp_json_after_key "$args_json" paths >/dev/null 2>&1; then
-    while IFS= read -r v; do
+    mcp_json_get_string_array "$args_json" paths >/dev/null || return 1
+    while IFS= read -r -d '' v; do
       [[ -n "$v" ]] && MCP_ARG_PATHS+=("$v")
     done < <(mcp_json_get_string_array "$args_json" paths)
   fi
 
   if mcp_json_after_key "$args_json" args >/dev/null 2>&1; then
-    while IFS= read -r v; do
+    mcp_json_get_string_array "$args_json" args >/dev/null || return 1
+    while IFS= read -r -d '' v; do
       [[ -n "$v" ]] && MCP_ARG_ARGS+=("$v")
-    done < <(mcp_json_get_string_array "$args_json" args || true)
+    done < <(mcp_json_get_string_array "$args_json" args)
   fi
 
   if v=$(mcp_json_get_number "$args_json" jobs 2>/dev/null); then
@@ -770,7 +850,10 @@ mcp_handle_tools_call() {
       return 0
       ;;
     run_tool)
-      mcp_parse_run_args_from_json "$args_json"
+      mcp_parse_run_args_from_json "$args_json" || {
+        echo "invalid run_tool arguments" >&2
+        return 1
+      }
       cli_name=$MCP_ARG_NAME
       [[ -n "$cli_name" ]] || {
         echo "run_tool requires name" >&2
@@ -779,7 +862,10 @@ mcp_handle_tools_call() {
       ;;
     *)
       # Per-format tool
-      mcp_parse_run_args_from_json "$args_json"
+      mcp_parse_run_args_from_json "$args_json" || {
+        echo "invalid tool arguments" >&2
+        return 1
+      }
       cli_name=$(mcp_mcp_to_cli_name "$tool_mcp")
       ;;
   esac
@@ -810,7 +896,7 @@ mcp_handle_tools_call() {
 mcp_dispatch() {
   # $1 = request JSON. Prints response JSON (or empty for notifications).
   local req=$1
-  local method id_json result err_msg
+  local method id_json result err_msg err_file
 
   method=$(mcp_json_get_string "$req" method) || {
     id_json=$(mcp_id_json "$req")
@@ -836,15 +922,18 @@ mcp_dispatch() {
       mcp_ok_response "$id_json" "$result"
       ;;
     tools/call)
-      if result=$(mcp_handle_tools_call "$req" 2>"${TMPDIR:-/tmp}/mcp-err.$$"); then
+      err_file=$(mktemp "${TMPDIR:-/tmp}/mcp-err.XXXXXX") || {
+        mcp_error_response "$id_json" -32603 "Internal error: cannot create error log"
+        return 0
+      }
+      if result=$(mcp_handle_tools_call "$req" 2>"$err_file"); then
         mcp_ok_response "$id_json" "$result"
       else
-        err_msg=$(cat "${TMPDIR:-/tmp}/mcp-err.$$" 2>/dev/null || echo "tools/call failed")
-        rm -f "${TMPDIR:-/tmp}/mcp-err.$$"
+        err_msg=$(cat -- "$err_file" 2>/dev/null || echo "tools/call failed")
         # Tool errors as MCP error, or as isError result — use error for safety rejects
         mcp_error_response "$id_json" -32000 "$err_msg"
       fi
-      rm -f "${TMPDIR:-/tmp}/mcp-err.$$"
+      rm -f -- "$err_file"
       ;;
     *)
       mcp_error_response "$id_json" -32601 "Method not found: $method"

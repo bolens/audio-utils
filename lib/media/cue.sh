@@ -5,8 +5,9 @@
 cue_msf_to_sec() {
   local msf="$1"
   local mm ss ff
+  [[ "$msf" =~ ^[0-9]+:[0-9]{2}:[0-9]{2}$ ]] || return 1
   IFS=: read -r mm ss ff <<<"$msf" || return 1
-  [[ -n "$mm" && -n "$ss" && -n "$ff" ]] || return 1
+  ((10#$ss < 60 && 10#$ff < 75)) || return 1
   awk -v mm="$mm" -v ss="$ss" -v ff="$ff" 'BEGIN {
     printf "%.8f\n", (mm * 60) + ss + (ff / 75.0)
   }'
@@ -222,6 +223,11 @@ cue_list_tracks() {
     end_sec=""
     if ((i + 1 < ${#idx_nums[@]})); then
       next_start=${starts[$((i + 1))]}
+      if ! awk -v start="${starts[$i]}" -v following="$next_start" \
+        'BEGIN { exit !(following > start) }'; then
+        log_err "Error: non-increasing INDEX 01 before TRACK ${idx_nums[$((i + 1))]} in $cue_path"
+        return 1
+      fi
       end_sec=$next_start
     fi
     # Strip | so pipe-delimited records stay parseable

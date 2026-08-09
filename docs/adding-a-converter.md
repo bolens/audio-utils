@@ -6,6 +6,7 @@ Converters live under [`conversion/`](../conversion/). For library lifecycle too
 
 Fastest path: `make new-converter NAME=<src>-to-<dst>` (wraps
 [`scripts/new-tool.sh`](../scripts/new-tool.sh)) generates the full skeleton.
+Names use lowercase kebab case and contain exactly one `-to-` separator.
 The manual steps below describe what the generator produces.
 
 1. Copy a sibling under `conversion/` (prefer a similar lossless or lossy peer).

@@ -21,6 +21,28 @@ test_config_missing_file_is_ok() {
   audio_utils_load_config
 }
 
+test_config_without_home_ignores_tmpdir_config() {
+  _load_lib
+  mkdir -p "$T/tmp/audio-utils"
+  printf '%s\n' 'AUDIO_UTILS_ROOTS=/attacker' >"$T/tmp/audio-utils/config"
+
+  unset AUDIO_UTILS_ROOTS
+  if ! (unset HOME XDG_CONFIG_HOME; TMPDIR="$T/tmp" audio_utils_load_config
+    [[ ! -v AUDIO_UTILS_ROOTS ]]); then
+    fail "config loader trusted implicit temporary-directory config"
+  fi
+}
+
+test_explicit_config_home_works_without_home() {
+  _load_lib
+  _write_config <<<'AUDIO_UTILS_ROOTS=/explicit'
+
+  unset AUDIO_UTILS_ROOTS
+  local roots
+  roots=$(unset HOME; audio_utils_load_config; printf '%s' "$AUDIO_UTILS_ROOTS")
+  assert_eq "$roots" /explicit
+}
+
 test_config_sets_allowed_key() {
   _load_lib
   _write_config <<<'AUDIO_UTILS_ROOTS=/music'

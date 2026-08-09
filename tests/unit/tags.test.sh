@@ -15,6 +15,16 @@ test_track_number_zero_padded() {
   assert_eq "$(flac_tag_normalize_track 9)" "09"
   assert_eq "$(flac_tag_normalize_track 12)" "12"
   assert_eq "$(flac_tag_normalize_track 01)" "01"
+  assert_eq "$(flac_tag_normalize_track 0009)" "09"
+  assert_eq "$(flac_tag_normalize_track 000)" "00"
+}
+
+test_track_number_avoids_integer_overflow() {
+  _load_lib
+  assert_eq "$(flac_tag_normalize_track 123456789012345678901234567890)" \
+    "123456789012345678901234567890"
+  assert_eq "$(flac_tag_normalize_track 000123456789012345678901234567890/999)" \
+    "123456789012345678901234567890/999"
 }
 
 test_track_number_with_total() {
@@ -44,6 +54,8 @@ test_date_strips_iso_time() {
 test_date_other_values_unchanged() {
   _load_lib
   assert_eq "$(flac_tag_normalize_date "circa 1970")" "circa 1970"
+  assert_eq "$(flac_tag_normalize_date "2020-05-01oops")" "2020-05-01oops"
+  assert_eq "$(flac_tag_normalize_date "2020-05-01+02:00")" "2020-05-01+02:00"
 }
 
 test_junk_tag_detection() {

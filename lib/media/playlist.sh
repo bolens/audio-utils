@@ -96,14 +96,15 @@ playlist_to_relative() {
   esac
 }
 
-# Encode path as file:// URI (absolute).
-playlist_file_uri() {
-  local p=$1 abs
-  abs=$(playlist_canon_path "$p")
-  # Percent-encode spaces and a few reserved chars; leave path separators.
+# Percent-encode a path while preserving separators.
+_playlist_uri_encode_path() {
+  local path=$1
+  # Iterate in the C locale so non-ASCII text is encoded as UTF-8 bytes rather
+  # than locale characters (URI percent escapes represent bytes).
+  local LC_ALL=C
   local enc="" i c hex
-  for ((i = 0; i < ${#abs}; i++)); do
-    c=${abs:i:1}
+  for ((i = 0; i < ${#path}; i++)); do
+    c=${path:i:1}
     case "$c" in
       [A-Za-z0-9._~/-]) enc+="$c" ;;
       *)
@@ -112,12 +113,20 @@ playlist_file_uri() {
         ;;
     esac
   done
-  printf 'file://%s\n' "$enc"
+  printf '%s\n' "$enc"
+}
+
+# Encode path as file:// URI (absolute).
+playlist_file_uri() {
+  local p=$1 abs
+  abs=$(playlist_canon_path "$p")
+  printf 'file://%s\n' "$(_playlist_uri_encode_path "$abs")"
 }
 
 # Decode file:// URI or plain path → filesystem path.
 playlist_uri_to_path() {
   local u=$1 out="" i=0 c hex
+  local LC_ALL=C
   u=${u#$'\r'}
   u=${u%"${u##*[![:space:]]}"}
   u=${u#"${u%%[![:space:]]*}"}
@@ -142,6 +151,18 @@ playlist_uri_to_path() {
     ((i++)) || true
   done
   printf '%s\n' "$out"
+}
+
+# Decode the five predefined XML entities used by XSPF text nodes. Decode
+# &amp; last so an input such as &amp;lt; remains literal "&lt;".
+_playlist_xml_unescape() {
+  local s=$1
+  s=${s//&lt;/<}
+  s=${s//&gt;/>}
+  s=${s//&quot;/\"}
+  s=${s//&apos;/\'}
+  s=${s//&amp;/\&}
+  printf '%s' "$s"
 }
 
 # Sanitize title for entry stream (strip US/newlines).
@@ -240,6 +261,8 @@ _playlist_parse_xspf() {
   local loc title path
   while IFS=$'\x1f' read -r loc title; do
     [[ -n "$loc" ]] || continue
+    loc=$(_playlist_xml_unescape "$loc")
+    title=$(_playlist_xml_unescape "$title")
     loc=$(playlist_uri_to_path "$loc")
     path=$(playlist_resolve_entry "$basedir" "$loc") || continue
     _playlist_emit "$path" "$title" ""
@@ -388,7 +411,7 @@ _playlist_write_xspf() {
         if [[ "$op" == /* ]]; then
           uri=$(playlist_file_uri "$op")
         else
-          uri=$op
+          uri=$(_playlist_uri_encode_path "$op")
         fi
       fi
       printf '    <track>\n'
@@ -404,15 +427,26 @@ _playlist_write_xspf() {
   mv -f -- "$tmp" "$out"
 }
 
-# Normalize artist+title for soft dedupe.
-playlist_normalize_title_key() {
-  local artist=$1 title=$2
-  local s
-  s=$(printf '%s\t%s' "${artist,,}" "${title,,}")
-  s=${s//[[:space:]]+/ }
+# Normalize one metadata field for soft dedupe.
+_playlist_normalize_text() {
+  local s=${1,,} restore_extglob=0
+  if ! shopt -q extglob; then
+    shopt -s extglob
+    restore_extglob=1
+  fi
+  s=${s//+([[:space:]])/ }
   s=${s#"${s%%[![:space:]]*}"}
   s=${s%"${s##*[![:space:]]}"}
-  printf '%s\n' "$s"
+  ((restore_extglob == 0)) || shopt -u extglob
+  printf '%s' "$s"
+}
+
+# Normalize artist+title for soft dedupe while retaining a field separator.
+playlist_normalize_title_key() {
+  local artist title
+  artist=$(_playlist_normalize_text "$1")
+  title=$(_playlist_normalize_text "$2")
+  printf '%s\t%s\n' "$artist" "$title"
 }
 
 # Build dedupe key for one entry.

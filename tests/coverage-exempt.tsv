@@ -1,7 +1,7 @@
 # Tools/lib modules exempt from the functional-coverage goal, one per line:
 #   <repo-relative path> <TAB> <reason>
-# Keep this list under review: scripts/coverage-audit.sh flags entries that
-# are stale (path gone) or shadowed (a functional test now covers them).
+# Keep this list under review: scripts/coverage-audit.sh flags stale paths and
+# entries explicitly retired by a functional `# covers-exempt: PATH` marker.
 # Everything here still gets smoke coverage (CLI contract + dep-skip paths).
 #
 # --- physical hardware / real media rips -------------------------------------

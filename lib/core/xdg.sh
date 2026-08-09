@@ -39,6 +39,20 @@ _audio_utils_ensure_dir() {
   [[ -d "$dir" && -w "$dir" ]]
 }
 
+# Ensure a runtime dir is owned by this user and cannot be a symlink. Runtime
+# files may contain command arguments and status, so a merely writable path is
+# not sufficient when falling back to a shared temporary parent.
+_audio_utils_ensure_private_dir() {
+  local dir="$1" owner
+  [[ ! -L "$dir" ]] || return 1
+  mkdir -p -- "$dir" || return 1
+  [[ -d "$dir" && ! -L "$dir" ]] || return 1
+  owner=$(stat -c %u -- "$dir") || return 1
+  [[ "$owner" -eq "$EUID" ]] || return 1
+  chmod 700 -- "$dir" || return 1
+  [[ -w "$dir" ]]
+}
+
 # Try candidates in order; print first writable path. Args: mode(or empty) dirs...
 _audio_utils_first_writable_dir() {
   local mode="$1"
@@ -54,26 +68,64 @@ _audio_utils_first_writable_dir() {
   return 1
 }
 
+_audio_utils_namespace_suffix() {
+  local name="${1:-}"
+  if [[ -z "$name" ]]; then
+    return 0
+  fi
+  if [[ ! "$name" =~ ^[A-Za-z0-9][A-Za-z0-9._-]*$ ]]; then
+    echo "Error: invalid audio-utils namespace: $name" >&2
+    return 2
+  fi
+  printf '/%s' "$name"
+}
+
+_audio_utils_private_fallback_path() {
+  local kind="$1" suffix="$2"
+  printf '%s/audio-utils-%s/%s%s\n' "${TMPDIR:-/tmp}" "$EUID" "$kind" "$suffix"
+}
+
+_audio_utils_private_fallback_dir() {
+  local kind="$1" suffix="$2" root dir
+  root="${TMPDIR:-/tmp}/audio-utils-${EUID}"
+  dir=$(_audio_utils_private_fallback_path "$kind" "$suffix") || return 1
+  _audio_utils_ensure_private_dir "$root" || return 1
+  _audio_utils_ensure_private_dir "$dir" || return 1
+  printf '%s\n' "$dir"
+}
+
 # Preferred state path WITHOUT creating directories (lazy).
 audio_utils_state_dir_path() {
   local tool="${1:-}"
-  local suffix=""
-  [[ -n "$tool" ]] && suffix="/${tool}"
-  printf '%s\n' "$(audio_utils_xdg_state_home)/audio-utils${suffix}"
+  local suffix
+  suffix=$(_audio_utils_namespace_suffix "$tool") || return
+  if [[ -n "${XDG_STATE_HOME:-}" || -n "${HOME:-}" ]]; then
+    printf '%s\n' "$(audio_utils_xdg_state_home)/audio-utils${suffix}"
+  else
+    _audio_utils_private_fallback_path state "$suffix"
+  fi
 }
 
 # Persistent per-user state (logs, run history). Optional tool subdirectory.
 # Prints path; creates directory. Falls back to cache/runtime/tmp if needed.
 audio_utils_state_dir() {
-  local tool="${1:-}"
-  local suffix="" cand
-  [[ -n "$tool" ]] && suffix="/${tool}"
+  local tool="${1:-}" suffix cand
+  local -a candidates=()
+  suffix=$(_audio_utils_namespace_suffix "$tool") || return
 
-  cand=$(_audio_utils_first_writable_dir "" \
-    "$(audio_utils_xdg_state_home)/audio-utils${suffix}" \
-    "$(audio_utils_xdg_cache_home)/audio-utils/state${suffix}" \
-    "${TMPDIR:-/tmp}/audio-utils-state${suffix}") || return 1
-  printf '%s\n' "$cand"
+  if [[ -n "${XDG_STATE_HOME:-}" || -n "${HOME:-}" ]]; then
+    candidates+=("$(audio_utils_xdg_state_home)/audio-utils${suffix}")
+  fi
+  if [[ -n "${XDG_CACHE_HOME:-}" || -n "${HOME:-}" ]]; then
+    candidates+=("$(audio_utils_xdg_cache_home)/audio-utils/state${suffix}")
+  fi
+  if ((${#candidates[@]})); then
+    cand=$(_audio_utils_first_writable_dir "" "${candidates[@]}") && {
+      printf '%s\n' "$cand"
+      return 0
+    }
+  fi
+  _audio_utils_private_fallback_dir state "$suffix"
 }
 
 # Ensure parent dir exists; optionally truncate; chmod 600.
@@ -94,39 +146,59 @@ audio_utils_ensure_log_file() {
 
 # Cache root for non-essential data.
 audio_utils_cache_dir() {
-  local tool="${1:-}"
-  local suffix="" cand
-  [[ -n "$tool" ]] && suffix="/${tool}"
+  local tool="${1:-}" suffix cand
+  suffix=$(_audio_utils_namespace_suffix "$tool") || return
 
-  cand=$(_audio_utils_first_writable_dir "" \
-    "$(audio_utils_xdg_cache_home)/audio-utils${suffix}" \
-    "${TMPDIR:-/tmp}/audio-utils-cache${suffix}") || return 1
-  printf '%s\n' "$cand"
+  if [[ -n "${XDG_CACHE_HOME:-}" || -n "${HOME:-}" ]]; then
+    cand=$(_audio_utils_first_writable_dir "" \
+      "$(audio_utils_xdg_cache_home)/audio-utils${suffix}") && {
+        printf '%s\n' "$cand"
+        return 0
+      }
+  fi
+  _audio_utils_private_fallback_dir cache "$suffix"
 }
 
 # Short-lived runtime base (status files, mktemp, registry).
 # Prefer XDG_RUNTIME_DIR; fall back to cache/runtime then TMPDIR.
 audio_utils_runtime_dir() {
   local cand
-  cand=$(_audio_utils_first_writable_dir 700 \
+  for cand in \
     "${XDG_RUNTIME_DIR:+${XDG_RUNTIME_DIR}/audio-utils}" \
     "$(audio_utils_xdg_cache_home)/audio-utils/runtime" \
-    "${TMPDIR:-/tmp}/audio-utils-runtime-$$") || return 1
-  printf '%s\n' "$cand"
+    "${TMPDIR:-/tmp}/audio-utils-runtime-${EUID}"; do
+    [[ -n "$cand" ]] || continue
+    if _audio_utils_ensure_private_dir "$cand"; then
+      printf '%s\n' "$cand"
+      return 0
+    fi
+  done
+  return 1
 }
 
-# mktemp file under runtime dir. Optional name template (default: tmp.XXXXXX).
+_audio_utils_validate_temp_template() {
+  local template="$1"
+  if [[ ! "$template" =~ ^[A-Za-z0-9][A-Za-z0-9._-]*X{3,}$ ]]; then
+    echo "Error: invalid temporary-file template: $template" >&2
+    return 2
+  fi
+}
+
+# mktemp file under runtime dir. Optional basename template (default:
+# tmp.XXXXXX); it must end in at least three X characters.
 audio_utils_mktemp() {
   local template="${1:-tmp.XXXXXX}"
   local base
+  _audio_utils_validate_temp_template "$template" || return
   base=$(audio_utils_runtime_dir) || return 1
   mktemp -- "${base}/${template}"
 }
 
-# mktemp -d under runtime dir. Optional name template (default: tmp.XXXXXX).
+# mktemp -d under runtime dir. Template rules match audio_utils_mktemp.
 audio_utils_mktemp_d() {
   local template="${1:-tmp.XXXXXX}"
   local base
+  _audio_utils_validate_temp_template "$template" || return
   base=$(audio_utils_runtime_dir) || return 1
   mktemp -d -- "${base}/${template}"
 }

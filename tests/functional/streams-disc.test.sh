@@ -59,6 +59,19 @@ test_streams_dry_run_lists_targets() {
   assert_no_file "$T/media/show.a0.flac"
 }
 
+test_bluray_plain_media_preserves_newline_filename() {
+  require_cmd flac metaflac ffmpeg ffprobe flock
+  local name=$'Concert\nLive.mkv'
+  mkdir -p "$T/bluray-media"
+  _mk_mkv "$T/bluray-media/$name" 1
+
+  run_tool conversion/bluray-to-flac/bluray-to-flac.sh "$T/bluray-media"
+  assert_eq "$(tool_rc)" 0 "rc ($(tool_out | tail -3))"
+  assert_file "$T/bluray-media/flac/${name%.mkv}.a0.flac"
+  flac -t --totally-silent \
+    "$T/bluray-media/flac/${name%.mkv}.a0.flac" || fail "invalid FLAC"
+}
+
 # --- disc-inventory --------------------------------------------------------------
 
 test_disc_inventory_counts_units_and_dedupes_video_ts() {
@@ -86,9 +99,16 @@ test_disc_inventory_counts_units_and_dedupes_video_ts() {
 
 # --- audio-key --------------------------------------------------------------------
 
+_require_runnable_keyfinder() {
+  local rc=0
+  require_cmd keyfinder-cli
+  keyfinder-cli --help >/dev/null 2>&1 || rc=$?
+  [[ "$rc" -ne 126 && "$rc" -ne 127 ]] || skip "keyfinder-cli is not runnable"
+}
+
 test_audio_key_tags_initialkey_on_flac() {
   require_cmd flac metaflac ffmpeg ffprobe flock
-  require_cmd keyfinder-cli
+  _require_runnable_keyfinder
   local src
   src=$(fixture flac_tagged)
   mkdir -p "$T/album"
@@ -103,7 +123,7 @@ test_audio_key_tags_initialkey_on_flac() {
 
 test_audio_key_skips_already_tagged_without_overwrite() {
   require_cmd flac metaflac ffmpeg ffprobe flock
-  require_cmd keyfinder-cli
+  _require_runnable_keyfinder
   local src
   src=$(fixture flac_tagged)
   mkdir -p "$T/album"
@@ -114,6 +134,18 @@ test_audio_key_skips_already_tagged_without_overwrite() {
   assert_eq "$(tool_rc)" 0
   assert_eq "$(metaflac --show-tag=INITIALKEY "$T/album/track.flac")" \
     "INITIALKEY=11B" "existing key must survive without -y"
+}
+
+test_audio_key_rejects_broken_backend_preflight() {
+  require_cmd flac metaflac ffmpeg ffprobe flock
+  mkdir -p "$T/bin" "$T/empty"
+  printf '#!/usr/bin/env bash\nexit 127\n' >"$T/bin/keyfinder-cli"
+  chmod +x "$T/bin/keyfinder-cli"
+
+  PATH="$T/bin:$PATH" run_tool util/audio/audio-key/audio-key.sh "$T/empty"
+
+  assert_eq "$(tool_rc)" 1 "broken backend must fail preflight"
+  assert_grep 'runnable keyfinder-cli' "$T/out"
 }
 
 run_tests

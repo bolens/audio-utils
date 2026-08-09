@@ -50,6 +50,16 @@ plugin_after_flags() {
     echo "Error: silence-detect is read-only; -y is not supported" >&2
     return 1
   fi
+  if [[ ! "$SILENCE_SEC" =~ ^[0-9]+([.][0-9]+)?$ ]] || \
+     ! awk -v s="$SILENCE_SEC" 'BEGIN { exit !(s > 0) }'; then
+    echo "Error: --silence-sec must be numeric and > 0" >&2
+    return 1
+  fi
+  if [[ ! "$SILENCE_DB" =~ ^-?[0-9]+([.][0-9]+)?$ ]] || \
+     ! awk -v s="$SILENCE_DB" 'BEGIN { exit !(s <= 0) }'; then
+    echo "Error: --silence-db must be numeric and <= 0" >&2
+    return 1
+  fi
   return 0
 }
 

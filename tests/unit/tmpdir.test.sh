@@ -38,6 +38,30 @@ test_workdir_prefix_env_honored() {
   cleanup_registered_tmpdirs
 }
 
+test_workdir_prefix_rejects_path_fragments() {
+  _load
+  init_tmpdir_registry
+  mkdir -p "$T/album" "$T/runtime-parent"
+  local prefix rc
+  for prefix in '../escape' 'bad/name' '.hidden' 'has space' '-option'; do
+    rc=0
+    AUDIO_UTILS_WORKDIR_PREFIX=$prefix make_workdir "$T/album" \
+      >"$T/out" 2>"$T/err" || rc=$?
+    assert_eq "$rc" 2 "reject prefix: $prefix"
+  done
+  assert_not_grep '/escape\.' "$(find "$T" -mindepth 1 -print)"
+}
+
+test_invalid_prefix_prevents_orphan_sweep() {
+  _load
+  mkdir -p "$T/album/.audio-utils.keep"
+  _invalid_sweep() {
+    AUDIO_UTILS_WORKDIR_PREFIX='../escape' sweep_orphan_workdirs "$T/album"
+  }
+  assert_exit 2 _invalid_sweep
+  [[ -d "$T/album/.audio-utils.keep" ]] || fail "invalid prefix triggered deletion"
+}
+
 test_cleanup_removes_registered_dirs_only() {
   _load
   init_tmpdir_registry

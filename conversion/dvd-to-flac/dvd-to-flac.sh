@@ -7,7 +7,7 @@
 #   dvd-to-flac.sh -f list.txt
 #
 # Options:
-#   -f FILE  -L FILE  -S FILE  -n  -y  -q  -v  -h  --version
+#   -f FILE  -L FILE  -S FILE  --dirs0  -n  -y  -q  -v  -h  --version
 #   -j N     Accepted for CLI parity; DVD extract is serial (ignored)
 #
 # Exit codes: 0 ok, 1 failures, 2 usage/deps
@@ -20,6 +20,7 @@ source "${SCRIPT_DIR}/lib/plugin.sh"
 audio_utils_load_config
 
 DIR_FILE=""
+DIRS0=0
 DRY_RUN=0
 OVERWRITE=0
 QUIET=0
@@ -35,12 +36,24 @@ usage() {
 
 while (($# > 0)); do
   case "$1" in
-    -f) DIR_FILE=$2; shift 2 ;;
-    -L) FAIL_LOG=$2; shift 2 ;;
-    -S) SUCCESS_LOG=$2; shift 2 ;;
+    -f|-L|-S|-j)
+      [[ $# -ge 2 ]] || { echo "Error: $1 needs a value" >&2; usage 2; }
+      case "$1" in
+        -f) DIR_FILE=$2 ;;
+        -L) FAIL_LOG=$2 ;;
+        -S) SUCCESS_LOG=$2 ;;
+        -j)
+          [[ $2 =~ ^[1-9][0-9]*$ ]] || {
+            echo "Error: -j needs a positive integer" >&2
+            usage 2
+          }
+          ;;
+      esac
+      shift 2
+      ;;
+    --dirs0) DIRS0=1; shift ;;
     -n) DRY_RUN=1; shift ;;
     -y) OVERWRITE=1; shift ;;
-    -j) shift 2 ;; # accepted for CLI parity; DVD extract is serial
     -q) QUIET=1; shift ;;
     -v) VERBOSE=1; shift ;;
     -h|--help) usage 0 ;;
@@ -68,7 +81,11 @@ if [[ -n "$DIR_FILE" ]]; then
 fi
 while (($# > 0)); do PATHS+=("$1"); shift; done
 if ((${#PATHS[@]} == 0)) && [[ ! -t 0 ]]; then
-  mapfile -t PATHS
+  if ((DIRS0)); then
+    au_mapfile0 PATHS
+  else
+    mapfile -t PATHS
+  fi
 fi
 if ((${#PATHS[@]} == 0)); then
   echo "Error: no VIDEO_TS paths given" >&2

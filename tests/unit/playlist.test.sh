@@ -67,6 +67,23 @@ test_file_uri_roundtrip() {
   assert_eq "$(playlist_uri_to_path "$uri")" "$T/My Music/a b.flac"
 }
 
+test_file_uri_roundtrips_utf8_and_reserved_bytes() {
+  _load_lib
+  mkdir -p "$T/Música"
+  touch "$T/Música/100% #1.flac"
+  local uri
+  uri=$(playlist_file_uri "$T/Música/100% #1.flac")
+  assert_grep '%C3%BA' "$uri" "UTF-8 bytes encoded"
+  assert_grep '100%25%20%231.flac' "$uri" "reserved bytes encoded"
+  assert_eq "$(playlist_uri_to_path "$uri")" "$T/Música/100% #1.flac"
+}
+
+test_uri_decoder_preserves_malformed_escapes() {
+  _load_lib
+  assert_eq "$(playlist_uri_to_path 'file:///music/100%/bad%2G.flac')" \
+    '/music/100%/bad%2G.flac'
+}
+
 test_parse_m3u_entries() {
   _load_lib
   mkdir -p "$T/music"
@@ -90,6 +107,34 @@ test_dedupe_entries_keeps_first() {
   out=$(printf 'a.flac\x1fSong\x1f10\nb.flac\x1fOther\x1f10\na.flac\x1fSong\x1f10\n' \
     | playlist_dedupe_entries)
   assert_eq "$(wc -l <<<"$out")" "2"
+}
+
+test_title_key_normalizes_case_and_whitespace() {
+  _load_lib
+  assert_eq "$(playlist_normalize_title_key $'  The\tArtist ' $' Song   Name\n')" \
+    $'the artist\tsong name'
+  shopt -u extglob
+  _playlist_normalize_text 'a  b' >/dev/null
+  if shopt -q extglob; then
+    fail "normalization leaked extglob into caller"
+  fi
+}
+
+test_title_key_retains_artist_title_boundary() {
+  _load_lib
+  local first second
+  first=$(playlist_normalize_title_key 'A B' 'C')
+  second=$(playlist_normalize_title_key 'A' 'B C')
+  [[ "$first" != "$second" ]] || fail "artist/title boundary collapsed"
+}
+
+test_title_dedupe_collapses_whitespace_variants() {
+  _load_lib
+  local out
+  out=$(printf 'a.flac\x1fSong   Name\x1f10\nb.flac\x1fsong\tname\x1f11\n' \
+    | playlist_dedupe_entries title)
+  assert_eq "$(wc -l <<<"$out")" 1
+  assert_grep '^a.flac' "$out" "first variant retained"
 }
 
 test_parse_m3u_crlf_and_trailing_line_without_newline() {
@@ -162,6 +207,27 @@ EOF
   assert_eq "$(head -1 <<<"$out" | cut -d$'\x1f' -f2)" "Spaced Song"
 }
 
+test_parse_xspf_decodes_xml_entities() {
+  _load_lib
+  mkdir -p "$T/R&B"
+  touch "$T/R&B/a.flac"
+  cat >"$T/entities.xspf" <<'EOF'
+<playlist>
+  <trackList>
+    <track>
+      <location>R&amp;B/a.flac</location>
+      <title>A &amp; B &lt;Live&gt; &quot;Mix&quot; &apos;Edit&apos;</title>
+    </track>
+  </trackList>
+</playlist>
+EOF
+  local out
+  out=$(playlist_parse "$T/entities.xspf")
+  assert_eq "$(cut -d$'\x1f' -f1 <<<"$out")" "$T/R&B/a.flac"
+  assert_eq "$(cut -d$'\x1f' -f2 <<<"$out")" \
+    "A & B <Live> \"Mix\" 'Edit'"
+}
+
 _tsv_two_entries() {
   printf '%s\x1f%s\x1f%s\n' "$T/music/a.flac" "Song A" "100"
   printf '%s\x1f%s\x1f%s\n' "$T/music/b.flac" "" ""
@@ -211,6 +277,18 @@ test_write_xspf_escapes_xml_and_roundtrips() {
   local out
   out=$(playlist_parse "$T/out.xspf")
   assert_eq "$(wc -l <<<"$out")" "1" "write→parse roundtrip"
+}
+
+test_write_xspf_encodes_relative_location_uris() {
+  _load_lib
+  mkdir -p "$T/Música"
+  touch "$T/Música/100% #1.flac"
+  printf '%s\x1f\x1f\n' "$T/Música/100% #1.flac" \
+    | playlist_write xspf "$T/out.xspf" "$T" relative
+  assert_grep 'M%C3%BAsica/100%25%20%231.flac' "$T/out.xspf"
+  local out
+  out=$(playlist_parse "$T/out.xspf")
+  assert_eq "$(cut -d$'\x1f' -f1 <<<"$out")" "$T/Música/100% #1.flac"
 }
 
 test_write_rejects_unknown_format() {

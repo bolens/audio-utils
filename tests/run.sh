@@ -171,4 +171,8 @@ if ((failed_files > 0)); then
   echo "=== FAILED ($failed_files file(s))"
   exit 1
 fi
+if ((total_pass + total_fail + total_skip == 0)); then
+  echo "=== NO MATCHING TEST FUNCTIONS" >&2
+  exit 2
+fi
 echo "=== OK"

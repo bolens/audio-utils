@@ -83,15 +83,22 @@ plugin_after_flags() {
     echo "Error: silence-trim does not support -y (use --apply)" >&2
     return 1
   fi
-  if ! awk -v s="${ST_SILENCE_SEC}" 'BEGIN { exit !(s+0 > 0) }'; then
+  if [[ ! "$ST_SILENCE_SEC" =~ ^[0-9]+([.][0-9]+)?$ ]] || \
+     ! awk -v s="$ST_SILENCE_SEC" 'BEGIN { exit !(s > 0) }'; then
     echo "Error: --silence-sec must be > 0" >&2
     return 1
   fi
-  if ! awk -v s="${ST_PAD_SEC}" 'BEGIN { exit !(s+0 >= 0) }'; then
+  if [[ ! "$ST_SILENCE_DB" =~ ^-?[0-9]+([.][0-9]+)?$ ]] || \
+     ! awk -v s="$ST_SILENCE_DB" 'BEGIN { exit !(s <= 0) }'; then
+    echo "Error: --silence-db must be numeric and <= 0" >&2
+    return 1
+  fi
+  if [[ ! "$ST_PAD_SEC" =~ ^[0-9]+([.][0-9]+)?$ ]]; then
     echo "Error: --pad-sec must be >= 0" >&2
     return 1
   fi
-  if ! awk -v s="${ST_MIN_KEEP}" 'BEGIN { exit !(s+0 > 0) }'; then
+  if [[ ! "$ST_MIN_KEEP" =~ ^[0-9]+([.][0-9]+)?$ ]] || \
+     ! awk -v s="$ST_MIN_KEEP" 'BEGIN { exit !(s > 0) }'; then
     echo "Error: --min-keep must be > 0" >&2
     return 1
   fi

@@ -113,6 +113,26 @@ test_album_incomplete_discs() {
   assert_grep "incomplete-discs" "$T/failures.log"
 }
 
+test_album_incomplete_validates_duration_ratio() {
+  mkdir -p "$T/empty"
+  local value rc
+  for value in 0 1 -0.1 .35 1. 1e-1 0.35junk nope; do
+    run_tool util/audit/album-incomplete/album-incomplete.sh \
+      --duration-ratio="$value" "$T/empty"
+    rc=$(tool_rc)
+    assert_eq "$rc" 2 "accepted --duration-ratio=$value"
+    assert_grep "duration-ratio must be" "$T/out"
+  done
+
+  run_tool util/audit/album-incomplete/album-incomplete.sh \
+    --duration-ratio 0.001 "$T/empty"
+  assert_eq "$(tool_rc)" 0 "valid small ratio ($(tool_out | tail -3))"
+
+  run_tool util/audit/album-incomplete/album-incomplete.sh \
+    --duration-ratio=0.999 "$T/empty"
+  assert_eq "$(tool_rc)" 0 "valid large ratio ($(tool_out | tail -3))"
+}
+
 # --- lossy-authenticity ------------------------------------------------------
 
 test_lossy_authenticity_runs_on_mp3() {
@@ -211,6 +231,22 @@ test_playlist_smart_genre_filter() {
   fi
 }
 
+test_playlist_smart_validates_bpm_range() {
+  require_cmd flock awk
+  mkdir -p "$T/empty"
+
+  run_tool util/playlist/playlist-smart/playlist-smart.sh \
+    --out "$T/inverted.m3u" --bpm-min 140 --bpm-max 120 "$T/empty"
+  assert_eq "$(tool_rc)" 2 "inverted BPM range must fail"
+  assert_grep "bpm-min must be <=" "$T/out"
+  assert_no_file "$T/inverted.m3u"
+
+  run_tool util/playlist/playlist-smart/playlist-smart.sh \
+    --out="$T/exact.m3u" --bpm-min=120.5 --bpm-max=120.5 "$T/empty"
+  assert_eq "$(tool_rc)" 0 "equal BPM bounds must be valid"
+  assert_no_file "$T/exact.m3u" "empty match set must not create playlist"
+}
+
 # --- silence-split -----------------------------------------------------------
 
 test_silence_split_two_tones() {
@@ -229,6 +265,40 @@ test_silence_split_two_tones() {
   assert_eq "$(tool_rc)" 0 "silence-split rc ($(tool_out | tail -5))"
   assert_file "$T/live/set - 01.flac"
   assert_file "$T/live/set - 02.flac"
+}
+
+test_silence_tools_reject_malformed_numbers() {
+  mkdir -p "$T/empty"
+  local tool flag value rc
+  while IFS='|' read -r tool flag value; do
+    run_tool "util/flac/$tool/$tool.sh" "$flag=$value" "$T/empty"
+    rc=$(tool_rc)
+    assert_eq "$rc" 2 "$tool accepted $flag=$value"
+    assert_grep "Error:" "$T/out"
+  done <<'EOF'
+silence-split|--silence-sec|1oops
+silence-split|--silence-db|-50dB
+silence-split|--silence-db|1
+silence-split|--min-track|.5
+silence-trim|--silence-sec|1.
+silence-trim|--silence-db|nope
+silence-trim|--silence-db|1
+silence-trim|--pad-sec|-0.1
+silence-trim|--min-keep|1e2
+EOF
+}
+
+test_silence_tools_accept_numeric_boundaries() {
+  require_cmd flac metaflac ffmpeg ffprobe flock awk
+  mkdir -p "$T/empty"
+
+  run_tool util/flac/silence-trim/silence-trim.sh \
+    --silence-sec=0.1 --silence-db=0 --pad-sec=0 --min-keep=0.1 "$T/empty"
+  assert_eq "$(tool_rc)" 0 "silence-trim numeric boundary"
+
+  run_tool util/flac/silence-split/silence-split.sh \
+    --silence-sec=0.1 --silence-db=0 --min-track=0.1 "$T/empty"
+  assert_eq "$(tool_rc)" 0 "silence-split numeric boundary"
 }
 
 # --- silence-trim ------------------------------------------------------------
