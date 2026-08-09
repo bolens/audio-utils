@@ -178,7 +178,7 @@ audio_utils_runtime_dir() {
 
 _audio_utils_validate_temp_template() {
   local template="$1"
-  if [[ ! "$template" =~ ^[A-Za-z0-9][A-Za-z0-9._-]*XXX$ ]]; then
+  if [[ ! "$template" =~ ^[A-Za-z0-9][A-Za-z0-9._-]*X{3,}$ ]]; then
     echo "Error: invalid temporary-file template: $template" >&2
     return 2
   fi
