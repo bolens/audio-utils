@@ -102,7 +102,7 @@ test_bluray_preserves_16_bit_depth_and_stream_provenance() {
   assert_grep '^SOURCE_CODEC=pcm_s16le$' "$(metaflac --export-tags-to=- "$out")"
   assert_grep '^SOURCE_LANGUAGE=eng$' "$(metaflac --export-tags-to=- "$out")"
   assert_grep '^SOURCE_TITLE=Main Program$' "$(metaflac --export-tags-to=- "$out")"
-  assert_grep '^SOURCE_SHA256=[0-9a-f]\{64\}$' "$(metaflac --export-tags-to=- "$out")"
+  assert_grep '^SOURCE_AUDIO_MD5=[0-9a-f]\{32\}$' "$(metaflac --export-tags-to=- "$out")"
   assert_grep '^SOURCE_STREAM=0$' "$(metaflac --export-tags-to=- "$out")"
 }
 
@@ -161,18 +161,18 @@ test_bluray_rejects_stale_output_unless_overwrite_requested() {
   ffmpeg -nostdin -v error -y -i "$fixture_dir/sine.wav" -c:a pcm_s16le "$src"
   run_tool conversion/bluray-to-flac/bluray-to-flac.sh "$src"
   assert_eq "$(tool_rc)" 0
-  old_sha=$(metaflac --show-tag=SOURCE_SHA256 "$T/media/show.mkv.a0.flac")
+  old_sha=$(metaflac --show-tag=SOURCE_AUDIO_MD5 "$T/media/show.mkv.a0.flac")
 
   ffmpeg -nostdin -v error -y -f lavfi -i 'sine=frequency=880:duration=1' \
     -c:a pcm_s16le "$src"
   run_tool conversion/bluray-to-flac/bluray-to-flac.sh "$src"
   assert_eq "$(tool_rc)" 1
-  assert_grep 'existing output does not match source; use -y' "$T/out"
-  assert_eq "$(metaflac --show-tag=SOURCE_SHA256 "$T/media/show.mkv.a0.flac")" "$old_sha"
+  assert_grep 'existing output does not match source audio; use -y' "$T/out"
+  assert_eq "$(metaflac --show-tag=SOURCE_AUDIO_MD5 "$T/media/show.mkv.a0.flac")" "$old_sha"
 
   run_tool conversion/bluray-to-flac/bluray-to-flac.sh -y "$src"
   assert_eq "$(tool_rc)" 0
-  new_sha=$(metaflac --show-tag=SOURCE_SHA256 "$T/media/show.mkv.a0.flac")
+  new_sha=$(metaflac --show-tag=SOURCE_AUDIO_MD5 "$T/media/show.mkv.a0.flac")
   [[ "$new_sha" != "$old_sha" ]] || fail "overwrite kept stale source identity"
 }
 
@@ -182,6 +182,33 @@ test_bluray_rejects_invalid_title_controls() {
   assert_eq "$(tool_rc)" 2
   run_tool conversion/bluray-to-flac/bluray-to-flac.sh --minlength -1 "$T"
   assert_eq "$(tool_rc)" 2
+  AUDIO_UTILS_BD_TITLE=bad run_tool conversion/bluray-to-flac/bluray-to-flac.sh "$T"
+  assert_eq "$(tool_rc)" 2
+  AUDIO_UTILS_BD_MIN_LENGTH=bad run_tool conversion/bluray-to-flac/bluray-to-flac.sh "$T"
+  assert_eq "$(tool_rc)" 2
+  AUDIO_UTILS_BD_DISC_ID='../bad' run_tool conversion/bluray-to-flac/bluray-to-flac.sh "$T"
+  assert_eq "$(tool_rc)" 2
+}
+
+test_bluray_accepts_metadata_only_source_remux() {
+  require_cmd flac metaflac ffmpeg ffprobe flock
+  local fixture_dir src tmp old_md5
+  fixture_dir=$(fixture wav_sine)
+  mkdir -p "$T/media"
+  src="$T/media/show.mkv"
+  tmp="$T/media/remux.mkv"
+  ffmpeg -nostdin -v error -y -i "$fixture_dir/sine.wav" -c:a flac "$src"
+  run_tool conversion/bluray-to-flac/bluray-to-flac.sh "$src"
+  assert_eq "$(tool_rc)" 0
+  old_md5=$(metaflac --show-tag=SOURCE_AUDIO_MD5 "$T/media/show.mkv.a0.flac")
+
+  ffmpeg -nostdin -v error -y -i "$src" -map 0:a:0 -c:a copy \
+    -metadata title='Metadata changed' "$tmp"
+  mv -f -- "$tmp" "$src"
+  run_tool conversion/bluray-to-flac/bluray-to-flac.sh "$src"
+  assert_eq "$(tool_rc)" 0 "metadata-only remux should retain identical audio"
+  assert_grep 'skip (source-bound flac ok)' "$T/out"
+  assert_eq "$(metaflac --show-tag=SOURCE_AUDIO_MD5 "$T/media/show.mkv.a0.flac")" "$old_md5"
 }
 
 # --- disc-inventory --------------------------------------------------------------
