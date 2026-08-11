@@ -11,6 +11,8 @@ _load_bluray() {
   source "$AU_REPO_ROOT/lib/pipeline/bluray.sh"
   log_err() { :; }
   log_note() { :; }
+  log_info() { :; }
+  log_verbose() { :; }
 }
 
 test_plain_media_print0_preserves_newline_and_sort_order() {
@@ -41,6 +43,15 @@ test_decrypt_plain_media_emits_nul_records() {
   done < <(bluray_decrypt_or_copy "$T/media" "$T/out")
   assert_eq "${#found[@]}" "1"
   assert_eq "${found[0]}" "$T/media/$good"
+}
+
+test_decrypt_plain_media_fails_on_partial_unreadability() {
+  _load_bluray
+  bluray_media_readable() { [[ $1 != *bad* ]]; }
+  mkdir -p "$T/media" "$T/out"
+  : >"$T/media/good.mkv"
+  : >"$T/media/bad.mkv"
+  assert_exit 1 bluray_decrypt_or_copy "$T/media" "$T/out"
 }
 
 test_resolve_media_dir_with_many_files_under_pipefail() {
@@ -74,6 +85,8 @@ test_makemkv_backup_passes_explicit_source() {
   mkdir -p "$T/bin" "$T/disc/BDMV" "$T/out"
   # shellcheck disable=SC2016 # mock script expands these at execution time
   printf '%s\n' '#!/usr/bin/env bash' \
+    'if [[ " $* " == *" info "* ]]; then printf '\''TINFO:0,9,0,"0:01:00"\n'\''; exit; fi' \
+    'dest=${!#}; printf x >"$dest/title.mkv"' \
     'printf '\''%s\0'\'' "$@" >"$MAKE_ARGS"' >"$T/bin/makemkvcon"
   chmod +x "$T/bin/makemkvcon"
   AUDIO_UTILS_MAKEMKV="$T/bin/makemkvcon"
@@ -83,7 +96,7 @@ test_makemkv_backup_passes_explicit_source() {
   local -a args
   mapfile -d '' -t args <"$T/args"
   assert_eq "${args[0]}" "--robot"
-  assert_eq "${args[1]}" "--minlength=30"
+  assert_eq "${args[1]}" "--minlength=0"
   assert_eq "${args[2]}" "mkv"
   assert_eq "${args[3]}" "file:$T/disc"
   assert_eq "${args[4]}" "all"
@@ -95,6 +108,8 @@ test_makemkv_backup_honors_title_and_minlength() {
   mkdir -p "$T/bin" "$T/disc/BDMV" "$T/out"
   # shellcheck disable=SC2016 # mock script expands these at execution time
   printf '%s\n' '#!/usr/bin/env bash' \
+    'if [[ " $* " == *" info "* ]]; then printf '\''TINFO:7,9,0,"0:02:00"\n'\''; exit; fi' \
+    'dest=${!#}; printf x >"$dest/title.mkv"' \
     'printf '\''%s\0'\'' "$@" >"$MAKE_ARGS"' >"$T/bin/makemkvcon"
   chmod +x "$T/bin/makemkvcon"
   AUDIO_UTILS_MAKEMKV="$T/bin/makemkvcon"
@@ -131,6 +146,16 @@ test_device_id_is_stable_and_disc_specific() {
   [[ "$alpha" != "$beta" ]] || fail "different discs produced the same id"
 }
 
+test_device_id_accepts_valid_operator_override() {
+  _load_bluray
+  AUDIO_UTILS_BD_DISC_ID='my-disc_01'
+  export AUDIO_UTILS_BD_DISC_ID
+  assert_eq "$(bluray_device_id /dev/sr0)" my-disc_01
+  AUDIO_UTILS_BD_DISC_ID='../unsafe'
+  export AUDIO_UTILS_BD_DISC_ID
+  assert_exit 1 bluray_device_id /dev/sr0
+}
+
 test_decode_length_rejects_truncation() {
   _load_bluray
   # shellcheck source=/dev/null
@@ -140,6 +165,73 @@ test_decode_length_rejects_truncation() {
   assert_exit 1 _bluray_verify_decode_length source.mkv 0 decoded.wav
   audio_duration_sec() { printf '%s\n' 9.9; }
   _bluray_verify_decode_length source.mkv 0 decoded.wav
+}
+
+test_source_duration_falls_back_to_matroska_tag() {
+  _load_bluray
+  # shellcheck source=/dev/null
+  source "$AU_REPO_ROOT/conversion/bluray-to-flac/lib/convert.sh"
+  _bluray_stream_field() { printf '%s\n' N/A; }
+  ffprobe() { printf '%s\n' '00:01:02.500000000'; }
+  assert_eq "$(_bluray_source_duration source.mkv 0)" "62.500000000"
+}
+
+test_resolve_iso_as_disc_image() {
+  _load_bluray
+  : >"$T/disc.iso"
+  assert_eq "$(bluray_resolve_input "$T/disc.iso")" disc_image
+}
+
+test_expected_title_count_applies_minimum() {
+  _load_bluray
+  local info
+  info=$'TINFO:0,9,0,"0:00:20"\nTINFO:1,9,0,"0:01:00"'
+  assert_eq "$(printf '%s\n' "$info" | bluray_expected_title_count all 30)" 1
+  assert_eq "$(printf '%s\n' "$info" | bluray_expected_title_count all 0)" 2
+  assert_eq "$(printf '%s\n' "$info" | bluray_expected_title_count 7 30)" 1
+}
+
+test_makemkv_backup_rejects_partial_title_inventory() {
+  _load_bluray
+  mkdir -p "$T/bin" "$T/disc/BDMV" "$T/out"
+  # shellcheck disable=SC2016 # mock script expands these at execution time
+  printf '%s\n' '#!/usr/bin/env bash' \
+    'if [[ " $* " == *" info "* ]]; then' \
+    '  printf '\''TINFO:0,9,0,"0:01:00"\nTINFO:1,9,0,"0:02:00"\n'\''' \
+    '  exit' \
+    'fi' \
+    'dest=${!#}; printf x >"$dest/only-one.mkv"' >"$T/bin/makemkvcon"
+  chmod +x "$T/bin/makemkvcon"
+  AUDIO_UTILS_MAKEMKV="$T/bin/makemkvcon"
+  AUDIO_UTILS_BD_TITLE=all
+  AUDIO_UTILS_BD_MIN_LENGTH=0
+  export AUDIO_UTILS_MAKEMKV AUDIO_UTILS_BD_TITLE AUDIO_UTILS_BD_MIN_LENGTH
+  assert_exit 1 bluray_makemkv_backup "$T/disc" "$T/out"
+}
+
+test_iso_dry_run_uses_image_specific_output_dir() {
+  _load_bluray
+  # shellcheck source=/dev/null
+  source "$AU_REPO_ROOT/conversion/bluray-to-flac/lib/convert.sh"
+  : >"$T/concert.iso"
+  DRY_RUN=1
+  local message=""
+  bluray_makemkv_bin() { printf '%s\n' /mock/makemkvcon; }
+  log_progress() { message=$*; }
+  convert_one "$T/concert.iso"
+  [[ "$message" == *"$T/concert.flac/"* ]] || fail "unexpected ISO output: $message"
+}
+
+test_disk_preflight_rejects_insufficient_space() {
+  _load_bluray
+  # shellcheck source=/dev/null
+  source "$AU_REPO_ROOT/conversion/bluray-to-flac/lib/convert.sh"
+  _bluray_source_size() { printf '%s\n' 100; }
+  bytes_avail() { printf '%s\n' 399; }
+  AU_DISK_FACTOR=4
+  assert_exit 1 _bluray_check_disk_preflight source media_file "$T"
+  bytes_avail() { printf '%s\n' 400; }
+  _bluray_check_disk_preflight source media_file "$T"
 }
 
 test_bdmv_never_falls_back_to_raw_stream_clips() {

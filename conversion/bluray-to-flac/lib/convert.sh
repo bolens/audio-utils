@@ -56,16 +56,48 @@ _bluray_dry_run_media() {
   ((found))
 }
 
+_bluray_source_size() {
+  local path="$1" kind="$2"
+  if [[ "$kind" == device ]]; then
+    blockdev --getsize64 -- "$path" 2>/dev/null || return 1
+  elif [[ -f "$path" ]]; then
+    file_bytes "$path"
+  else
+    du -sb --apparent-size -- "$path" 2>/dev/null | awk '{print $1}'
+  fi
+}
+
+_bluray_check_disk_preflight() {
+  local path="$1" kind="$2" outdir="$3" bytes free need factor
+  factor=${AU_DISK_FACTOR:-4}
+  bytes=$(_bluray_source_size "$path" "$kind") || {
+    log_info "warning: could not estimate Blu-ray source size; continuing"
+    return 0
+  }
+  free=$(bytes_avail "$outdir")
+  [[ "$bytes" =~ ^[0-9]+$ && "$free" =~ ^[0-9]+$ ]] || {
+    log_info "warning: could not determine Blu-ray free-space requirement; continuing"
+    return 0
+  }
+  need=$(awk -v b="$bytes" -v f="$factor" 'BEGIN { printf "%d", b*f }')
+  if ((free < need)); then
+    log_err "Error: insufficient space for Blu-ray conversion (need ~$need bytes, have $free)"
+    return 1
+  fi
+  log_verbose "disk ok: source=$bytes free=$free need~=$need (x$factor)"
+}
+
 _bluray_tag_stream_provenance() {
-  local flac="$1" src="$2" idx="$3" source_sha="$4"
+  local flac="$1" src="$2" idx="$3" source_audio_md5="$4"
   local field value codec profile lossy=0
   codec=$(_bluray_stream_field "$src" "$idx" codec_name)
   profile=$(_bluray_stream_field "$src" "$idx" profile)
   metaflac --remove-tag=SOURCE_CODEC --remove-tag=SOURCE_PROFILE \
     --remove-tag=SOURCE_LANGUAGE --remove-tag=SOURCE_TITLE \
     --remove-tag=SOURCE_CHANNEL_LAYOUT --remove-tag=SOURCE_SHA256 \
+    --remove-tag=SOURCE_AUDIO_MD5 \
     --remove-tag=SOURCE_STREAM --remove-tag=LOSSY_SOURCE -- "$flac"
-  metaflac --set-tag="SOURCE_SHA256=$source_sha" \
+  metaflac --set-tag="SOURCE_AUDIO_MD5=$source_audio_md5" \
     --set-tag="SOURCE_STREAM=$idx" -- "$flac"
   [[ -n "$codec" ]] && metaflac --set-tag="SOURCE_CODEC=$codec" -- "$flac"
   [[ -n "$profile" ]] && metaflac --set-tag="SOURCE_PROFILE=$profile" -- "$flac"
@@ -87,17 +119,43 @@ _bluray_tag_stream_provenance() {
 }
 
 _bluray_existing_matches_source() {
-  local flac="$1" source_sha="$2" idx="$3" tagged_sha tagged_stream
+  local flac="$1" source_audio_md5="$2" idx="$3" tagged_md5 tagged_stream flac_md5
   [[ -f "$flac" ]] && flac_ok "$flac" || return 1
-  tagged_sha=$(metaflac --show-tag=SOURCE_SHA256 -- "$flac" 2>/dev/null)
+  tagged_md5=$(metaflac --show-tag=SOURCE_AUDIO_MD5 -- "$flac" 2>/dev/null)
   tagged_stream=$(metaflac --show-tag=SOURCE_STREAM -- "$flac" 2>/dev/null)
-  [[ "$tagged_sha" == "SOURCE_SHA256=$source_sha" && \
-    "$tagged_stream" == "SOURCE_STREAM=$idx" ]]
+  flac_md5=$(audio_md5 "$flac")
+  [[ "$tagged_md5" == "SOURCE_AUDIO_MD5=$source_audio_md5" && \
+    "$tagged_stream" == "SOURCE_STREAM=$idx" && "$flac_md5" == "$source_audio_md5" ]]
+}
+
+_bluray_parse_duration_tag() {
+  awk -F: 'NF == 3 {
+    seconds=($1 * 3600) + ($2 * 60) + $3
+    if (seconds >= 0) printf "%.9f\n", seconds
+  }' <<<"$1"
+}
+
+_bluray_source_duration() {
+  local src="$1" idx="$2" duration
+  duration=$(_bluray_stream_field "$src" "$idx" duration)
+  if [[ "$duration" =~ ^[0-9]+([.][0-9]+)?$ ]]; then
+    printf '%s\n' "$duration"
+    return 0
+  fi
+  duration=$(ffprobe -v error -select_streams "a:$idx" \
+    -show_entries stream_tags=DURATION -of default=nw=1:nk=1 -- "$src" 2>/dev/null | head -n1)
+  duration=$(_bluray_parse_duration_tag "$duration")
+  if [[ "$duration" =~ ^[0-9]+([.][0-9]+)?$ ]]; then
+    printf '%s\n' "$duration"
+    return 0
+  fi
+  ffprobe -v error -show_entries format=duration \
+    -of default=nw=1:nk=1 -- "$src" 2>/dev/null | head -n1
 }
 
 _bluray_verify_decode_length() {
   local src="$1" idx="$2" wav="$3" src_duration wav_duration
-  src_duration=$(_bluray_stream_field "$src" "$idx" duration)
+  src_duration=$(_bluray_source_duration "$src" "$idx")
   wav_duration=$(audio_duration_sec "$wav")
   if [[ ! "$src_duration" =~ ^[0-9]+([.][0-9]+)?$ || \
     ! "$wav_duration" =~ ^[0-9]+([.][0-9]+)?$ ]]; then
@@ -114,8 +172,8 @@ _bluray_verify_decode_length() {
 }
 
 _extract_media_streams() {
-  local src="$1" outdir="$2" tmpdir="$3" source_root="$4"
-  local base rel rel_dir n i wav flac_out pcm_codec source_sha
+  local src="$1" outdir="$2" tmpdir="$3" source_root="$4" audit_src="$5"
+  local base rel rel_dir n i wav flac_out pcm_codec source_audio_md5 title_note
   local -a enc_out
   local fail=0
 
@@ -127,32 +185,17 @@ _extract_media_streams() {
     rel_dir=$(dirname -- "$rel")
   fi
   mkdir -p -- "$outdir/$rel_dir" || return 1
+  title_note=${rel#./}
   n=$(ffprobe -v error -select_streams a -show_entries stream=index -of csv=p=0 -- "$src" 2>/dev/null | grep -c . || true)
   n=${n:-0}
   ((n >= 1)) || {
     log_fail "$src" "no audio streams"
     return 1
   }
-  source_sha=$(file_sha256 "$src") || {
-    log_fail "$src" "source SHA-256 failed"
-    return 1
-  }
-
   for ((i = 0; i < n; i++)); do
     flac_out=$(_bluray_output_path "$src" "$outdir" "$source_root" "$i")
     wav="${tmpdir}/${base}.a${i}.wav"
     pcm_codec=$(_bluray_stream_pcm_codec "$src" "$i")
-
-    if [[ -f "$flac_out" && "${OVERWRITE:-0}" -eq 0 ]]; then
-      if _bluray_existing_matches_source "$flac_out" "$source_sha" "$i"; then
-        log_progress "skip (source-bound flac ok): $flac_out"
-        log_success "$src" "$flac_out" "$(audio_md5 "$flac_out")" "$(file_sha256 "$flac_out")" "skipped-existing-ok;stream=$i"
-        continue
-      fi
-      log_fail "$src" "existing output does not match source; use -y: $flac_out"
-      fail=1
-      continue
-    fi
 
     if ! ffmpeg -v error -xerror -err_detect explode -y -i "$src" \
       -map "0:a:${i}" -c:a "$pcm_codec" "$wav" 2>"${tmpdir}/ex.err"; then
@@ -161,9 +204,28 @@ _extract_media_streams() {
       fail=1
       continue
     fi
+    source_audio_md5=$(audio_md5 "$wav")
+    if [[ -z "$source_audio_md5" ]]; then
+      log_fail "$src" "decoded audio MD5 failed for a:$i"
+      fail=1
+      continue
+    fi
     if ! _bluray_verify_decode_length "$src" "$i" "$wav"; then
       log_fail "$src" "decode length verification failed for a:$i"
       fail=1
+      continue
+    fi
+    if [[ -f "$flac_out" && "${OVERWRITE:-0}" -eq 0 ]]; then
+      if _bluray_existing_matches_source "$flac_out" "$source_audio_md5" "$i"; then
+        log_progress "skip (source-bound flac ok): $flac_out"
+        log_success "$audit_src" "$flac_out" "$source_audio_md5" "$(file_sha256 "$flac_out")" \
+          "skipped-existing-ok;title=$title_note;stream=$i"
+        rm -f -- "$wav"
+        continue
+      fi
+      log_fail "$src" "existing output does not match source audio; use -y: $flac_out"
+      fail=1
+      rm -f -- "$wav"
       continue
     fi
     if ! encode_flac_verified "$wav" "$tmpdir" "$src#a$i" >"${tmpdir}/enc.out"; then
@@ -172,14 +234,21 @@ _extract_media_streams() {
       continue
     fi
     au_mapfile0 enc_out "${tmpdir}/enc.out"
-    if ! _bluray_tag_stream_provenance "${enc_out[0]}" "$src" "$i" "$source_sha"; then
+    if ! _bluray_tag_stream_provenance "${enc_out[0]}" "$src" "$i" "$source_audio_md5"; then
       log_fail "$src" "tag stream a:$i failed"
+      fail=1
+      continue
+    fi
+    if ! flac -t --silent "${enc_out[0]}" 2>"${tmpdir}/final-test.err"; then
+      set_last_err_file "${tmpdir}/final-test.err"
+      log_fail "$src" "final tagged FLAC verification failed for a:$i"
       fail=1
       continue
     fi
     mv -f -- "${enc_out[0]}" "$flac_out"
     log_info "verified: $flac_out"
-    log_success "$src" "$flac_out" "${enc_out[2]}" "$(file_sha256 "$flac_out")" "converted;stream=$i"
+    log_success "$audit_src" "$flac_out" "${enc_out[2]}" "$(file_sha256 "$flac_out")" \
+      "converted;title=$title_note;stream=$i"
     rm -f -- "$wav" \
       "${tmpdir}/pass1.flac" "${tmpdir}/pass2.flac" "${tmpdir}/pass3.flac" \
       "${tmpdir}/roundtrip.flac" "${tmpdir}/decoded.wav" "${tmpdir}/enc.out" 2>/dev/null || true
@@ -207,6 +276,10 @@ convert_one() {
       ;;
     media_dir)
       outdir="${path}/flac"
+      ;;
+    disc_image)
+      disc_label=$(basename -- "$path")
+      outdir="$(dirname -- "$path")/${disc_label%.*}.flac"
       ;;
     device)
       disc_id=$(bluray_device_id "$path") || {
@@ -236,6 +309,7 @@ convert_one() {
   fi
 
   mkdir -p -- "$outdir" || return 1
+  _bluray_check_disk_preflight "$path" "$kind" "$outdir" || return 1
   tmpdir=$(make_workdir "$outdir")
   work="${tmpdir}/media"
   mkdir -p -- "$work"
@@ -262,7 +336,7 @@ convert_one() {
   esac
   for f in "${media[@]}"; do
     [[ -n "$f" ]] || continue
-    if ! _extract_media_streams "$f" "$outdir" "$tmpdir" "$source_root"; then
+    if ! _extract_media_streams "$f" "$outdir" "$tmpdir" "$source_root" "$path"; then
       fail=1
     fi
   done

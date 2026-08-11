@@ -10,7 +10,7 @@
 # Options:
 #   -D DEVICE  Blu-ray device
 #   --title N|all       MakeMKV title selection (default: all)
-#   --minlength SEC     Ignore shorter MakeMKV titles (default: 30; 0 keeps all)
+#   --minlength SEC     Ignore shorter MakeMKV titles (default: 0 keeps all)
 #   -f FILE  -L FILE  -S FILE  --dirs0  -n  -y  -q  -v  -h  --version
 #   -j N       Accepted for CLI parity; extract is serial per title (ignored)
 #
@@ -37,7 +37,7 @@ SUCCESS_LOG=""
 DELETE_SOURCE=0
 BD_DEVICE="${AUDIO_UTILS_BD_DEVICE:-}"
 AUDIO_UTILS_BD_TITLE="${AUDIO_UTILS_BD_TITLE:-all}"
-AUDIO_UTILS_BD_MIN_LENGTH="${AUDIO_UTILS_BD_MIN_LENGTH:-30}"
+AUDIO_UTILS_BD_MIN_LENGTH="${AUDIO_UTILS_BD_MIN_LENGTH:-0}"
 
 usage() {
       sed -n '2,18p' "$0" | sed 's/^# \?//'
@@ -98,13 +98,27 @@ while (($# > 0)); do
   esac
 done
 
+[[ "$AUDIO_UTILS_BD_TITLE" == all || "$AUDIO_UTILS_BD_TITLE" =~ ^[0-9]+$ ]] || {
+  echo "Error: AUDIO_UTILS_BD_TITLE needs a non-negative integer or all" >&2
+  exit 2
+}
+[[ "$AUDIO_UTILS_BD_MIN_LENGTH" =~ ^[0-9]+$ ]] || {
+  echo "Error: AUDIO_UTILS_BD_MIN_LENGTH needs a non-negative integer" >&2
+  exit 2
+}
+if [[ -n "${AUDIO_UTILS_BD_DISC_ID:-}" && \
+  ! "$AUDIO_UTILS_BD_DISC_ID" =~ ^[A-Za-z0-9][A-Za-z0-9._-]*$ ]]; then
+  echo "Error: AUDIO_UTILS_BD_DISC_ID contains unsafe characters" >&2
+  exit 2
+fi
+
 if [[ -n "$BD_DEVICE" ]]; then
   AUDIO_UTILS_BD_DEVICE="$BD_DEVICE"
   export AUDIO_UTILS_BD_DEVICE
 fi
 
 export DRY_RUN OVERWRITE DELETE_SOURCE QUIET VERBOSE
-export AUDIO_UTILS_BD_TITLE AUDIO_UTILS_BD_MIN_LENGTH
+export AUDIO_UTILS_BD_TITLE AUDIO_UTILS_BD_MIN_LENGTH AUDIO_UTILS_BD_DISC_ID
 : "${FAIL_LOG:=$(audio_utils_state_dir bluray-to-flac)/failures.log}"
 : "${SUCCESS_LOG:=$(audio_utils_state_dir bluray-to-flac)/success.csv}"
 export FAIL_LOG SUCCESS_LOG

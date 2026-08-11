@@ -29,5 +29,6 @@ plugin_export_env() {
   # Note: bluray -D is the BD device path (getopt), not delete-existing.
   export AUDIO_UTILS_BD_DEVICE AUDIO_UTILS_MAKEMKV
   export AUDIO_UTILS_BD_TITLE AUDIO_UTILS_BD_MIN_LENGTH
+  export AUDIO_UTILS_BD_DISC_ID
   export AU_CLEANUP_SKIP
 }

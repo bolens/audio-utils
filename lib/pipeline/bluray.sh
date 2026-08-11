@@ -82,6 +82,10 @@ bluray_resolve_input() {
         printf '%s\n' media_file
         return 0
         ;;
+      *.iso)
+        printf '%s\n' disc_image
+        return 0
+        ;;
     esac
     printf '%s\n' unknown
     return 1
@@ -126,19 +130,50 @@ bluray_makemkv_source() {
 # messages, so hashing it avoids cross-disc output reuse on the same drive.
 bluray_device_id() {
   local src="$1" bin source info stable hash
+  if [[ -n "${AUDIO_UTILS_BD_DISC_ID:-}" ]]; then
+    [[ "$AUDIO_UTILS_BD_DISC_ID" =~ ^[A-Za-z0-9][A-Za-z0-9._-]*$ ]] || return 1
+    printf '%s\n' "$AUDIO_UTILS_BD_DISC_ID"
+    return 0
+  fi
   bin=$(bluray_makemkv_bin) || return 1
   source=$(bluray_makemkv_source "$src") || return 1
   info=$("$bin" --robot info "$source" 2>/dev/null) || return 1
-  stable=$(printf '%s\n' "$info" | LC_ALL=C sed -n '/^CINFO:/p; /^TINFO:/p')
+  stable=$(printf '%s\n' "$info" | LC_ALL=C awk -F, '
+    /^CINFO:(1|2|30),/ || /^TCOUNT:/ { print; next }
+    /^TINFO:/ {
+      id=$1; sub(/^TINFO:/, "", id)
+      if ($2 == 9 || $2 == 11) print
+    }')
   [[ -n "$stable" ]] || return 1
   hash=$(au_sha256_str "$stable")
   printf 'disc-%s\n' "${hash:0:16}"
 }
 
+bluray_expected_title_count() {
+  local title_spec="$1" min_length="$2"
+  if [[ "$title_spec" != all ]]; then
+    printf '%s\n' 1
+    return 0
+  fi
+  LC_ALL=C awk -F, -v min="$min_length" '
+    /^TINFO:/ {
+      title=$1; sub(/^TINFO:/, "", title)
+      if ($2 != 9) next
+      value=$4; gsub(/^"|"$/, "", value)
+      n=split(value, part, ":")
+      if (n == 3) {
+        seconds=(part[1] * 3600) + (part[2] * 60) + part[3]
+        if (seconds >= min) seen[title]=1
+      }
+    }
+    END { for (title in seen) count++; print count+0 }
+  '
+}
+
 # Extract authored titles from DEVICE_OR_DISC to OUTDIR (mkv files).
 # Args: SOURCE OUTDIR
 bluray_makemkv_backup() {
-  local src="$1" outdir="$2" bin err source title_spec min_length
+  local src="$1" outdir="$2" bin err source title_spec min_length info expected created
   bin=$(bluray_makemkv_bin) || {
     log_err "Error: MakeMKV (makemkvcon) not found"
     log_err "  Install MakeMKV or set AUDIO_UTILS_MAKEMKV=/path/to/makemkvcon"
@@ -151,12 +186,24 @@ bluray_makemkv_backup() {
   mkdir -p -- "$outdir" || return 1
   err="${outdir}/makemkv.err"
   title_spec=${AUDIO_UTILS_BD_TITLE:-all}
-  min_length=${AUDIO_UTILS_BD_MIN_LENGTH:-30}
+  min_length=${AUDIO_UTILS_BD_MIN_LENGTH:-0}
+  info=$("$bin" --robot info "$source" 2>/dev/null) || {
+    log_err "Error: MakeMKV could not inventory $source"
+    return 1
+  }
+  expected=$(printf '%s\n' "$info" | bluray_expected_title_count "$title_spec" "$min_length")
   if ! "$bin" --robot "--minlength=$min_length" mkv \
     "$source" "$title_spec" "$outdir" >"$err" 2>&1; then
     set_last_err_file "$err"
     log_err "FAILED makemkvcon: $source -> $outdir"
     [[ -s "$err" ]] && { log_err "  makemkv stderr:"; sed 's/^/  | /' "$err" | head -n 40 >&2; }
+    return 1
+  fi
+  created=$(find -P "$outdir" -maxdepth 3 -type f -iname '*.mkv' -printf . 2>/dev/null | wc -c)
+  if [[ "$expected" =~ ^[1-9][0-9]*$ ]] && ((created < expected)); then
+    AUDIO_UTILS_LAST_ERR="expected_titles=$expected created_mkvs=$created"
+    export AUDIO_UTILS_LAST_ERR
+    log_err "FAILED MakeMKV title inventory: expected=$expected created=$created"
     return 1
   fi
   log_note "note: MakeMKV backup completed -> $outdir"
@@ -168,7 +215,7 @@ bluray_makemkv_backup() {
 # On encrypted disc without tooling/KEYDB: fail closed with specific hints.
 bluray_decrypt_or_copy() {
   local src="$1" outdir="$2"
-  local kind bdmv disc readable=0 f
+  local kind bdmv disc readable=0 unreadable=0 f
 
   [[ -n "$src" && -n "$outdir" ]] || {
     log_err "Error: bluray_decrypt_or_copy requires SRC OUTDIR"
@@ -192,23 +239,38 @@ bluray_decrypt_or_copy() {
         if bluray_media_readable "$f"; then
           printf '%s\0' "$f"
           readable=1
+        else
+          log_err "Error: media not readable: $f"
+          unreadable=1
         fi
       done < <(bluray_list_plain_media --print0 "$src")
-      if ((readable)); then
+      if ((readable && !unreadable)); then
         return 0
       fi
       log_err "Error: no readable media under $src"
       return 1
       ;;
-    bdmv)
-      bdmv=$(bluray_resolve_bdmv "$src") || return 1
-      disc=$(dirname -- "$bdmv")
+    bdmv|disc_image)
+      if [[ "$kind" == bdmv ]]; then
+        bdmv=$(bluray_resolve_bdmv "$src") || return 1
+        disc=$(dirname -- "$bdmv")
+      else
+        disc=$src
+        bdmv=$src
+      fi
       if bluray_makemkv_bin >/dev/null; then
         if bluray_makemkv_backup "$disc" "$outdir"; then
           while IFS= read -r -d '' f; do
-            bluray_media_readable "$f" && printf '%s\0' "$f"
+            if bluray_media_readable "$f"; then
+              printf '%s\0' "$f"
+              readable=1
+            else
+              log_err "Error: MakeMKV output not readable: $f"
+              unreadable=1
+            fi
           done < <(bluray_list_plain_media --print0 "$outdir")
-          return 0
+          ((readable && !unreadable)) && return 0
+          return 1
         fi
       fi
       log_err "Error: cannot resolve authored Blu-ray titles at $bdmv"
@@ -220,9 +282,16 @@ bluray_decrypt_or_copy() {
       if bluray_makemkv_bin >/dev/null; then
         if bluray_makemkv_backup "$src" "$outdir"; then
           while IFS= read -r -d '' f; do
-            bluray_media_readable "$f" && printf '%s\0' "$f"
+            if bluray_media_readable "$f"; then
+              printf '%s\0' "$f"
+              readable=1
+            else
+              log_err "Error: MakeMKV output not readable: $f"
+              unreadable=1
+            fi
           done < <(bluray_list_plain_media --print0 "$outdir")
-          return 0
+          ((readable && !unreadable)) && return 0
+          return 1
         fi
         return 1
       fi
