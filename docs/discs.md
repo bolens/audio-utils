@@ -39,6 +39,21 @@ playlists may join, trim, reuse, or branch clips, so clip-by-clip extraction can
 duplicate or incorrectly segment a program.
 
 Device rip: `bluray-to-flac.sh -D /dev/sr0` (or `AUDIO_UTILS_BD_DEVICE`).
+Device outputs are isolated below `./bluray-rip/disc-<id>/`; the identifier is
+derived from MakeMKV disc/title metadata rather than the reusable drive path.
+
+MakeMKV title controls:
+
+```bash
+# One authored title
+bluray-to-flac.sh --title 3 /path/to/disc
+
+# All titles, including clips shorter than the 30-second default
+bluray-to-flac.sh --title all --minlength 0 /path/to/disc
+```
+
+The same defaults can be set with `AUDIO_UTILS_BD_TITLE` and
+`AUDIO_UTILS_BD_MIN_LENGTH`.
 
 ```bash
 # Arch (packages; KEYDB is still operator-supplied)
@@ -60,8 +75,11 @@ download or ship keys, dumps, or MakeMKV components.
 Outputs retain the container extension, such as `title.mkv.a0.flac`. Directory
 inputs mirror their relative subdirectories below `flac/`. Source codec,
 profile, language, stream title, and channel layout are retained as FLAC tags
-when available. Lossy sources are marked `LOSSY_SOURCE=1`; Dolby Atmos and
-DTS:X object data cannot be represented by FLAC.
+when available. `SOURCE_SHA256` and `SOURCE_STREAM` prevent a valid but stale
+FLAC from being accepted for changed input; use `-y` to replace a mismatch.
+Lossy sources are marked `LOSSY_SOURCE=1`; Dolby Atmos and DTS:X object data
+cannot be represented by FLAC. Strict decoder errors and decoded-duration
+checks guard against truncated extraction before FLAC verification begins.
 
 ## CDDA (`cdda-to-flac`)
 

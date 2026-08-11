@@ -121,10 +121,24 @@ bluray_makemkv_source() {
   fi
 }
 
+# Stable identifier for the disc currently present in DEVICE. MakeMKV's robot
+# metadata describes the disc and authored titles without including progress
+# messages, so hashing it avoids cross-disc output reuse on the same drive.
+bluray_device_id() {
+  local src="$1" bin source info stable hash
+  bin=$(bluray_makemkv_bin) || return 1
+  source=$(bluray_makemkv_source "$src") || return 1
+  info=$("$bin" --robot info "$source" 2>/dev/null) || return 1
+  stable=$(printf '%s\n' "$info" | LC_ALL=C sed -n '/^CINFO:/p; /^TINFO:/p')
+  [[ -n "$stable" ]] || return 1
+  hash=$(au_sha256_str "$stable")
+  printf 'disc-%s\n' "${hash:0:16}"
+}
+
 # Extract authored titles from DEVICE_OR_DISC to OUTDIR (mkv files).
 # Args: SOURCE OUTDIR
 bluray_makemkv_backup() {
-  local src="$1" outdir="$2" bin err source
+  local src="$1" outdir="$2" bin err source title_spec min_length
   bin=$(bluray_makemkv_bin) || {
     log_err "Error: MakeMKV (makemkvcon) not found"
     log_err "  Install MakeMKV or set AUDIO_UTILS_MAKEMKV=/path/to/makemkvcon"
@@ -136,7 +150,10 @@ bluray_makemkv_backup() {
   }
   mkdir -p -- "$outdir" || return 1
   err="${outdir}/makemkv.err"
-  if ! "$bin" --robot --minlength=0 mkv "$source" all "$outdir" >"$err" 2>&1; then
+  title_spec=${AUDIO_UTILS_BD_TITLE:-all}
+  min_length=${AUDIO_UTILS_BD_MIN_LENGTH:-30}
+  if ! "$bin" --robot "--minlength=$min_length" mkv \
+    "$source" "$title_spec" "$outdir" >"$err" 2>&1; then
     set_last_err_file "$err"
     log_err "FAILED makemkvcon: $source -> $outdir"
     [[ -s "$err" ]] && { log_err "  makemkv stderr:"; sed 's/^/  | /' "$err" | head -n 40 >&2; }

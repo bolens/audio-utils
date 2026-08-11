@@ -83,11 +83,63 @@ test_makemkv_backup_passes_explicit_source() {
   local -a args
   mapfile -d '' -t args <"$T/args"
   assert_eq "${args[0]}" "--robot"
-  assert_eq "${args[1]}" "--minlength=0"
+  assert_eq "${args[1]}" "--minlength=30"
   assert_eq "${args[2]}" "mkv"
   assert_eq "${args[3]}" "file:$T/disc"
   assert_eq "${args[4]}" "all"
   assert_eq "${args[5]}" "$T/out"
+}
+
+test_makemkv_backup_honors_title_and_minlength() {
+  _load_bluray
+  mkdir -p "$T/bin" "$T/disc/BDMV" "$T/out"
+  # shellcheck disable=SC2016 # mock script expands these at execution time
+  printf '%s\n' '#!/usr/bin/env bash' \
+    'printf '\''%s\0'\'' "$@" >"$MAKE_ARGS"' >"$T/bin/makemkvcon"
+  chmod +x "$T/bin/makemkvcon"
+  AUDIO_UTILS_MAKEMKV="$T/bin/makemkvcon"
+  AUDIO_UTILS_BD_TITLE=7
+  AUDIO_UTILS_BD_MIN_LENGTH=90
+  MAKE_ARGS="$T/args"
+  export AUDIO_UTILS_MAKEMKV AUDIO_UTILS_BD_TITLE AUDIO_UTILS_BD_MIN_LENGTH MAKE_ARGS
+  bluray_makemkv_backup "$T/disc" "$T/out"
+  local -a args
+  mapfile -d '' -t args <"$T/args"
+  assert_eq "${args[1]}" "--minlength=90"
+  assert_eq "${args[4]}" 7
+}
+
+test_device_id_is_stable_and_disc_specific() {
+  _load_bluray
+  mkdir -p "$T/bin"
+  # shellcheck disable=SC2016 # mock script expands these at execution time
+  printf '%s\n' '#!/usr/bin/env bash' \
+    'printf '\''CINFO:2,0,"%s"\nTINFO:0,2,0,"Main"\n'\'' "$MOCK_DISC"' \
+    >"$T/bin/makemkvcon"
+  chmod +x "$T/bin/makemkvcon"
+  AUDIO_UTILS_MAKEMKV="$T/bin/makemkvcon"
+  MOCK_DISC=alpha
+  export AUDIO_UTILS_MAKEMKV MOCK_DISC
+  local alpha alpha_again beta
+  alpha=$(bluray_device_id /dev/sr0)
+  alpha_again=$(bluray_device_id /dev/sr0)
+  MOCK_DISC=beta
+  export MOCK_DISC
+  beta=$(bluray_device_id /dev/sr0)
+  assert_eq "$alpha" "$alpha_again"
+  [[ "$alpha" == disc-* ]] || fail "unexpected disc id: $alpha"
+  [[ "$alpha" != "$beta" ]] || fail "different discs produced the same id"
+}
+
+test_decode_length_rejects_truncation() {
+  _load_bluray
+  # shellcheck source=/dev/null
+  source "$AU_REPO_ROOT/conversion/bluray-to-flac/lib/convert.sh"
+  _bluray_stream_field() { printf '%s\n' 10.0; }
+  audio_duration_sec() { printf '%s\n' 9.0; }
+  assert_exit 1 _bluray_verify_decode_length source.mkv 0 decoded.wav
+  audio_duration_sec() { printf '%s\n' 9.9; }
+  _bluray_verify_decode_length source.mkv 0 decoded.wav
 }
 
 test_bdmv_never_falls_back_to_raw_stream_clips() {

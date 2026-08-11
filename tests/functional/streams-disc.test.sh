@@ -102,6 +102,8 @@ test_bluray_preserves_16_bit_depth_and_stream_provenance() {
   assert_grep '^SOURCE_CODEC=pcm_s16le$' "$(metaflac --export-tags-to=- "$out")"
   assert_grep '^SOURCE_LANGUAGE=eng$' "$(metaflac --export-tags-to=- "$out")"
   assert_grep '^SOURCE_TITLE=Main Program$' "$(metaflac --export-tags-to=- "$out")"
+  assert_grep '^SOURCE_SHA256=[0-9a-f]\{64\}$' "$(metaflac --export-tags-to=- "$out")"
+  assert_grep '^SOURCE_STREAM=0$' "$(metaflac --export-tags-to=- "$out")"
 }
 
 test_bluray_marks_lossy_sources() {
@@ -148,6 +150,38 @@ test_bluray_accepts_ts_inside_media_directory() {
   run_tool conversion/bluray-to-flac/bluray-to-flac.sh "$T/media"
   assert_eq "$(tool_rc)" 0 "rc ($(tool_out | tail -5))"
   assert_file "$T/media/flac/show.ts.a0.flac"
+}
+
+test_bluray_rejects_stale_output_unless_overwrite_requested() {
+  require_cmd flac metaflac ffmpeg ffprobe flock
+  local src fixture_dir old_sha new_sha
+  fixture_dir=$(fixture wav_sine)
+  mkdir -p "$T/media"
+  src="$T/media/show.mkv"
+  ffmpeg -nostdin -v error -y -i "$fixture_dir/sine.wav" -c:a pcm_s16le "$src"
+  run_tool conversion/bluray-to-flac/bluray-to-flac.sh "$src"
+  assert_eq "$(tool_rc)" 0
+  old_sha=$(metaflac --show-tag=SOURCE_SHA256 "$T/media/show.mkv.a0.flac")
+
+  ffmpeg -nostdin -v error -y -f lavfi -i 'sine=frequency=880:duration=1' \
+    -c:a pcm_s16le "$src"
+  run_tool conversion/bluray-to-flac/bluray-to-flac.sh "$src"
+  assert_eq "$(tool_rc)" 1
+  assert_grep 'existing output does not match source; use -y' "$T/out"
+  assert_eq "$(metaflac --show-tag=SOURCE_SHA256 "$T/media/show.mkv.a0.flac")" "$old_sha"
+
+  run_tool conversion/bluray-to-flac/bluray-to-flac.sh -y "$src"
+  assert_eq "$(tool_rc)" 0
+  new_sha=$(metaflac --show-tag=SOURCE_SHA256 "$T/media/show.mkv.a0.flac")
+  [[ "$new_sha" != "$old_sha" ]] || fail "overwrite kept stale source identity"
+}
+
+test_bluray_rejects_invalid_title_controls() {
+  require_cmd flac metaflac ffmpeg ffprobe flock
+  run_tool conversion/bluray-to-flac/bluray-to-flac.sh --title nope "$T"
+  assert_eq "$(tool_rc)" 2
+  run_tool conversion/bluray-to-flac/bluray-to-flac.sh --minlength -1 "$T"
+  assert_eq "$(tool_rc)" 2
 }
 
 # --- disc-inventory --------------------------------------------------------------
