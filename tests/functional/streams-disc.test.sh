@@ -67,9 +67,86 @@ test_bluray_plain_media_preserves_newline_filename() {
 
   run_tool conversion/bluray-to-flac/bluray-to-flac.sh "$T/bluray-media"
   assert_eq "$(tool_rc)" 0 "rc ($(tool_out | tail -3))"
-  assert_file "$T/bluray-media/flac/${name%.mkv}.a0.flac"
+  assert_file "$T/bluray-media/flac/${name}.a0.flac"
   flac -t --totally-silent \
-    "$T/bluray-media/flac/${name%.mkv}.a0.flac" || fail "invalid FLAC"
+    "$T/bluray-media/flac/${name}.a0.flac" || fail "invalid FLAC"
+}
+
+test_bluray_mirrors_subdirs_and_avoids_basename_collisions() {
+  require_cmd flac metaflac ffmpeg ffprobe flock
+  mkdir -p "$T/media/one" "$T/media/two"
+  _mk_mkv "$T/media/one/title.mkv" 1
+  _mk_mkv "$T/media/two/title.mkv" 1
+
+  run_tool conversion/bluray-to-flac/bluray-to-flac.sh "$T/media"
+  assert_eq "$(tool_rc)" 0 "rc ($(tool_out | tail -5))"
+  assert_file "$T/media/flac/one/title.mkv.a0.flac"
+  assert_file "$T/media/flac/two/title.mkv.a0.flac"
+}
+
+test_bluray_preserves_16_bit_depth_and_stream_provenance() {
+  require_cmd flac metaflac ffmpeg ffprobe flock
+  local src
+  src=$(fixture wav_sine)
+  mkdir -p "$T/media"
+  ffmpeg -nostdin -v error -y -i "$src/sine.wav" -map 0:a:0 \
+    -metadata:s:a:0 language=eng -metadata:s:a:0 title='Main Program' \
+    -c:a pcm_s16le "$T/media/program.mkv"
+
+  run_tool conversion/bluray-to-flac/bluray-to-flac.sh "$T/media"
+  assert_eq "$(tool_rc)" 0 "rc ($(tool_out | tail -5))"
+  local out="$T/media/flac/program.mkv.a0.flac"
+  assert_file "$out"
+  assert_eq "$(metaflac --show-bps "$out")" 16
+  assert_grep '^SOURCE_CODEC=pcm_s16le$' "$(metaflac --export-tags-to=- "$out")"
+  assert_grep '^SOURCE_LANGUAGE=eng$' "$(metaflac --export-tags-to=- "$out")"
+  assert_grep '^SOURCE_TITLE=Main Program$' "$(metaflac --export-tags-to=- "$out")"
+}
+
+test_bluray_marks_lossy_sources() {
+  require_cmd flac metaflac ffmpeg ffprobe flock
+  require_ffmpeg_encoder ac3
+  local src
+  src=$(fixture wav_sine)
+  mkdir -p "$T/media"
+  ffmpeg -nostdin -v error -y -i "$src/sine.wav" -c:a ac3 "$T/media/lossy.mkv"
+
+  run_tool conversion/bluray-to-flac/bluray-to-flac.sh "$T/media"
+  assert_eq "$(tool_rc)" 0 "rc ($(tool_out | tail -5))"
+  local tags
+  tags=$(metaflac --export-tags-to=- "$T/media/flac/lossy.mkv.a0.flac")
+  assert_grep '^SOURCE_CODEC=ac3$' "$tags"
+  assert_grep '^LOSSY_SOURCE=1$' "$tags"
+  assert_grep 'lossy source codec ac3' "$T/out"
+}
+
+test_bluray_dry_run_lists_exact_outputs_and_rejects_silent_media() {
+  require_cmd flac metaflac ffmpeg ffprobe flock
+  mkdir -p "$T/media/sub"
+  _mk_mkv "$T/media/sub/show.mkv" 2
+
+  run_tool conversion/bluray-to-flac/bluray-to-flac.sh -n "$T/media"
+  assert_eq "$(tool_rc)" 0
+  assert_grep 'flac/sub/show.mkv.a0.flac' "$T/out"
+  assert_grep 'flac/sub/show.mkv.a1.flac' "$T/out"
+  assert_no_file "$T/media/flac/sub/show.mkv.a0.flac"
+
+  ffmpeg -nostdin -v error -y -f lavfi -i 'color=c=black:s=16x16:d=1' \
+    -c:v ffv1 "$T/silent.mkv"
+  run_tool conversion/bluray-to-flac/bluray-to-flac.sh -n "$T/silent.mkv"
+  assert_eq "$(tool_rc)" 1
+  assert_grep 'would fail (no readable audio)' "$T/out"
+}
+
+test_bluray_accepts_ts_inside_media_directory() {
+  require_cmd flac metaflac ffmpeg ffprobe flock
+  local src
+  src=$(fixture wav_sine)
+  mkdir -p "$T/media"
+  ffmpeg -nostdin -v error -y -i "$src/sine.wav" -c:a mp2 -f mpegts "$T/media/show.ts"
+  run_tool conversion/bluray-to-flac/bluray-to-flac.sh "$T/media"
+  assert_eq "$(tool_rc)" 0 "rc ($(tool_out | tail -5))"
+  assert_file "$T/media/flac/show.ts.a0.flac"
 }
 
 # --- disc-inventory --------------------------------------------------------------

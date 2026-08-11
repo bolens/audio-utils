@@ -1,63 +1,6 @@
 #!/usr/bin/env bash
-# Blu-ray AACS/BD+ helpers. No keys, KEYDB, or BD+ dumps in-repo — operator supplies them.
-
-# True if NAME.so* appears via ldconfig or common lib paths.
-_bluray_so_present() {
-  au_so_present "$1"
-}
-
-bluray_libbluray_present() { _bluray_so_present libbluray; }
-bluray_libaacs_present() { _bluray_so_present libaacs; }
-bluray_libbdplus_present() { _bluray_so_present libbdplus; }
-
-# Fail closed unless libbluray + libaacs look available.
-bluray_require_libs() {
-  local ok=1
-  if ! bluray_libbluray_present; then
-    log_err "Error: libbluray not found (needed for Blu-ray / BDMV)"
-    ok=0
-  fi
-  if ! bluray_libaacs_present; then
-    log_err "Error: libaacs not found (needed for AACS-encrypted discs)"
-    ok=0
-  fi
-  if ((ok == 0)); then
-    log_err "  Arch/CachyOS: libbluray libaacs (libbdplus optional for BD+)"
-    log_err "  Debian/Ubuntu: libbluray2 libaacs0 (libbdplus0 optional)"
-    log_err "  Fedora: libbluray libaacs (RPM Fusion for some extras)"
-    log_err "  This project does not ship AACS keys or BD+ dumps - see docs/discs.md"
-    return 1
-  fi
-  if ! bluray_libbdplus_present; then
-    log_note "note: libbdplus not found; BD+-protected titles may need MakeMKV or libbdplus + operator dumps"
-  fi
-  return 0
-}
-
-# Print candidate KEYDB.cfg paths (one per line); does not create or fetch keys.
-bluray_keydb_candidates() {
-  local cfg="${XDG_CONFIG_HOME:-$HOME/.config}/aacs"
-  local f
-  for f in KEYDB.cfg keydb.cfg KeyDB.cfg KEYDB.CFG; do
-    printf '%s\n' "${cfg}/${f}"
-  done
-}
-
-# True if an operator-supplied KEYDB.cfg exists.
-bluray_keydb_present() {
-  local p
-  while IFS= read -r p; do
-    [[ -f "$p" && -s "$p" ]] && return 0
-  done < <(bluray_keydb_candidates)
-  return 1
-}
-
-bluray_keydb_hint() {
-  local first
-  first=$(bluray_keydb_candidates | head -n1)
-  log_err "  Place operator-supplied KEYDB.cfg at: $first"
-  log_err "  (audio-utils never downloads or vendors AACS keys)"
-}
+# Blu-ray title transport. MakeMKV handles playlist resolution and any
+# decryption it supports; audio-utils never supplies keys or protection data.
 
 # Resolve MakeMKV CLI: AUDIO_UTILS_MAKEMKV or makemkvcon on PATH.
 bluray_makemkv_bin() {
@@ -98,11 +41,6 @@ bluray_disc_root() {
   dirname -- "$bdmv"
 }
 
-# Default Blu-ray device.
-bluray_default_device() {
-  printf '%s\n' "${AUDIO_UTILS_BD_DEVICE:-/dev/sr0}"
-}
-
 # True if ffprobe sees at least one audio stream (already readable / decrypted).
 bluray_media_readable() {
   local f="$1" n
@@ -127,26 +65,6 @@ bluray_list_plain_media() {
     LC_ALL=C find "${args[@]}" -print0 2>/dev/null | LC_ALL=C sort -z
   else
     LC_ALL=C find "${args[@]}" 2>/dev/null | LC_ALL=C sort
-  fi
-}
-
-# List STREAM/*.m2ts under BDMV (or disc root). Pass --print0 for NUL output.
-bluray_list_stream_m2ts() {
-  local print0=0
-  if [[ ${1:-} == --print0 ]]; then
-    print0=1
-    shift
-  fi
-  local bdmv stream
-  bdmv=$(bluray_resolve_bdmv "$1") || return 1
-  stream="${bdmv}/STREAM"
-  [[ -d "$stream" ]] || return 1
-  if ((print0)); then
-    LC_ALL=C find -P "$stream" -maxdepth 1 -type f -iname '*.m2ts' -print0 \
-      2>/dev/null | LC_ALL=C sort -z
-  else
-    LC_ALL=C find -P "$stream" -maxdepth 1 -type f -iname '*.m2ts' \
-      2>/dev/null | LC_ALL=C sort
   fi
 }
 
