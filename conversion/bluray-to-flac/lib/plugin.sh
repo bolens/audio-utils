@@ -20,9 +20,9 @@ done
 # shellcheck source=../../../lib/plugin_init.sh
 source "$_AU_ROOT/lib/plugin_init.sh"
 
-# libbluray/libaacs/MakeMKV are optional (hybrid) — checked per-input in lib/bluray.sh.
+# MakeMKV is checked per input because standalone decrypted media does not need it.
 plugin_require_deps() {
-  require_cmds flac ffmpeg ffprobe
+  require_cmds flac metaflac ffmpeg ffprobe
 }
 
 plugin_export_env() {
