@@ -12,8 +12,8 @@
 #   -f FILE  -L FILE  -S FILE  --dirs0  -n  -y  -q  -v  -h  --version
 #   -j N       Accepted for CLI parity; extract is serial per title (ignored)
 #
-# Hybrid: uses libbluray+libaacs (+ operator KEYDB) or MakeMKV when present;
-# otherwise accepts already-decrypted media. No keys shipped in-repo.
+# MakeMKV resolves authored BDMV/device titles; standalone decrypted media is
+# accepted directly. Raw STREAM clips are not interpreted as titles.
 #
 # Exit codes: 0 ok, 1 failures, 2 usage/deps
 
