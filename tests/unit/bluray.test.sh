@@ -53,4 +53,50 @@ test_resolve_media_dir_with_many_files_under_pipefail() {
   assert_eq "$(bluray_resolve_input "$T/media")" "media_dir"
 }
 
+test_resolve_media_dir_accepts_ts() {
+  _load_bluray
+  mkdir -p "$T/media"
+  : >"$T/media/title.ts"
+  assert_eq "$(bluray_resolve_input "$T/media")" "media_dir"
+}
+
+test_makemkv_source_uses_explicit_schemes() {
+  _load_bluray
+  mkdir -p "$T/disc/BDMV"
+  assert_eq "$(bluray_makemkv_source "$T/disc")" "file:$T/disc"
+  assert_eq "$(bluray_makemkv_source /dev/sr7)" "dev:/dev/sr7"
+  : >"$T/disc.iso"
+  assert_eq "$(bluray_makemkv_source "$T/disc.iso")" "iso:$T/disc.iso"
+}
+
+test_makemkv_backup_passes_explicit_source() {
+  _load_bluray
+  mkdir -p "$T/bin" "$T/disc/BDMV" "$T/out"
+  # shellcheck disable=SC2016 # mock script expands these at execution time
+  printf '%s\n' '#!/usr/bin/env bash' \
+    'printf '\''%s\0'\'' "$@" >"$MAKE_ARGS"' >"$T/bin/makemkvcon"
+  chmod +x "$T/bin/makemkvcon"
+  AUDIO_UTILS_MAKEMKV="$T/bin/makemkvcon"
+  MAKE_ARGS="$T/args"
+  export AUDIO_UTILS_MAKEMKV MAKE_ARGS
+  bluray_makemkv_backup "$T/disc" "$T/out"
+  local -a args
+  mapfile -d '' -t args <"$T/args"
+  assert_eq "${args[0]}" "--robot"
+  assert_eq "${args[1]}" "--minlength=0"
+  assert_eq "${args[2]}" "mkv"
+  assert_eq "${args[3]}" "file:$T/disc"
+  assert_eq "${args[4]}" "all"
+  assert_eq "${args[5]}" "$T/out"
+}
+
+test_bdmv_never_falls_back_to_raw_stream_clips() {
+  _load_bluray
+  mkdir -p "$T/disc/BDMV/STREAM" "$T/out"
+  : >"$T/disc/BDMV/STREAM/00001.m2ts"
+  bluray_makemkv_bin() { return 1; }
+  bluray_media_readable() { return 0; }
+  assert_exit 1 bluray_decrypt_or_copy "$T/disc" "$T/out"
+}
+
 run_tests

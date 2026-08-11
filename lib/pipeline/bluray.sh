@@ -122,7 +122,7 @@ bluray_list_plain_media() {
   local dir="$1"
   [[ -d "$dir" ]] || return 1
   local -a args=(-P "$dir" -maxdepth 3 -type f
-    \( -iname '*.m2ts' -o -iname '*.mkv' -o -iname '*.mka' -o -iname '*.mp4' \))
+    \( -iname '*.m2ts' -o -iname '*.mkv' -o -iname '*.mka' -o -iname '*.mp4' -o -iname '*.ts' \))
   if ((print0)); then
     LC_ALL=C find "${args[@]}" -print0 2>/dev/null | LC_ALL=C sort -z
   else
@@ -174,7 +174,7 @@ bluray_resolve_input() {
       return 0
     fi
     if LC_ALL=C find -P "$path" -maxdepth 3 -type f \
-      \( -iname '*.m2ts' -o -iname '*.mkv' -o -iname '*.mka' -o -iname '*.mp4' \) \
+      \( -iname '*.m2ts' -o -iname '*.mkv' -o -iname '*.mka' -o -iname '*.mp4' -o -iname '*.ts' \) \
       -print -quit 2>/dev/null | grep -q .; then
       printf '%s\n' media_dir
       return 0
@@ -186,50 +186,46 @@ bluray_resolve_input() {
   return 1
 }
 
-# Attempt MakeMKV backup of DEVICE_OR_DISC to OUTDIR (mkv files).
+# Convert a device or BDMV tree to MakeMKV's explicit source syntax.
+bluray_makemkv_source() {
+  local src="$1" bdmv disc
+  if [[ "$src" == dev:* || "$src" == disc:* || "$src" == file:* || "$src" == iso:* ]]; then
+    printf '%s\n' "$src"
+  elif [[ -b "$src" || "$src" == /dev/* ]]; then
+    printf 'dev:%s\n' "$src"
+  elif bdmv=$(bluray_resolve_bdmv "$src" 2>/dev/null); then
+    disc=$(dirname -- "$bdmv")
+    printf 'file:%s\n' "$disc"
+  elif [[ -f "$src" && "${src,,}" == *.iso ]]; then
+    printf 'iso:%s\n' "$src"
+  else
+    return 1
+  fi
+}
+
+# Extract authored titles from DEVICE_OR_DISC to OUTDIR (mkv files).
 # Args: SOURCE OUTDIR
 bluray_makemkv_backup() {
-  local src="$1" outdir="$2" bin err
+  local src="$1" outdir="$2" bin err source
   bin=$(bluray_makemkv_bin) || {
     log_err "Error: MakeMKV (makemkvcon) not found"
     log_err "  Install MakeMKV or set AUDIO_UTILS_MAKEMKV=/path/to/makemkvcon"
     return 1
   }
+  source=$(bluray_makemkv_source "$src") || {
+    log_err "Error: unsupported MakeMKV source: $src"
+    return 1
+  }
   mkdir -p -- "$outdir" || return 1
   err="${outdir}/makemkv.err"
-  # mkv output; disc path or device. -r robot mode, --minlength filter short clips.
-  if ! "$bin" mkv "$src" all "$outdir" --minlength=0 >"$err" 2>&1; then
-    # Some builds want disc:prefix
-    if ! "$bin" mkv "disc:$src" all "$outdir" --minlength=0 >"$err" 2>&1; then
-      set_last_err_file "$err"
-      log_err "FAILED makemkvcon: $src -> $outdir"
-      [[ -s "$err" ]] && { log_err "  makemkv stderr:"; sed 's/^/  | /' "$err" | head -n 40 >&2; }
-      return 1
-    fi
+  if ! "$bin" --robot --minlength=0 mkv "$source" all "$outdir" >"$err" 2>&1; then
+    set_last_err_file "$err"
+    log_err "FAILED makemkvcon: $source -> $outdir"
+    [[ -s "$err" ]] && { log_err "  makemkv stderr:"; sed 's/^/  | /' "$err" | head -n 40 >&2; }
+    return 1
   fi
   log_note "note: MakeMKV backup completed -> $outdir"
   return 0
-}
-
-# Try ffmpeg bluray protocol / libbluray demux of disc root to OUT_MKV (first playlist).
-# Best-effort; many builds need KEYDB + libs. Args: DISC_ROOT OUT_MKV
-bluray_ffmpeg_bluray_copy() {
-  local disc="$1" out_mkv="$2" err
-  err="$(dirname -- "$out_mkv")/ffmpeg-bluray.err"
-  mkdir -p -- "$(dirname -- "$out_mkv")" || return 1
-
-  # bluray: protocol (libbluray). Playlist -1 = longest / default.
-  if ffmpeg -hide_banner -protocols 2>/dev/null | grep -qi bluray; then
-    if ffmpeg -v error -y -f bluray -i "$disc" -map 0:a -c copy "$out_mkv" 2>"$err"; then
-      return 0
-    fi
-  fi
-  # Fallback: open BDMV path as directory input when demuxer supports it.
-  if ffmpeg -v error -y -i "$disc" -map 0:a -c copy "$out_mkv" 2>"$err"; then
-    return 0
-  fi
-  set_last_err_file "$err"
-  return 1
 }
 
 # Hybrid: produce readable media under OUTDIR for SRC (device/BDMV/plain).
@@ -237,7 +233,7 @@ bluray_ffmpeg_bluray_copy() {
 # On encrypted disc without tooling/KEYDB: fail closed with specific hints.
 bluray_decrypt_or_copy() {
   local src="$1" outdir="$2"
-  local kind bdmv disc readable=0 f first
+  local kind bdmv disc readable=0 f
 
   [[ -n "$src" && -n "$outdir" ]] || {
     log_err "Error: bluray_decrypt_or_copy requires SRC OUTDIR"
@@ -272,35 +268,6 @@ bluray_decrypt_or_copy() {
     bdmv)
       bdmv=$(bluray_resolve_bdmv "$src") || return 1
       disc=$(dirname -- "$bdmv")
-      while IFS= read -r -d '' f; do
-        if bluray_media_readable "$f"; then
-          printf '%s\0' "$f"
-          readable=1
-        fi
-      done < <(bluray_list_stream_m2ts --print0 "$bdmv")
-      if ((readable)); then
-        log_note "note: using already-readable STREAM m2ts under $bdmv"
-        return 0
-      fi
-      # Encrypted path — try open libs + KEYDB, then MakeMKV.
-      if bluray_require_libs && bluray_keydb_present; then
-        first="${outdir}/bluray-audio.mkv"
-        if bluray_ffmpeg_bluray_copy "$disc" "$first" && bluray_media_readable "$first"; then
-          printf '%s\0' "$first"
-          return 0
-        fi
-        log_note "note: ffmpeg/libbluray path failed; trying MakeMKV if available"
-      elif ! bluray_keydb_present; then
-        log_err "Error: BDMV streams not readable and KEYDB.cfg missing"
-        bluray_keydb_hint
-        if bluray_makemkv_bin >/dev/null; then
-          log_note "note: MakeMKV found - attempting backup without KEYDB"
-        else
-          log_err "  Or supply already-decrypted M2TS/MKV, or install MakeMKV (AUDIO_UTILS_MAKEMKV)"
-          log_err "  BD+ titles often need MakeMKV or libbdplus + operator dumps (docs/discs.md)"
-          return 1
-        fi
-      fi
       if bluray_makemkv_bin >/dev/null; then
         if bluray_makemkv_backup "$disc" "$outdir"; then
           while IFS= read -r -d '' f; do
@@ -309,11 +276,9 @@ bluray_decrypt_or_copy() {
           return 0
         fi
       fi
-      log_err "Error: cannot decrypt BDMV at $bdmv"
-      log_err "  Install libbluray+libaacs (+ KEYDB.cfg) and/or MakeMKV, or use decrypted media"
-      if ! bluray_libbdplus_present; then
-        log_err "  If this disc uses BD+: install libbdplus + dumps, or use MakeMKV"
-      fi
+      log_err "Error: cannot resolve authored Blu-ray titles at $bdmv"
+      log_err "  Install MakeMKV, or pass standalone decrypted M2TS/MKV files"
+      log_err "  Raw BDMV/STREAM clips are not titles and are intentionally not extracted"
       return 1
       ;;
     device)
@@ -326,16 +291,8 @@ bluray_decrypt_or_copy() {
         fi
         return 1
       fi
-      if bluray_require_libs && bluray_keydb_present; then
-        first="${outdir}/bluray-audio.mkv"
-        if bluray_ffmpeg_bluray_copy "$src" "$first" && bluray_media_readable "$first"; then
-          printf '%s\0' "$first"
-          return 0
-        fi
-      fi
       log_err "Error: cannot read Blu-ray device $src"
-      log_err "  Install MakeMKV (preferred for devices) or libbluray+libaacs with KEYDB.cfg"
-      bluray_keydb_hint
+      log_err "  Install MakeMKV to resolve and decrypt authored titles"
       return 1
       ;;
     *)
