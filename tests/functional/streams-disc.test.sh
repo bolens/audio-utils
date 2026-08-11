@@ -82,6 +82,7 @@ test_bluray_mirrors_subdirs_and_avoids_basename_collisions() {
   assert_eq "$(tool_rc)" 0 "rc ($(tool_out | tail -5))"
   assert_file "$T/media/flac/one/title.mkv.a0.flac"
   assert_file "$T/media/flac/two/title.mkv.a0.flac"
+  assert_eq "$(metaflac --show-bps "$T/media/flac/one/title.mkv.a0.flac")" 16
 }
 
 test_bluray_preserves_16_bit_depth_and_stream_provenance() {

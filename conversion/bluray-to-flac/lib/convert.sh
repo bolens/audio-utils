@@ -8,10 +8,11 @@ _bluray_stream_field() {
 }
 
 _bluray_stream_pcm_codec() {
-  local src="$1" idx="$2" bits
+  local src="$1" idx="$2" bits sample_fmt
   bits=$(_bluray_stream_field "$src" "$idx" bits_per_raw_sample)
   [[ "$bits" =~ ^[1-9][0-9]*$ ]] || bits=$(_bluray_stream_field "$src" "$idx" bits_per_sample)
-  if [[ "$bits" == 16 ]]; then
+  sample_fmt=$(_bluray_stream_field "$src" "$idx" sample_fmt)
+  if [[ "$bits" == 16 || "$sample_fmt" == s16 || "$sample_fmt" == s16p ]]; then
     printf '%s\n' pcm_s16le
   else
     printf '%s\n' pcm_s24le
