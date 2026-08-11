@@ -24,16 +24,21 @@ Env: paths passed as `VIDEO_TS` dirs to the tool. `AUDIO_UTILS_DVD_DEVICE` is on
 
 Open Linux CPPM tooling is scarce. Prefer **already-decrypted** AUDIO_TS / AOB inputs and `streams-to-flac`. Encrypted CPPM-only discs fail closed with a clear message.
 
-## Blu-ray AACS / BD+ (`bluray-to-flac`) — hybrid
+## Blu-ray AACS / BD+ (`bluray-to-flac`)
 
 Two paths:
 
-1. **Already decrypted** — BDMV `STREAM/*.m2ts` or a directory of `.m2ts` / `.mkv` that `ffprobe` can open → per-stream FLAC (same bar as `streams-to-flac`).
-2. **Encrypted disc** — when system tooling is present:
-   - **libbluray** + **libaacs** (optional **libbdplus** for BD+) and an operator-supplied **`KEYDB.cfg`** under `$XDG_CONFIG_HOME/aacs/` (never vendored here), and/or
-   - **MakeMKV** (`makemkvcon`, or `AUDIO_UTILS_MAKEMKV=/path/to/makemkvcon`).
+1. **Standalone decrypted media** — `.m2ts`, `.mkv`, `.mka`, `.mp4`, or `.ts`
+   files that `ffprobe` can open → one FLAC per audio stream.
+2. **BDMV tree or device** — **MakeMKV** (`makemkvcon`, or
+   `AUDIO_UTILS_MAKEMKV=/path/to/makemkvcon`) resolves authored playlists and
+   performs any supported decryption before conversion.
 
-Device rip: `bluray-to-flac.sh -D /dev/sr0` (or `AUDIO_UTILS_BD_DEVICE`). Prefer MakeMKV for devices when available.
+Raw `BDMV/STREAM` clips are deliberately not extracted as titles. MPLS
+playlists may join, trim, reuse, or branch clips, so clip-by-clip extraction can
+duplicate or incorrectly segment a program.
+
+Device rip: `bluray-to-flac.sh -D /dev/sr0` (or `AUDIO_UTILS_BD_DEVICE`).
 
 ```bash
 # Arch (packages; KEYDB is still operator-supplied)
@@ -49,9 +54,14 @@ sudo dnf install libbluray libaacs
 # libbdplus / MakeMKV from COPR or vendor packages
 ```
 
-Place `KEYDB.cfg` at `${XDG_CONFIG_HOME:-$HOME/.config}/aacs/KEYDB.cfg`. This repo will not download or ship it.
+MakeMKV manages its own supported decryption configuration. This repo does not
+download or ship keys, dumps, or MakeMKV components.
 
-BD+ titles may need **libbdplus** + operator VM/cache dumps, or MakeMKV. Fail closed with install hints when streams are unreadable.
+Outputs retain the container extension, such as `title.mkv.a0.flac`. Directory
+inputs mirror their relative subdirectories below `flac/`. Source codec,
+profile, language, stream title, and channel layout are retained as FLAC tags
+when available. Lossy sources are marked `LOSSY_SOURCE=1`; Dolby Atmos and
+DTS:X object data cannot be represented by FLAC.
 
 ## CDDA (`cdda-to-flac`)
 
@@ -73,8 +83,8 @@ sudo dnf install cdparanoia # Fedora
 | CSS / cannot read VOB | libdvdcss installed? readable VIDEO_TS? |
 | No tracks on CD | correct `/dev/srN`? permissions in `cdrom` / optical group? |
 | CPPM fail | use decrypted dump; see requirements |
-| Blu-ray unreadable | KEYDB.cfg present? libaacs/libbluray? Try MakeMKV; or use decrypted M2TS/MKV |
-| BD+ fail | libbdplus + dumps, or MakeMKV |
+| Blu-ray unreadable | Check MakeMKV support/logs; or use standalone decrypted media |
+| BD+ fail | Check whether the installed MakeMKV version supports the disc |
 
 Streaming DRM (Widevine / FairPlay / …) is documented in [streaming.md](streaming.md) — forever out of scope.
 

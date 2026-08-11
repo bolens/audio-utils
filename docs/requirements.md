@@ -79,7 +79,7 @@ installs record both revisions for `keyfinder-status`.
 | flac-to-tak | Official **Takc** (+ Wine if `.exe`); see [tak.md](tak.md) |
 | tak-to-flac | ffmpeg TAK decoder and/or Takc |
 | dvd-to-flac | **libdvdcss**; on-disk `VIDEO_TS` only (optional `dvdbackup` via `dvd_backup_title` in `lib/pipeline/dvd.sh`, not wired into the converter) |
-| bluray-to-flac | **libbluray** + **libaacs** (+ operator `KEYDB.cfg`); optional **libbdplus**, **MakeMKV** (`AUDIO_UTILS_MAKEMKV`); or already-decrypted M2TS/MKV |
+| bluray-to-flac | **MakeMKV** (`AUDIO_UTILS_MAKEMKV`) for BDMV/device input; or standalone decrypted M2TS/MKV/MKA/MP4/TS; `metaflac` |
 | cdda-to-flac | **cdparanoia** (AccurateRip / MusicBrainz workflows are external — not wired here) |
 | cue-to-flac / streams-to-flac | core set only |
 | tracks-to-m4b | ffmpeg (`aac` / `libopus` / `alac`); Opus-in-M4B needs `libopus` |
