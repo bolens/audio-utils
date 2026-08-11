@@ -57,12 +57,16 @@ _bluray_dry_run_media() {
 }
 
 _bluray_tag_stream_provenance() {
-  local flac="$1" src="$2" idx="$3" field value codec profile lossy=0
+  local flac="$1" src="$2" idx="$3" source_sha="$4"
+  local field value codec profile lossy=0
   codec=$(_bluray_stream_field "$src" "$idx" codec_name)
   profile=$(_bluray_stream_field "$src" "$idx" profile)
   metaflac --remove-tag=SOURCE_CODEC --remove-tag=SOURCE_PROFILE \
     --remove-tag=SOURCE_LANGUAGE --remove-tag=SOURCE_TITLE \
-    --remove-tag=SOURCE_CHANNEL_LAYOUT --remove-tag=LOSSY_SOURCE -- "$flac"
+    --remove-tag=SOURCE_CHANNEL_LAYOUT --remove-tag=SOURCE_SHA256 \
+    --remove-tag=SOURCE_STREAM --remove-tag=LOSSY_SOURCE -- "$flac"
+  metaflac --set-tag="SOURCE_SHA256=$source_sha" \
+    --set-tag="SOURCE_STREAM=$idx" -- "$flac"
   [[ -n "$codec" ]] && metaflac --set-tag="SOURCE_CODEC=$codec" -- "$flac"
   [[ -n "$profile" ]] && metaflac --set-tag="SOURCE_PROFILE=$profile" -- "$flac"
   for field in language title; do
@@ -82,9 +86,36 @@ _bluray_tag_stream_provenance() {
   fi
 }
 
+_bluray_existing_matches_source() {
+  local flac="$1" source_sha="$2" idx="$3" tagged_sha tagged_stream
+  [[ -f "$flac" ]] && flac_ok "$flac" || return 1
+  tagged_sha=$(metaflac --show-tag=SOURCE_SHA256 -- "$flac" 2>/dev/null)
+  tagged_stream=$(metaflac --show-tag=SOURCE_STREAM -- "$flac" 2>/dev/null)
+  [[ "$tagged_sha" == "SOURCE_SHA256=$source_sha" && \
+    "$tagged_stream" == "SOURCE_STREAM=$idx" ]]
+}
+
+_bluray_verify_decode_length() {
+  local src="$1" idx="$2" wav="$3" src_duration wav_duration
+  src_duration=$(_bluray_stream_field "$src" "$idx" duration)
+  wav_duration=$(audio_duration_sec "$wav")
+  if [[ ! "$src_duration" =~ ^[0-9]+([.][0-9]+)?$ || \
+    ! "$wav_duration" =~ ^[0-9]+([.][0-9]+)?$ ]]; then
+    log_note "note: stream a:$idx duration unavailable; relying on strict decoder errors"
+    return 0
+  fi
+  if awk -v s="$src_duration" -v w="$wav_duration" \
+    'BEGIN { tolerance=0.25; exit !((s-w) > tolerance) }'; then
+    AUDIO_UTILS_LAST_ERR="source_duration=$src_duration decoded_duration=$wav_duration"
+    export AUDIO_UTILS_LAST_ERR
+    log_err "VERIFY FAIL (decoded audio shorter than source): $src#a$idx"
+    return 1
+  fi
+}
+
 _extract_media_streams() {
   local src="$1" outdir="$2" tmpdir="$3" source_root="$4"
-  local base rel rel_dir n i wav flac_out pcm_codec
+  local base rel rel_dir n i wav flac_out pcm_codec source_sha
   local -a enc_out
   local fail=0
 
@@ -102,21 +133,36 @@ _extract_media_streams() {
     log_fail "$src" "no audio streams"
     return 1
   }
+  source_sha=$(file_sha256 "$src") || {
+    log_fail "$src" "source SHA-256 failed"
+    return 1
+  }
 
   for ((i = 0; i < n; i++)); do
     flac_out=$(_bluray_output_path "$src" "$outdir" "$source_root" "$i")
     wav="${tmpdir}/${base}.a${i}.wav"
     pcm_codec=$(_bluray_stream_pcm_codec "$src" "$i")
 
-    if [[ -f "$flac_out" && "${OVERWRITE:-0}" -eq 0 ]] && flac_ok "$flac_out"; then
-      log_progress "skip (flac ok): $flac_out"
-      log_success "$src" "$flac_out" "$(audio_md5 "$flac_out")" "$(file_sha256 "$flac_out")" "skipped-existing-ok;stream=$i"
+    if [[ -f "$flac_out" && "${OVERWRITE:-0}" -eq 0 ]]; then
+      if _bluray_existing_matches_source "$flac_out" "$source_sha" "$i"; then
+        log_progress "skip (source-bound flac ok): $flac_out"
+        log_success "$src" "$flac_out" "$(audio_md5 "$flac_out")" "$(file_sha256 "$flac_out")" "skipped-existing-ok;stream=$i"
+        continue
+      fi
+      log_fail "$src" "existing output does not match source; use -y: $flac_out"
+      fail=1
       continue
     fi
 
-    if ! ffmpeg -v error -y -i "$src" -map "0:a:${i}" -c:a "$pcm_codec" "$wav" 2>"${tmpdir}/ex.err"; then
+    if ! ffmpeg -v error -xerror -err_detect explode -y -i "$src" \
+      -map "0:a:${i}" -c:a "$pcm_codec" "$wav" 2>"${tmpdir}/ex.err"; then
       set_last_err_file "${tmpdir}/ex.err"
       log_fail "$src" "extract a:$i failed"
+      fail=1
+      continue
+    fi
+    if ! _bluray_verify_decode_length "$src" "$i" "$wav"; then
+      log_fail "$src" "decode length verification failed for a:$i"
       fail=1
       continue
     fi
@@ -126,7 +172,7 @@ _extract_media_streams() {
       continue
     fi
     au_mapfile0 enc_out "${tmpdir}/enc.out"
-    if ! _bluray_tag_stream_provenance "${enc_out[0]}" "$src" "$i"; then
+    if ! _bluray_tag_stream_provenance "${enc_out[0]}" "$src" "$i" "$source_sha"; then
       log_fail "$src" "tag stream a:$i failed"
       fail=1
       continue
@@ -143,7 +189,7 @@ _extract_media_streams() {
 
 convert_one() {
   local path="$1"
-  local outdir tmpdir work media fail=0 kind disc_label source_root
+  local outdir tmpdir work media fail=0 kind disc_label source_root disc_id
 
   kind=$(bluray_resolve_input "$path" 2>/dev/null) || kind=unknown
   if [[ "$kind" == unknown ]]; then
@@ -163,7 +209,11 @@ convert_one() {
       outdir="${path}/flac"
       ;;
     device)
-      outdir="${PWD}/bluray-rip"
+      disc_id=$(bluray_device_id "$path") || {
+        log_fail "$path" "cannot identify Blu-ray disc with MakeMKV"
+        return 1
+      }
+      outdir="${PWD}/bluray-rip/${disc_id}"
       ;;
     *)
       outdir="${PWD}/bluray-rip"

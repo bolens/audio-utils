@@ -8,7 +8,9 @@
 #   find-bdmv-dirs.sh | bluray-to-flac.sh
 #
 # Options:
-#   -D DEVICE  Blu-ray device (default: AUDIO_UTILS_BD_DEVICE or /dev/sr0)
+#   -D DEVICE  Blu-ray device
+#   --title N|all       MakeMKV title selection (default: all)
+#   --minlength SEC     Ignore shorter MakeMKV titles (default: 30; 0 keeps all)
 #   -f FILE  -L FILE  -S FILE  --dirs0  -n  -y  -q  -v  -h  --version
 #   -j N       Accepted for CLI parity; extract is serial per title (ignored)
 #
@@ -33,7 +35,9 @@ VERBOSE=0
 FAIL_LOG=""
 SUCCESS_LOG=""
 DELETE_SOURCE=0
-BD_DEVICE=""
+BD_DEVICE="${AUDIO_UTILS_BD_DEVICE:-}"
+AUDIO_UTILS_BD_TITLE="${AUDIO_UTILS_BD_TITLE:-all}"
+AUDIO_UTILS_BD_MIN_LENGTH="${AUDIO_UTILS_BD_MIN_LENGTH:-30}"
 
 usage() {
       sed -n '2,18p' "$0" | sed 's/^# \?//'
@@ -63,6 +67,22 @@ while (($# > 0)); do
       shift 2
       ;;
     --dirs0) DIRS0=1; shift ;;
+    --title)
+      [[ $# -ge 2 && ( "$2" == all || "$2" =~ ^[0-9]+$ ) ]] || {
+        echo "Error: --title needs a non-negative integer or all" >&2
+        usage 2
+      }
+      AUDIO_UTILS_BD_TITLE=$2
+      shift 2
+      ;;
+    --minlength)
+      [[ $# -ge 2 && "$2" =~ ^[0-9]+$ ]] || {
+        echo "Error: --minlength needs a non-negative integer" >&2
+        usage 2
+      }
+      AUDIO_UTILS_BD_MIN_LENGTH=$2
+      shift 2
+      ;;
     -n) DRY_RUN=1; shift ;;
     -y) OVERWRITE=1; shift ;;
     -q) QUIET=1; shift ;;
@@ -84,6 +104,7 @@ if [[ -n "$BD_DEVICE" ]]; then
 fi
 
 export DRY_RUN OVERWRITE DELETE_SOURCE QUIET VERBOSE
+export AUDIO_UTILS_BD_TITLE AUDIO_UTILS_BD_MIN_LENGTH
 : "${FAIL_LOG:=$(audio_utils_state_dir bluray-to-flac)/failures.log}"
 : "${SUCCESS_LOG:=$(audio_utils_state_dir bluray-to-flac)/success.csv}"
 export FAIL_LOG SUCCESS_LOG
