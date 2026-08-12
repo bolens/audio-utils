@@ -4,6 +4,37 @@ Rewrite playlists: change format (`--format m3u|pls|xspf`), path style (`--relat
 
 Part of **[audio-utils](../../../)**. See [docs/playlists.md](../../../docs/playlists.md).
 
+## Format and path conversion
+
+Without `--format`, the detected playlist family is retained and rewritten in
+place. Selecting another family writes a sibling with the appropriate
+extension; an existing destination is skipped unless `-y` is supplied.
+Supported output families are M3U/M3U8, PLS, and XSPF.
+
+```bash
+./playlist-normalize.sh -n --relative /path/to/playlists
+./playlist-normalize.sh --format xspf --absolute /path/to/playlists
+```
+
+Relative paths are based on the source playlist directory, including when a
+new-format sibling is produced. Absolute mode resolves local entries to full
+paths. Format conversion preserves entry order and the metadata representable
+by the destination format.
+
+## Optional deduplication
+
+`--dedupe` keeps the first occurrence. `--by path` uses resolved path identity;
+`--by title` uses normalized artist/title metadata and may merge distinct
+recordings with the same labels.
+
+```bash
+./playlist-normalize.sh --dedupe --by path -n /path/to/playlists
+```
+
+Normalization writes playlists but never deletes audio or source playlists;
+`-d`/`-D` are rejected. Use dry-run before changing path style or using soft
+title matching. See [playlist behavior](../../../docs/playlists.md).
+
 <!-- BEGIN GENERATED COMMAND REFERENCE -->
 ## Command reference
 
