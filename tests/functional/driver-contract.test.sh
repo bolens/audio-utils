@@ -152,4 +152,25 @@ test_clean_tmp_uses_roots_file_with_spaces() {
   assert_no_file "$T/My Music/album/.wav2flac.stale"
 }
 
+test_clean_tmp_preserves_glob_characters_in_roots() {
+  require_cmd make find xargs
+  mkdir -p "$T/Music [live]/album/.wav2flac.stale"
+  printf '%s\n' "$T/Music [live]" >"$T/roots"
+  AUDIO_UTILS_ROOTS_FILE="$T/roots" \
+    make -s -C "$AU_REPO_ROOT/conversion/wav-to-flac" clean-tmp >"$T/out"
+  assert_no_file "$T/Music [live]/album/.wav2flac.stale"
+}
+
+test_clean_tmp_validates_all_roots_before_deleting() {
+  require_cmd make find xargs
+  mkdir -p "$T/good/album/.wav2flac.stale"
+  printf '%s\n' "$T/good" "$T/missing" >"$T/roots"
+  local rc=0
+  AUDIO_UTILS_ROOTS_FILE="$T/roots" \
+    make -s -C "$AU_REPO_ROOT/conversion/wav-to-flac" clean-tmp >"$T/out" 2>&1 || rc=$?
+  assert_eq "$rc" 2 "make propagates failed cleanup recipe"
+  assert_file "$T/good/album/.wav2flac.stale" "validation must precede deletion"
+  assert_grep 'not a directory' "$T/out"
+}
+
 run_tests

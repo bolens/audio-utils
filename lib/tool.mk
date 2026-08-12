@@ -113,18 +113,5 @@ clean:
 	echo "cleaned $$state"
 
 clean-tmp:
-	@roots_file="$${AUDIO_UTILS_ROOTS_FILE:-}"; \
-	if [ -n "$$roots_file" ]; then \
-		[ -f "$$roots_file" ] || { echo "AUDIO_UTILS_ROOTS_FILE not found: $$roots_file"; exit 1; }; \
-		while IFS= read -r root || [ -n "$$root" ]; do \
-			[ -n "$$root" ] || continue; \
-			find "$$root" -type d -name '$(WORKDIR_GLOB)' -print0 2>/dev/null; \
-		done <"$$roots_file" | xargs -0 -r rm -rf --; \
-	else \
-		roots="$(ROOTS)"; \
-		[ -n "$$roots" ] || roots="$(AUDIO_UTILS_ROOTS)"; \
-		[ -n "$$roots" ] || roots="$(WAV2FLAC_ROOTS)"; \
-		[ -n "$$roots" ] || { echo "Set AUDIO_UTILS_ROOTS_FILE, AUDIO_UTILS_ROOTS, or ROOTS="; exit 1; }; \
-		find $$roots -type d -name '$(WORKDIR_GLOB)' -print0 2>/dev/null | xargs -0 -r rm -rf --; \
-	fi; \
-	echo done
+	@AUDIO_UTILS_ROOTS='$(ROOTS)' \
+		bash '$(AU_ROOT)/scripts/clean-tool-tmp.sh' '$(WORKDIR_GLOB)'
