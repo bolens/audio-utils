@@ -173,6 +173,27 @@ test_cue_audit_rejects_unreadable_and_out_of_range_images() {
   assert_grep 'index-outside-image' "$T/out"
 }
 
+test_cue_audit_validates_multifile_sections() {
+  require_cmd flac metaflac ffmpeg ffprobe flock
+  mkdir -p "$T/multi"
+  ffmpeg -nostdin -v error -y -f lavfi -i 'sine=duration=1' "$T/multi/one.flac"
+  cp "$T/multi/one.flac" "$T/multi/two.flac"
+  cat >"$T/multi/album.cue" <<'EOF'
+FILE "one.flac" WAVE
+  TRACK 01 AUDIO
+    INDEX 01 00:00:00
+FILE "two.flac" WAVE
+  TRACK 02 AUDIO
+    INDEX 01 00:00:00
+EOF
+  run_tool util/audit/cue-audit/cue-audit.sh "$T/multi"
+  assert_eq "$(tool_rc)" 0 "valid multi-file CUE"
+  sed -i '6s/00:00:00/00:02:00/' "$T/multi/album.cue"
+  run_tool util/audit/cue-audit/cue-audit.sh "$T/multi"
+  assert_eq "$(tool_rc)" 1 "second-image bounds must be checked"
+  assert_grep 'parse-failed' "$T/out"
+}
+
 # --- dynamics-report --------------------------------------------------------------
 
 test_dynamics_report_measures_and_writes_summary() {

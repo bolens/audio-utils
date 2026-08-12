@@ -119,6 +119,20 @@ test_audiobook_audit_flags_track_gaps_and_duplicates() {
   assert_grep 'track-gaps' "$T/out"
 }
 
+test_audiobook_audit_checks_declared_track_totals() {
+  require_cmd flac metaflac ffmpeg ffprobe flock
+  mkdir -p "$T/book"
+  _mk_chapter_flac "$T/book/one.flac" One 1 1
+  _mk_chapter_flac "$T/book/two.flac" Two 2 1
+  metaflac --remove-tag=TRACKNUMBER --set-tag=TRACKNUMBER=1/3 "$T/book/one.flac"
+  metaflac --remove-tag=TRACKNUMBER --set-tag=TRACKNUMBER=2/4 "$T/book/two.flac"
+  ffmpeg -nostdin -v error -y -f lavfi -i 'color=c=red:size=32x32:d=1' \
+    -frames:v 1 "$T/book/cover.jpg"
+  run_tool util/audiobook/audiobook-audit/audiobook-audit.sh "$T/book"
+  assert_eq "$(tool_rc)" 1
+  assert_grep 'mismatched-track-totals' "$T/out"
+}
+
 test_flac_to_aac_default_quality_96() {
   require_cmd flac metaflac ffmpeg ffprobe flock
   require_ffmpeg_encoder aac

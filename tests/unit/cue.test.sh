@@ -71,6 +71,28 @@ test_file_name_from_line() {
   assert_eq "$(cue_file_name_from_line ' image.wav WAVE')" "image.wav"
 }
 
+test_lists_and_resolves_every_cue_file() {
+  _load_lib
+  mkdir -p "$T/multi"
+  : >"$T/multi/Disc One.wav"
+  : >"$T/multi/disc-two.FLAC"
+  cat >"$T/multi/album.cue" <<'EOF'
+FILE "Disc One.wav" WAVE
+  TRACK 01 AUDIO
+    INDEX 01 00:00:00
+FILE "Disc-Two.flac" WAVE
+  TRACK 02 AUDIO
+    INDEX 01 00:00:00
+EOF
+  local -a names=()
+  while IFS= read -r -d '' name; do names+=("$name"); done < <(
+    cue_list_file_names0 "$T/multi/album.cue")
+  assert_eq "${#names[@]}" 2
+  assert_eq "${names[0]}" 'Disc One.wav'
+  assert_eq "$(cue_resolve_named_image "$T/multi/album.cue" 'disc-two.flac')" \
+    "$T/multi/disc-two.FLAC"
+}
+
 test_sanitize_filename() {
   _load_lib
   assert_eq "$(cue_sanitize_filename 'A/B:C?D*E')" "A_B_C_D_E"
