@@ -102,7 +102,15 @@ archive_package_audit() {
 }
 
 archive_snapshot_write() {
-  local dir=$1 output=$2 tmp f rel
+  local dir=$1 output=$2 tmp f rel dir_abs output_abs
+  dir_abs=$(au_abspath "$dir") || return 1
+  output_abs=$(au_abspath "$output") || return 1
+  case "$output_abs" in
+    "$dir_abs" | "$dir_abs"/*)
+      log_err "Error: archive snapshot output must be outside package: $output"
+      return 1
+      ;;
+  esac
   mkdir -p -- "$(dirname -- "$output")" || return 1
   tmp=$(mktemp --tmpdir="$(dirname -- "$output")" .archive-snapshot.XXXXXX) || return 1
   {
