@@ -44,6 +44,11 @@ bluray-to-flac.sh --stage-dir /archive/staging --split-chapters /path/to/disc
 
 # Verify an existing archive without reading the source again
 bluray-to-flac.sh --verify-archive /archive/disc/flac
+
+# Fully decode-audit it, or create a recoverable signed package
+bluray-to-flac.sh --audit-archive /archive/disc/flac
+bluray-to-flac.sh --preserve-streams --sign-key /keys/archive.key \
+  --par2-percent 10 --seal /path/to/disc
 ```
 
 Options:
@@ -57,6 +62,11 @@ Options:
 | `--split-chapters` | Also create verified per-chapter FLAC tracks. |
 | `--allow-float-reduction` | Explicitly permit verified float PCM to 24-bit conversion. |
 | `--verify-archive DIR` | Validate `DIR/SHA256SUMS` and exit. |
+| `--audit-archive DIR` | Verify the package, fully decode every FLAC, compare its MD5, and verify PAR2 data. |
+| `--preserve-streams` | Remux each original compressed/lossless audio bitstream to `<flac>.source.mka`. |
+| `--sign-key FILE` | Sign `SHA256SUMS` with a minisign secret key. |
+| `--par2-percent N` | Add `N` percent PAR2 recovery data (`0`–`100`). |
+| `--seal` | Flush the completed package and make integrity/provenance metadata read-only. |
 | `-f FILE` | Read newline-delimited input paths from a file. |
 | `--dirs0` | Read NUL-delimited input paths from stdin. |
 | `-L FILE` / `-S FILE` | Override failure and success log paths. |
@@ -72,9 +82,12 @@ input, `AUDIO_UTILS_BD_DISC_ID` may provide a stable output identifier; it must
 start with an alphanumeric character and contain only alphanumerics, `.`, `_`,
 or `-`.
 
-`AUDIO_UTILS_BD_STAGE_DIR`, `AUDIO_UTILS_BD_SPLIT_CHAPTERS`, and
-`AUDIO_UTILS_BD_ALLOW_FLOAT` provide environment equivalents for the archival
-options.
+`AUDIO_UTILS_BD_STAGE_DIR`, `AUDIO_UTILS_BD_SPLIT_CHAPTERS`,
+`AUDIO_UTILS_BD_ALLOW_FLOAT`, `AUDIO_UTILS_BD_PRESERVE_STREAMS`,
+`AUDIO_UTILS_BD_SIGN_KEY`, `AUDIO_UTILS_BD_PAR2_PERCENT`, and
+`AUDIO_UTILS_BD_SEAL` provide environment equivalents. Set
+`AUDIO_UTILS_BD_SIGN_PUBKEY` when verifying a minisign signature without a
+matching public key embedded in the normal minisign configuration.
 
 `find-bdmv-dirs.sh` discovers BDMV directories below explicit roots (or the
 configured roots), and `convert-all.sh` discovers and converts them. Both
@@ -116,7 +129,9 @@ verified 24-bit preparation path; affected outputs carry `PRECISION_REDUCED=1`.
 For titles with chapters, the converter writes `.ffmetadata`, `.chapters.json`,
 and CUE sidecars. CUE is omitted only when the FLAC filename contains a newline,
 which CUE cannot represent safely. `--split-chapters` additionally creates a
-verified `<name>.chapters/` directory of per-chapter FLAC tracks.
+verified `<name>.chapters/` directory of per-chapter FLAC tracks. Their exact
+sample total and concatenated decoded MD5 must reproduce the covered parent
+region before the archive can complete.
 
 Each archive contains:
 
@@ -124,11 +139,24 @@ Each archive contains:
   decoded MD5, file SHA-256, sample count, rate, channels, and precision;
 - `provenance/tool-versions.txt`;
 - persisted MakeMKV inventory, log, and classified warning files when used;
-- `SHA256SUMS`, generated and immediately verified only after a successful run.
+- normalized MakeMKV title and message TSVs when MakeMKV was used;
+- `SHA256SUMS`, generated and immediately verified only after a successful run;
+- `ARCHIVE_COMPLETE.json`, written last after metadata publication, checksums,
+  optional signing/recovery data, and a filesystem flush.
 
-Use `--verify-archive DIR` for later integrity audits. `--stage-dir DIR` retains
-readable MakeMKV title MKVs under a source/disc-specific directory and reuses
-them on retry, avoiding another disc extraction after a downstream failure.
+An absent completion marker means the package is incomplete, even if some
+outputs exist. Session provenance is published atomically and aborted sessions
+do not enter the permanent manifest. Use `--verify-archive DIR` for quick file
+integrity checks and `--audit-archive DIR` for a periodic full decode audit.
+`--stage-dir DIR` retains MakeMKV title MKVs under a source/disc-specific
+directory; `STAGE_SHA256SUMS` must verify before a retry can reuse them.
+
+`--preserve-streams` retains the original codec payloads independently of the
+FLAC representation, which is especially useful for TrueHD/Atmos, DTS-HD/DTS:X,
+and lossy sources. `--sign-key` adds authenticity, `--par2-percent` adds local
+damage recovery, and `--seal` makes package metadata read-only after flushing
+it. These controls complement backups; PAR2 and read-only permissions are not
+substitutes for independent copies.
 
 Lossy codecs are marked `LOSSY_SOURCE=1` and reported. Dolby Atmos and DTS:X
 object data cannot be represented in FLAC. Extraction uses strict decoder error

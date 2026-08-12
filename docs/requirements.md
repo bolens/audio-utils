@@ -49,6 +49,8 @@ On Fedora, enable [RPM Fusion](https://rpmfusion.org/) before installing `ffmpeg
 | `sox` | `sox` | `sox` | `sox` |
 | `mediainfo` | `mediainfo` | `mediainfo` | `mediainfo` |
 | `makemkvcon` | often AUR (`makemkv`) | third-party | third-party |
+| `minisign` | `minisign` | `minisign` | `minisign` |
+| `par2` | `par2cmdline` | `par2` | `par2cmdline` |
 | `wine` (Takc `.exe`) | `wine` | `wine` | `wine` |
 
 `scripts/keyfinder-cli.sh` builds reviewed, pinned commits of libkeyfinder and
@@ -79,7 +81,7 @@ installs record both revisions for `keyfinder-status`.
 | flac-to-tak | Official **Takc** (+ Wine if `.exe`); see [tak.md](tak.md) |
 | tak-to-flac | ffmpeg TAK decoder and/or Takc |
 | dvd-to-flac | **libdvdcss**; on-disk `VIDEO_TS` only (optional `dvdbackup` via `dvd_backup_title` in `lib/pipeline/dvd.sh`, not wired into the converter) |
-| bluray-to-flac | **MakeMKV** (`AUDIO_UTILS_MAKEMKV`) for BDMV/device/ISO input; or standalone decrypted M2TS/MKV/MKA/MP4/TS; `metaflac` |
+| bluray-to-flac | **MakeMKV** (`AUDIO_UTILS_MAKEMKV`) for BDMV/device/ISO input; or standalone decrypted M2TS/MKV/MKA/MP4/TS; `metaflac`; optional **minisign** signing and **par2** recovery data |
 | cdda-to-flac | **cdparanoia** (AccurateRip / MusicBrainz workflows are external — not wired here) |
 | cue-to-flac / streams-to-flac | core set only |
 | tracks-to-m4b | ffmpeg (`aac` / `libopus` / `alac`); Opus-in-M4B needs `libopus` |
