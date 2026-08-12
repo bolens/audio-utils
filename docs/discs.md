@@ -57,6 +57,13 @@ bluray-to-flac.sh --title all --minlength 30 /path/to/disc
 The same defaults can be set with `AUDIO_UTILS_BD_TITLE` and
 `AUDIO_UTILS_BD_MIN_LENGTH`.
 
+For resumable extraction, `--stage-dir DIR` retains readable MakeMKV title
+MKVs in a disc/source-specific directory. MakeMKV inventory, logs, warnings,
+tool versions, per-stream provenance, chapter sidecars, and `SHA256SUMS` remain
+with the finished archive. Use `--verify-archive DIR` for later verification;
+use `--split-chapters` when per-chapter FLAC tracks are wanted in addition to
+the whole-title FLAC and chapter/CUE sidecars.
+
 ```bash
 # Arch (packages; KEYDB is still operator-supplied)
 sudo pacman -S libbluray libaacs
