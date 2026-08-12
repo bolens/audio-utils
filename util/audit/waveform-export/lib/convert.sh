@@ -36,7 +36,7 @@ convert_one() {
 
   if [[ ! -s "$tmp" ]] || ! audio_image_ok "$tmp"; then
     rm -f -- "$err" "$tmp"
-    log_fail "$src" "waveform render produced empty file"
+    log_fail "$src" "waveform render produced invalid image"
     return 1
   fi
   mv -f -- "$tmp" "$out" || { rm -f -- "$tmp"; return 1; }
