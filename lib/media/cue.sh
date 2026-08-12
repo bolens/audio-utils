@@ -104,15 +104,12 @@ cue_sanitize_filename() {
 # Absolute path to the audio image referenced by FILE in the CUE.
 cue_resolve_image() {
   local cue_path="$1"
-  local cue_dir line rest found="" candidate stem ext base lower
-  local -a try_exts
+  local line rest found=""
 
   [[ -f "$cue_path" ]] || {
     log_err "Error: CUE not found: $cue_path"
     return 1
   }
-  cue_dir=$(cd "$(dirname -- "$cue_path")" && pwd) || return 1
-
   while IFS= read -r line || [[ -n "$line" ]]; do
     line=${line%$'\r'}
     line="${line#"${line%%[![:space:]]*}"}"
@@ -130,36 +127,7 @@ cue_resolve_image() {
     return 1
   fi
 
-  if cue_resolve_named_image "$cue_path" "$found"; then return 0; fi
-
-  if [[ -f "$candidate" ]]; then
-    printf '%s\n' "$(cd "$(dirname -- "$candidate")" && pwd)/$(basename -- "$candidate")"
-    return 0
-  fi
-
-  try_exts=(wav flac ape mp3 aiff aif wv tak bin)
-  stem="${found%.*}"
-  for ext in "${try_exts[@]}"; do
-    for candidate in \
-      "${cue_dir}/${stem}.${ext}" \
-      "${cue_dir}/${stem}.${ext^^}" \
-      "${cue_dir}/${found}" \
-      "${cue_dir}/${found,,}"; do
-      [[ -f "$candidate" ]] || continue
-      printf '%s\n' "$(cd "$(dirname -- "$candidate")" && pwd)/$(basename -- "$candidate")"
-      return 0
-    done
-  done
-
-  base=$(basename -- "$found")
-  lower=${base,,}
-  while IFS= read -r -d '' candidate; do
-    if [[ "$(basename -- "$candidate")" == "$base" ]] ||
-      [[ "$(basename -- "${candidate,,}")" == "$lower" ]]; then
-      printf '%s\n' "$candidate"
-      return 0
-    fi
-  done < <(find "$cue_dir" -maxdepth 1 -type f -print0 2>/dev/null)
+  cue_resolve_named_image "$cue_path" "$found" && return 0
 
   log_err "Error: CUE image not found: $found (beside $cue_path)"
   return 1
