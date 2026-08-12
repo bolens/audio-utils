@@ -18,3 +18,26 @@ Part of **[audio-utils](../../../)**.
 ./lossy-authenticity.sh --strict DIR
 make help
 ```
+
+<!-- BEGIN GENERATED COMMAND REFERENCE -->
+## Command reference
+
+This block is generated from the current `--help` output. Run
+`scripts/sync-tool-readmes.sh` after changing CLI options.
+
+```text
+lossy-authenticity - detect re-encoded / fake high-bitrate lossy files.
+
+Usage:
+  lossy-authenticity.sh DIR [DIR ...]
+  find-lossy-dirs.sh | lossy-authenticity.sh
+
+Options:
+  -s / --strict   Tighter spectral cliffs; flag ffmpeg encoder strings
+  -f FILE  -L FILE  -S FILE  -n  -j N  -q  -v  -h  --version
+
+Read-only: -d / -D / -y rejected.
+Heuristic (not proof). Complements lossy-audit and flac-authenticity.
+Exit codes: 0 ok, 1 suspects, 2 usage/deps
+```
+<!-- END GENERATED COMMAND REFERENCE -->

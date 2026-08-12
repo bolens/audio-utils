@@ -14,3 +14,25 @@ Complements [`util/flac-replaygain`](../../flac/flac-replaygain/) /
 this tool only measures and reports.
 
 Part of **[audio-utils](../../../)**.
+
+<!-- BEGIN GENERATED COMMAND REFERENCE -->
+## Command reference
+
+This block is generated from the current `--help` output. Run
+`scripts/sync-tool-readmes.sh` after changing CLI options.
+
+```text
+Loudness / dynamics report: integrated LUFS, LRA, true peak (EBU R128).
+
+Usage:
+  dynamics-report.sh DIR [DIR ...]
+
+Options:
+  -f FILE  -L FILE  -S FILE  -n  -j N  -q  -v  -h  --version
+  --min-lra=N     Flag files with LRA below N LU in the report (default: 3)
+  --report FILE   Write the report to FILE instead of XDG state
+
+Read-only: -d / -D / -y rejected. Summary report written to the state dir.
+Exit codes: 0 ok, 1 unreadable files, 2 usage/deps
+```
+<!-- END GENERATED COMMAND REFERENCE -->

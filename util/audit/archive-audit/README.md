@@ -22,3 +22,27 @@ changed package files.
 ```
 
 Part of **[audio-utils](../../../)**.
+
+<!-- BEGIN GENERATED COMMAND REFERENCE -->
+## Command reference
+
+This block is generated from the current `--help` output. Run
+`scripts/sync-tool-readmes.sh` after changing CLI options.
+
+```text
+Audit preservation packages (checksums, provenance, FLAC, signatures, PAR2).
+
+Usage:
+  archive-audit.sh DIR [DIR ...]
+
+Options:
+  --quick               Checksums/signature only; skip semantic/decode audit
+  --public-key KEY      Minisign public key
+  --snapshot-dir DIR    Atomically write one current snapshot per package
+  --baseline-dir DIR    Fail when current package differs from its snapshot
+  -f FILE  -L FILE  -S FILE  -n  -j N  -q  -v  -h  --version
+
+Read-only package audit: -d / -D / -y rejected.
+Exit codes: 0 clean, 1 issues/drift, 2 usage/deps
+```
+<!-- END GENERATED COMMAND REFERENCE -->

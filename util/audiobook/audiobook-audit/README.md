@@ -12,3 +12,25 @@ See [audiobooks](../../../docs/audiobooks.md). Part of **[audio-utils](../../../
 ./audiobook-audit.sh -n DIR
 make help
 ```
+
+<!-- BEGIN GENERATED COMMAND REFERENCE -->
+## Command reference
+
+This block is generated from the current `--help` output. Run
+`scripts/sync-tool-readmes.sh` after changing CLI options.
+
+```text
+audiobook-audit - QC for .m4b books and multi-file chapter dirs.
+
+Usage:
+  audiobook-audit.sh DIR [DIR ...]
+  find-audio-dirs.sh | audiobook-audit.sh
+
+Options:
+  -f FILE  -L FILE  -S FILE  -n  -j N  -q  -v  -h  --version
+
+Read-only (-d/-D/-y rejected). Checks cover, author, narrator, chapters,
+series consistency, and unexpected .m4b codecs.
+Exit codes: 0 ok, 1 issues found, 2 usage/deps
+```
+<!-- END GENERATED COMMAND REFERENCE -->

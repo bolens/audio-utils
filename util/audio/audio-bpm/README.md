@@ -29,3 +29,26 @@ export AUDIO_UTILS_ROOTS="$HOME/Music"
 ```
 
 See also: [`util/audio-key/`](../audio-key/) for musical key tagging.
+
+<!-- BEGIN GENERATED COMMAND REFERENCE -->
+## Command reference
+
+This block is generated from the current `--help` output. Run
+`scripts/sync-tool-readmes.sh` after changing CLI options.
+
+```text
+Detect tempo and save it as a tag (BPM; TBPM on MP3).
+
+Usage:
+  audio-bpm.sh DIR [DIR ...]
+  find-audio-dirs.sh | audio-bpm.sh
+
+Options:
+  -f FILE  -L FILE  -S FILE  -n  -j N  -q  -v  -y  -h  --version
+
+Detection via bpm-tools (preferred) or aubio.
+FLAC uses metaflac; other formats remux with ffmpeg -c copy.
+-d / -D rejected.
+Exit codes: 0 ok, 1 failures, 2 usage/deps
+```
+<!-- END GENERATED COMMAND REFERENCE -->

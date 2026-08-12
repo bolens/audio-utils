@@ -18,3 +18,28 @@ Part of **[audio-utils](../../../)**.
 ./hardlink-dupes.sh --apply DIR
 make help
 ```
+
+<!-- BEGIN GENERATED COMMAND REFERENCE -->
+## Command reference
+
+This block is generated from the current `--help` output. Run
+`scripts/sync-tool-readmes.sh` after changing CLI options.
+
+```text
+hardlink-dupes - hardlink content-identical FLACs to reclaim space.
+
+Usage:
+  hardlink-dupes.sh DIR [DIR ...]
+  find-flac-dirs.sh | hardlink-dupes.sh
+
+Options:
+  --apply       Replace duplicates with hardlinks to the first keeper
+  -M / --md5    Use decode audio MD5 instead of STREAMINFO MD5
+  --cross-fs    Attempt link even across filesystems (usually fails)
+  -f FILE  -L FILE  -S FILE  -n  -j N  -q  -v  -h  --version
+
+Report-only by default (exit 1 when candidates exist). Does not support -d/-D/-y.
+Prefer flac-dupes for discovery-only; this tool optionally reclaims inodes.
+Exit codes: 0 ok, 1 candidates/failures, 2 usage/deps
+```
+<!-- END GENERATED COMMAND REFERENCE -->

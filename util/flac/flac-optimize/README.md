@@ -31,3 +31,27 @@ export AUDIO_UTILS_ROOTS="$HOME/Music"
 `-d` / `-D` rejected.
 
 Exit codes: `0` ok, `1` failures, `2` usage/deps.
+
+<!-- BEGIN GENERATED COMMAND REFERENCE -->
+## Command reference
+
+This block is generated from the current `--help` output. Run
+`scripts/sync-tool-readmes.sh` after changing CLI options.
+
+```text
+Recompress FLACs without changing PCM (default -8).
+
+Usage:
+  flac-optimize.sh DIR [DIR ...]
+  find-flac-dirs.sh | flac-optimize.sh
+
+Options:
+  -f FILE  -L FILE  -S FILE  -n  -j N  -q  -v  -y  -h  --version
+  -c N / --compression N   FLAC level 0-8 (default 8)
+
+Skips when the new file is not smaller unless -y.
+Preserves Vorbis comments and embedded pictures.
+-d / -D rejected.
+Exit codes: 0 ok, 1 failures, 2 usage/deps
+```
+<!-- END GENERATED COMMAND REFERENCE -->

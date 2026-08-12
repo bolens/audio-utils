@@ -37,3 +37,26 @@ Exit codes: `0` ok, `1` failures, `2` usage/deps.
 flac-verify.sh, convert-all.sh, find-flac-dirs.sh
 lib/  plugin, convert, load
 ```
+
+<!-- BEGIN GENERATED COMMAND REFERENCE -->
+## Command reference
+
+This block is generated from the current `--help` output. Run
+`scripts/sync-tool-readmes.sh` after changing CLI options.
+
+```text
+Verify FLAC integrity under library roots (flac -t; optional decode MD5).
+
+Usage:
+  flac-verify.sh DIR [DIR ...]
+  find-flac-dirs.sh | flac-verify.sh
+
+Options:
+  -f FILE  -L FILE  -S FILE  -n  -j N  -q  -v  -h  --version
+  -M / --md5   Also decode via ffmpeg and record audio MD5
+               (and compare to STREAMINFO MD5 when non-zero)
+
+Read-only: -d / -D / -y are rejected.
+Exit codes: 0 ok, 1 failures, 2 usage/deps
+```
+<!-- END GENERATED COMMAND REFERENCE -->

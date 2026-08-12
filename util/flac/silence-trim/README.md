@@ -26,3 +26,32 @@ Part of **[audio-utils](../../../)**.
 ./silence-trim.sh --apply DIR
 make help
 ```
+
+<!-- BEGIN GENERATED COMMAND REFERENCE -->
+## Command reference
+
+This block is generated from the current `--help` output. Run
+`scripts/sync-tool-readmes.sh` after changing CLI options.
+
+```text
+silence-trim - trim leading/trailing silence from FLAC/PCM (report / --apply).
+
+Usage:
+  silence-trim.sh DIR [DIR ...]
+  find-flac-dirs.sh | silence-trim.sh
+
+Options:
+  --silence-sec SEC   Min silence length to treat as edge (default 1.0)
+  --silence-db DB     Noise floor (default -50)
+  --pad-sec SEC       Keep this much silence at the cut (default 0.05)
+  --min-keep SEC      Abort if keep window would be shorter (default 1.0)
+  --lead-only         Trim leading silence only
+  --trail-only        Trim trailing silence only
+  --apply             Rewrite files in place (default: report candidates)
+  -f FILE  -L FILE  -S FILE  -n  -j N  -q  -v  -h  --version
+
+Report-only by default (exit 1 when candidates exist). -d/-D/-y rejected.
+Peer of silence-detect (QC) and silence-split (multi-track).
+Exit codes: 0 ok, 1 candidates/failures, 2 usage/deps
+```
+<!-- END GENERATED COMMAND REFERENCE -->

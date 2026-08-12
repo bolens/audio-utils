@@ -34,3 +34,26 @@ export AUDIO_UTILS_ROOTS="$HOME/Music"
 `-d` / `-D` are rejected.
 
 Exit codes: `0` ok, `1` failures, `2` usage/deps.
+
+<!-- BEGIN GENERATED COMMAND REFERENCE -->
+## Command reference
+
+This block is generated from the current `--help` output. Run
+`scripts/sync-tool-readmes.sh` after changing CLI options.
+
+```text
+Apply ReplayGain 2.0 tags to FLACs (album by default; track-only optional).
+
+Usage:
+  flac-replaygain.sh DIR [DIR ...]
+  find-flac-dirs.sh | flac-replaygain.sh
+
+Options:
+  -f FILE  -L FILE  -S FILE  -n  -j N  -q  -v  -y  -h  --version
+  -T / --track   Track gain only (default: album + track per directory)
+
+Requires: rsgain (preferred) or loudgain.
+-d / -D rejected. -y forces rewrite (skip-existing off).
+Exit codes: 0 ok, 1 failures, 2 usage/deps
+```
+<!-- END GENERATED COMMAND REFERENCE -->

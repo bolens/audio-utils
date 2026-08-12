@@ -18,3 +18,25 @@ Note: `mac` writes no tags, so Vorbis comments from the FLAC are dropped;
 conversions of tagged sources are marked `tags=dropped` in the success log.
 
 Part of **[audio-utils](../../)**.
+
+<!-- BEGIN GENERATED COMMAND REFERENCE -->
+## Command reference
+
+This block is generated from the current `--help` output. Run
+`scripts/sync-tool-readmes.sh` after changing CLI options.
+
+```text
+Convert FLAC -> APE with PCM audio-MD5 verification.
+
+Usage:
+  flac-to-ape.sh DIR [DIR ...]
+  find-*-dirs.sh | flac-to-ape.sh
+
+Options:
+  -f FILE  -d  -D  -Q LEVEL  -L FILE  -S FILE  -n  -y  -j N  -q  -v  -h  --version
+  --quality=LEVEL   APE level: fast|normal|high|extrahigh|insane or 1000-5000
+                    (also AUDIO_UTILS_APE_LEVEL / -Q)
+
+Exit codes: 0 ok, 1 failures, 2 usage/deps
+```
+<!-- END GENERATED COMMAND REFERENCE -->

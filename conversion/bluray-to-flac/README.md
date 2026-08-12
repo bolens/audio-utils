@@ -181,3 +181,41 @@ See [disc and MakeMKV notes](../../docs/discs.md),
 [streaming scope](../../docs/streaming.md).
 
 Part of [audio-utils](../../).
+
+<!-- BEGIN GENERATED COMMAND REFERENCE -->
+## Command reference
+
+This block is generated from the current `--help` output. Run
+`scripts/sync-tool-readmes.sh` after changing CLI options.
+
+```text
+Extract Blu-ray / BDMV / decrypted M2TS|MKV audio -> FLAC.
+
+Usage:
+  bluray-to-flac.sh /path/to/BDMV [/path/to/disc ...]
+  bluray-to-flac.sh /path/to/decrypted.m2ts
+  bluray-to-flac.sh -D /dev/sr0
+  find-bdmv-dirs.sh | bluray-to-flac.sh
+
+Options:
+  -D DEVICE  Blu-ray device
+  --title N|all       MakeMKV title selection (default: all)
+  --minlength SEC     Ignore shorter MakeMKV titles (default: 0 keeps all)
+  --allow-float-reduction  Permit verified float PCM -> 24-bit conversion
+  --split-chapters    Also create verified per-chapter FLAC tracks
+  --stage-dir DIR     Keep/reuse MakeMKV title MKVs under DIR
+  --verify-archive DIR  Verify DIR/SHA256SUMS and exit
+  --audit-archive DIR   Verify checksums, FLACs, MD5s, signatures, PAR2
+  --preserve-streams    Keep original codec bitstreams as .source.mka
+  --sign-key FILE       Sign SHA256SUMS with minisign
+  --par2-percent N      Generate N percent PAR2 recovery data
+  --seal                Sync and make archive metadata read-only
+  -f FILE  -L FILE  -S FILE  --dirs0  -n  -y  -q  -v  -h  --version
+  -j N       Accepted for CLI parity; extract is serial per title (ignored)
+
+MakeMKV resolves authored BDMV/device titles; standalone decrypted media is
+accepted directly. Raw STREAM clips are not interpreted as titles.
+
+Exit codes: 0 ok, 1 failures, 2 usage/deps
+```
+<!-- END GENERATED COMMAND REFERENCE -->

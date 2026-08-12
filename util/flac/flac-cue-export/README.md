@@ -32,3 +32,26 @@ the `ALBUM` tag (sanitized).
 `-d` / `-D` rejected.
 
 Exit codes: `0` ok, `1` failures, `2` usage/deps.
+
+<!-- BEGIN GENERATED COMMAND REFERENCE -->
+## Command reference
+
+This block is generated from the current `--help` output. Run
+`scripts/sync-tool-readmes.sh` after changing CLI options.
+
+```text
+Export album-dir FLACs to a single image FLAC + CUE (inverse of cue-to-flac).
+
+Usage:
+  flac-cue-export.sh DIR [DIR ...]
+  find-flac-dirs.sh | flac-cue-export.sh
+
+Options:
+  -f FILE  -L FILE  -S FILE  -n  -j N  -q  -v  -y  -h  --version
+
+Once per directory with ≥2 FLACs: writes Album.flac + Album.cue beside tracks.
+Requires matching sample rate/channels. -y overwrites existing image/cue.
+-d / -D rejected.
+Exit codes: 0 ok, 1 failures, 2 usage/deps
+```
+<!-- END GENERATED COMMAND REFERENCE -->

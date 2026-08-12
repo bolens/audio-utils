@@ -31,3 +31,26 @@ export AUDIO_UTILS_ROOTS="$HOME/Music"
 `-d` / `-D` are rejected.
 
 Exit codes: `0` ok, `1` failures, `2` usage/deps.
+
+<!-- BEGIN GENERATED COMMAND REFERENCE -->
+## Command reference
+
+This block is generated from the current `--help` output. Run
+`scripts/sync-tool-readmes.sh` after changing CLI options.
+
+```text
+Embed folder covers into FLACs, or extract embedded pictures to the album dir.
+
+Usage:
+  flac-artwork.sh DIR [DIR ...]
+  find-flac-dirs.sh | flac-artwork.sh
+
+Options:
+  -f FILE  -L FILE  -S FILE  -n  -j N  -q  -v  -y  -h  --version
+  -x / --extract   Export embedded picture to cover.jpg (default: embed)
+
+Looks for cover.jpg|png, folder.jpg|png, front.jpg|png, AlbumArt*.jpg (case-insensitive).
+-d / -D rejected. -y overwrites existing embedded art / cover file.
+Exit codes: 0 ok, 1 failures, 2 usage/deps
+```
+<!-- END GENERATED COMMAND REFERENCE -->

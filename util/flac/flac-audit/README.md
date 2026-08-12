@@ -35,3 +35,30 @@ export AUDIO_UTILS_ROOTS="$HOME/Music"
 Read-only: `-d`, `-D`, and `-y` are rejected.
 
 Exit codes: `0` all clean, `1` issues found, `2` usage/deps.
+
+<!-- BEGIN GENERATED COMMAND REFERENCE -->
+## Command reference
+
+This block is generated from the current `--help` output. Run
+`scripts/sync-tool-readmes.sh` after changing CLI options.
+
+```text
+Read-only FLAC library audit (integrity, core tags, cover, leftover PCM).
+
+Usage:
+  flac-audit.sh DIR [DIR ...]
+  find-flac-dirs.sh | flac-audit.sh
+
+Options:
+  -f FILE  -L FILE  -S FILE  -n  -j N  -q  -v  -h  --version
+
+Reports (fails the file) when:
+  - flac -t fails
+  - missing ARTIST / ALBUM / TITLE / TRACKNUMBER
+  - no embedded picture and no folder cover
+  - leftover sibling .wav / .aiff / .aif / .caf beside a FLAC
+
+Read-only: -d / -D / -y rejected.
+Exit codes: 0 all clean, 1 issues found, 2 usage/deps
+```
+<!-- END GENERATED COMMAND REFERENCE -->

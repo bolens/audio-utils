@@ -31,3 +31,28 @@ export AUDIO_UTILS_ROOTS="$HOME/Music"
 `-d` / `-D` rejected.
 
 Exit codes: `0` ok, `1` failures, `2` usage/deps.
+
+<!-- BEGIN GENERATED COMMAND REFERENCE -->
+## Command reference
+
+This block is generated from the current `--help` output. Run
+`scripts/sync-tool-readmes.sh` after changing CLI options.
+
+```text
+Rename FLACs from tags (inplace or Artist/Album layout).
+
+Usage:
+  flac-rename.sh DIR [DIR ...]
+  find-flac-dirs.sh | flac-rename.sh
+
+Options:
+  -f FILE  -L FILE  -S FILE  -n  -j N  -q  -v  -y  -h  --version
+  --layout=inplace|artist-album   Default: inplace (NN - Title.flac)
+  --dest-root=DIR                 Required for artist-album (or AUDIO_UTILS_ROOTS)
+
+Target name: NN - Title.flac from TRACKNUMBER + TITLE.
+artist-album: DEST/Artist/Album/NN - Title.flac
+-d / -D rejected. -y overwrites an existing target.
+Exit codes: 0 ok, 1 failures, 2 usage/deps
+```
+<!-- END GENERATED COMMAND REFERENCE -->
