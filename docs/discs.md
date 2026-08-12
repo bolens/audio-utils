@@ -58,11 +58,19 @@ The same defaults can be set with `AUDIO_UTILS_BD_TITLE` and
 `AUDIO_UTILS_BD_MIN_LENGTH`.
 
 For resumable extraction, `--stage-dir DIR` retains readable MakeMKV title
-MKVs in a disc/source-specific directory. MakeMKV inventory, logs, warnings,
-tool versions, per-stream provenance, chapter sidecars, and `SHA256SUMS` remain
-with the finished archive. Use `--verify-archive DIR` for later verification;
-use `--split-chapters` when per-chapter FLAC tracks are wanted in addition to
-the whole-title FLAC and chapter/CUE sidecars.
+MKVs in a disc/source-specific directory and checks them with
+`STAGE_SHA256SUMS` before reuse. MakeMKV inventory, normalized title/message
+TSVs, raw logs, tool versions, per-stream provenance, chapter sidecars,
+`SHA256SUMS`, and a last-written `ARCHIVE_COMPLETE.json` remain with the
+finished archive. Use `--verify-archive DIR` for quick verification and
+`--audit-archive DIR` for a full FLAC decode/MD5 and PAR2 audit. Split chapters
+must reconstruct the covered parent audio before completion.
+
+For stronger preservation packages, `--preserve-streams` retains original
+codec payloads in Matroska, `--sign-key FILE` signs the checksum manifest,
+`--par2-percent N` creates recovery data, and `--seal` flushes then marks
+integrity/provenance metadata read-only. Minisign and PAR2 are optional
+dependencies. Keep independent backups even when recovery data is present.
 
 ```bash
 # Arch (packages; KEYDB is still operator-supplied)
