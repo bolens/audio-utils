@@ -3,6 +3,8 @@
 Read-only EBU R128 survey (ffmpeg `ebur128`): integrated loudness, loudness
 range, true peak per file, plus a summary report listing low-LRA
 (brickwall-suspect) files and true-peak overs.
+The report is installed atomically. Use `--report FILE` to override its XDG
+state location.
 
 Scopes the portable+PCM cluster (`--preset portable-pcm`); lossless archives
 (wv/ape/tak/tta) are out of scope unless you pass dirs by hand.

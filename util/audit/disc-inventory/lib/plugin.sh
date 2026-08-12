@@ -10,6 +10,7 @@ AU_WORKDIR_PREFIX=discinv
 AU_SUCCESS_COLUMNS='timestamp,unit,kind,audio_md5,file_sha256,codec,bytes,samples,notes'
 AU_GETOPT_EXTRA=""
 AU_CLEANUP_SKIP=1
+AU_DISCINV_REPORT="${AU_DISCINV_REPORT:-}"
 
 _AU_ROOT=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
 while [[ ! -f "$_AU_ROOT/lib/plugin_init.sh" ]]; do
@@ -19,6 +20,14 @@ while [[ ! -f "$_AU_ROOT/lib/plugin_init.sh" ]]; do
 done
 # shellcheck source=../../../../lib/plugin_init.sh
 source "$_AU_ROOT/lib/plugin_init.sh"
+
+plugin_consume_arg() {
+  case "${1:-}" in
+    --report) [[ -n "${2:-}" ]] || return 1; AU_DISCINV_REPORT=$2; AU_CONSUMED=2 ;;
+    *) return 1 ;;
+  esac
+  export AU_CONSUMED AU_DISCINV_REPORT
+}
 
 plugin_after_flags() {
   if [[ "${DELETE_SOURCE:-0}" -eq 1 || "${DELETE_EXISTING:-0}" -eq 1 ]]; then
@@ -63,12 +72,18 @@ plugin_export_env() {
     AU_DISCINV_STATE=$(audio_utils_mktemp_d "discinv.XXXXXX")
     register_tmpdir "$AU_DISCINV_STATE"
   fi
-  export AU_DISCINV_STATE AU_CLEANUP_SKIP AU_SOURCE_EXTS
+  AU_DISCINV_REPORT="${AU_DISCINV_REPORT:-$(audio_utils_state_dir_path "$AU_TOOL_NAME")/disc-inventory.tsv}"
+  export AU_DISCINV_STATE AU_DISCINV_REPORT AU_CLEANUP_SKIP AU_SOURCE_EXTS
 }
 
 plugin_finalize() {
-  local rows="${AU_DISCINV_STATE:-}/units.tsv"
+  local rows="${AU_DISCINV_STATE:-}/units.tsv" report="${AU_DISCINV_REPORT:-}" tmp
   [[ -f "$rows" ]] || { log_always "Disc units: 0"; return 0; }
+  mkdir -p -- "$(dirname -- "$report")" || return 1
+  tmp=$(mktemp --tmpdir="$(dirname -- "$report")" .disc-inventory.XXXXXX) || return 1
+  { printf 'kind\tpath\n'; LC_ALL=C sort -u -- "$rows"; } >"$tmp"
+  mv -f -- "$tmp" "$report" || { rm -f -- "$tmp"; return 1; }
   log_always "Disc units found:"
   awk -F'\t' '{printf "  %-10s %s\n", $1, $2}' "$rows" | LC_ALL=C sort
+  log_always "Inventory report: $report"
 }
