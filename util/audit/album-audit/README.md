@@ -12,6 +12,26 @@ unit.
 
 Part of **[audio-utils](../../../)**.
 
+## Directory model
+
+Each directory is treated as one album unit and coordinated once even when
+parallel discovery encounters many tracks. Track sequences are evaluated per
+disc, while album-wide tags and FLAC technical properties are compared across
+the full directory.
+
+```bash
+./album-audit.sh /path/to/music
+```
+
+Findings such as mixed dates or sample rates can be legitimate for compilations
+and archival sets; the audit reports inconsistency rather than deciding artistic
+intent. Various-artists detection makes `ALBUMARTIST` especially important.
+Nested disc directories are separate units unless layout is normalized first.
+
+This tool is read-only and rejects `-d`, `-D`, and `-y`. Use
+`multi-disc-layout`, tag tools, and per-file audits for repairs, then rerun the
+album-level check.
+
 <!-- BEGIN GENERATED COMMAND REFERENCE -->
 ## Command reference
 

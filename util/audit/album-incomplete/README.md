@@ -17,6 +17,23 @@ Part of **[audio-utils](../../../)**.
 make help
 ```
 
+## Duration heuristic
+
+For albums with at least three measured tracks, durations are sorted and
+compared with the median. With the default ratio `0.35`, tracks shorter than
+35% of the median or longer than roughly 2.86 times it are flagged. This can
+identify truncated files and accidental inserts, but intros, bonus tracks, and
+long-form pieces can be legitimate outliers.
+
+Use `--no-duration` when structure alone is authoritative, or tune the ratio
+for the collection before treating findings as defects. Track/disc totals are
+also policy signals: hidden tracks and intentionally omitted discs need manual
+interpretation.
+
+The audit coordinates one result per directory, is read-only, and rejects
+mutation flags. Correct tags or restore missing media, then rerun alongside
+`album-audit` for consistency checks.
+
 <!-- BEGIN GENERATED COMMAND REFERENCE -->
 ## Command reference
 

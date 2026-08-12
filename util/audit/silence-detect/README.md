@@ -11,6 +11,24 @@ Peer of [`silence-split`](../../flac/silence-split/).
 
 Part of **[audio-utils](../../../)**.
 
+## Threshold interpretation
+
+`--silence-sec` is the minimum leading/trailing duration and must be positive;
+`--silence-db` is the signal threshold and must be zero or negative. Defaults
+are 1.0 second at -50 dB. Raise the threshold toward zero to classify more
+quiet material as silence, or lower it for a stricter near-digital-silence test.
+
+```bash
+./silence-detect.sh --silence-sec=2 --silence-db=-55 /path/to/library
+./silence-detect.sh --no-clip /path/to/library
+```
+
+Clipping findings are enabled by default; `--no-clip` isolates the silence
+policy. These are QC signals, not automatic edit instructions—intentional
+pauses, fades, and mastered peaks need human interpretation. The tool is
+read-only and rejects mutation flags. Use `silence-trim --apply` only after
+reviewing a report and keeping recoverable originals.
+
 <!-- BEGIN GENERATED COMMAND REFERENCE -->
 ## Command reference
 
