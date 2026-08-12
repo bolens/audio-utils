@@ -5,6 +5,32 @@ others remux with `ffmpeg -c copy`.
 
 Part of **[audio-utils](../../../)**.
 
+## Normalizations
+
+The tool normalizes track numbers (including `N/TOTAL` forms), reduces ISO-like
+dates to their date/year representation, and uses consistent core tag names.
+`-A` / `--fill-albumartist` copies `ARTIST` into a missing album-artist field.
+For FLAC it also removes common provenance-noise tags such as `ITUNNORM`,
+`ITUNSMPB`, `ENCODER`, and `TOOL`.
+
+```bash
+./audio-tags.sh -n /path/to/library
+./audio-tags.sh --fill-albumartist /path/to/library
+```
+
+## Mutation model
+
+FLAC is edited with `metaflac`. Other supported formats are remuxed with
+`ffmpeg -c copy` into temporary storage and then replaced, so audio is not
+re-encoded. The container hash will change even when its encoded audio does
+not. Use `-n` to inventory the scope before a large normalization run.
+
+This is an in-place metadata operation and does not create disposable source
+siblings; `-d` and `-D` are rejected. Back up irreplaceable custom metadata
+before broad normalization because only the documented core fields are
+rewritten for non-FLAC containers. Requires `ffmpeg`/`ffprobe`, with `metaflac`
+for FLAC. See [dependencies](../../../docs/requirements.md).
+
 <!-- BEGIN GENERATED COMMAND REFERENCE -->
 ## Command reference
 

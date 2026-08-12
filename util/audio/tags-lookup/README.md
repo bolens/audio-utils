@@ -13,6 +13,27 @@ key is supplied (`--client-key` / `ACOUSTID_CLIENT_KEY`). See
 
 Part of **[audio-utils](../../../)**.
 
+## Interpreting matches
+
+The first returned recording ID is included as a candidate when the embedded
+tag is missing, but AcoustID may return multiple recordings for one fingerprint.
+A candidate is not automatically authoritative; confirm release context in an
+interactive tagger before writing it.
+
+```bash
+ACOUSTID_CLIENT_KEY=... ./tags-lookup.sh -j 1 /path/to/library
+```
+
+An embedded ID passes when it appears anywhere in the returned recording set.
+No match, request errors, absent fingerprints, missing IDs, and mismatches all
+produce findings. Installing `jq` gives precise recording-ID extraction; the
+fallback parser may include noisier UUID candidates.
+
+The delay is per worker, so parallel jobs multiply request rate. Prefer one job
+and respect AcoustID service limits. The tool is read-only, rejects mutation
+flags, and never sends audio—only fingerprint, duration, and client key. See
+[the network boundary](../../../docs/enrichment.md).
+
 <!-- BEGIN GENERATED COMMAND REFERENCE -->
 ## Command reference
 

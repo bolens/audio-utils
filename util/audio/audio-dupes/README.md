@@ -5,6 +5,34 @@ Content duplicates across FLAC and lossy formats. Default: chromaprint
 
 Part of **[audio-utils](../../../)**.
 
+## Choosing an identity mode
+
+Fingerprint mode is the default and compares a 120-second Chromaprint plus its
+reported duration. It is useful across codecs and bitrates, where file hashes
+and decoded samples naturally differ. If a short or silent file produces no
+fingerprint, the tool falls back to decoded-audio MD5.
+
+`-M` / `--md5` always uses decoded PCM MD5. That is stronger for lossless
+copies with identical sample data but will not group lossy encodes of the same
+recording.
+
+```bash
+./audio-dupes.sh /path/to/library
+./audio-dupes.sh --md5 /path/to/lossless-library
+```
+
+## Reading results
+
+The first path for a content key is reported as unique. Later paths with the
+same key fail with `duplicate of PATH`, and the final summary reports the
+number of duplicate groups. Exit status `1` therefore means duplicates or
+files that could not be fingerprinted/decoded, not that files were changed.
+
+This is strictly an audit: `-d`, `-D`, and `-y` are rejected. Review reported
+paths manually or use a dedicated verified deduplication tool when hardlinking
+FLAC archives. Fingerprint mode requires `fpcalc`; both modes require
+`ffmpeg`/`ffprobe`. See [dependencies](../../../docs/requirements.md).
+
 <!-- BEGIN GENERATED COMMAND REFERENCE -->
 ## Command reference
 

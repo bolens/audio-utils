@@ -13,6 +13,23 @@ See [audiobooks](../../../docs/audiobooks.md). Part of **[audio-utils](../../../
 make help
 ```
 
+## Unit model and findings
+
+An M4B is audited as one file. Multi-file books are coordinated once per
+directory and checked as a chapter set. Full strict decoding catches truncated
+media that tag-only inspection would miss.
+
+Single-file checks distinguish missing or trivial chapters, unsupported codecs,
+invalid cover art, and incomplete author/narrator/series metadata. Multi-file
+checks add contiguous unique track numbering, consistent declared totals,
+sample rates, titles, and series fields.
+
+A finding reflects library policy and may require judgment—for example, some
+books legitimately lack a narrator tag or intentionally mix sample rates. The
+tool is read-only and rejects `-d`, `-D`, and `-y`. Normalize with
+`audiobook-tags`, repair chapters separately, and rerun. See
+[audiobook workflows](../../../docs/audiobooks.md).
+
 <!-- BEGIN GENERATED COMMAND REFERENCE -->
 ## Command reference
 

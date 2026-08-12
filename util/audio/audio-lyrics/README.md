@@ -12,6 +12,26 @@ lyric *fetching* is out of scope.
 
 Part of **[audio-utils](../../../)**.
 
+## Sidecar selection and mutation
+
+Coverage treats either an embedded lyrics field or a same-stem `.lrc`/`.txt`
+sidecar as present. Report mode changes nothing and makes gaps visible in batch
+or CI-style audits.
+
+Import is intentionally FLAC-only because `metaflac` provides a predictable
+tag update path. Existing lyrics tags are retained unless `-y` is supplied.
+Export writes the embedded text to a same-stem `.lrc`, also preserving an
+existing sidecar unless `-y` is given.
+
+```bash
+./audio-lyrics.sh /path/to/library
+./audio-lyrics.sh --export /path/to/library
+./audio-lyrics.sh -n -y --import /path/to/flac-library
+```
+
+The tool does not validate LRC timestamps, reconcile conflicting tag/sidecar
+text, or contact lyric services. It never deletes media and rejects `-d`/`-D`.
+
 <!-- BEGIN GENERATED COMMAND REFERENCE -->
 ## Command reference
 

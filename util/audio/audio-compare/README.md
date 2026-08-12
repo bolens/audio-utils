@@ -14,6 +14,25 @@ Read-only. Companion to [`util/library/tree-diff`](../../library/tree-diff/)
 
 Part of **[audio-utils](../../../)**.
 
+## Root mapping and mode choice
+
+Each source path is resolved relative to its configured `AUDIO_UTILS_ROOTS`
+entry and mapped beneath `--against`; the tool refuses to guess a source root.
+
+```bash
+AUDIO_UTILS_ROOTS=/srv/archive \
+  ./audio-compare.sh --against /mnt/copy /srv/archive
+```
+
+Decoded `md5` is the strongest cross-container equality check for integer PCM.
+`streaminfo` is faster but requires nonzero FLAC STREAMINFO MD5 values on both
+sides. `peak` only compares absolute peak within the selected epsilon; matching
+peaks do not imply matching waveforms and are best used as a coarse diagnostic.
+
+This is a one-directional, read-only comparison. It reports missing counterparts
+and mismatches but not files found only in the comparison tree. Use `tree-diff`
+for byte identity and reverse scans for surplus detection.
+
 <!-- BEGIN GENERATED COMMAND REFERENCE -->
 ## Command reference
 
