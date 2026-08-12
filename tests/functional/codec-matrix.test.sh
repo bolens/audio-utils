@@ -1,4 +1,8 @@
 #!/usr/bin/env bash
+# covers-tool: conversion/flac-to-tta
+# covers-tool: conversion/tta-to-flac
+# covers-tool: conversion/flac-to-wv
+# covers-tool: conversion/wv-to-flac
 # Functional: remaining codec converters — TTA, WavPack, CAF round-trips,
 # WAV↔AIFF remuxes, and the WMA / Speex lossy encoders. Every case is
 # encoder-gated so runners with a slim ffmpeg skip rather than fail.
