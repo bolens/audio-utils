@@ -82,9 +82,21 @@ fi
 
 # --- tool classification --------------------------------------------------------
 
-# A tool is functionally covered when its name appears in any functional test.
-_tool_covered() { # tool-name
-  grep -rql -- "$1" tests/functional/ 2>/dev/null
+# A tool is covered by an explicit marker, or by a functional test that both
+# names its entry point and invokes run_tool. The latter supports the common
+# `_TOOL=path; run_tool "$_TOOL"` idiom without letting comments or prose claim
+# coverage merely by mentioning a tool name.
+_tool_covered() { # tool-dir tool-name
+  local dir=$1 name=$2 test
+  while IFS= read -r -d '' test; do
+    if grep -qF -- "# covers-tool: $dir" "$test" && \
+      grep -qE '(^|[[:space:]])run_tool([[:space:]]|$)' "$test"; then
+      return 0
+    fi
+    grep -qF -- "$dir/$name.sh" "$test" || continue
+    grep -qE '(^|[[:space:]])run_tool([[:space:]]|$)' "$test" && return 0
+  done < <(find tests/functional -type f -name '*.test.sh' -print0)
+  return 1
 }
 
 _exemption_covered() { # repo-relative path
@@ -108,7 +120,7 @@ for mk in conversion/*/Makefile util/*/*/Makefile; do
       SHADOWED+=("$dir")
     fi
     EXEMPTED+=("$dir")
-  elif _tool_covered "$name"; then
+  elif _tool_covered "$dir" "$name"; then
     COVERED+=("$dir")
   else
     UNCOVERED+=("$dir")
