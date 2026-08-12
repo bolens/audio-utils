@@ -6,6 +6,28 @@ Supports `.m3u` / `.m3u8`, `.pls`, `.xspf`.
 
 Part of **[audio-utils](../../../)**. See [docs/playlists.md](../../../docs/playlists.md).
 
+## Checks and identity modes
+
+The audit validates UTF-8 when `iconv` is present, detects the actual playlist
+format, parses all entries, rejects empty playlists, and reports unreadable or
+missing targets. Duplicate detection defaults to canonical resolved paths.
+`--by title` uses normalized artist/title identity and is deliberately softer.
+
+```bash
+./playlist-audit.sh /path/to/playlists
+./playlist-audit.sh --by title /path/to/playlists
+```
+
+One playlist can report several findings together, such as
+`non-utf8;missing=2;dupes=1`. A clean result means every listed local path is
+readable and no selected-identity duplicates exist; it does not decode every
+audio file or validate remote playlist URLs.
+
+This tool is read-only and rejects `-d`, `-D`, and `-y`. Use
+[`playlist-normalize`](../playlist-normalize/) for format/path repair and
+[`playlist-dedupe`](../playlist-dedupe/) for controlled rewriting. See
+[playlist behavior](../../../docs/playlists.md).
+
 <!-- BEGIN GENERATED COMMAND REFERENCE -->
 ## Command reference
 
