@@ -76,8 +76,12 @@ The generic `args` array remains available for forward-compatible CLI flags.
 Audit tools expose their policy controls as typed MCP fields. In particular,
 `archive_audit` exposes `quick`, `public_key`, `snapshot_dir`, and
 `baseline_dir`; lossy, silence, path, dynamics, and disc inventory tools expose
-their numeric thresholds and report destinations. The schemas enforce the same
+their numeric thresholds and report destinations. `album_incomplete` exposes
+`duration_ratio` and `no_duration`; `lossy_authenticity` and `rip_log_audit`
+expose `strict`. The schemas enforce the same
 ranges as the corresponding CLIs while retaining generic `args` compatibility.
+The same typed fields are parsed when the audit is invoked through `run_tool`;
+its generic schema retains `args` as the discoverable forward-compatible form.
 
 ## Direct stdio
 

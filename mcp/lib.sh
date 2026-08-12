@@ -668,6 +668,8 @@ mcp_audit_schema_json() {
     path-audit) extra=',"max_path":{"type":"integer","minimum":0}' ;;
     dynamics-report) extra=',"min_lra":{"type":"number","minimum":0},"report":{"type":"string"}' ;;
     disc-inventory) extra=',"report":{"type":"string"}' ;;
+    album-incomplete) extra=',"duration_ratio":{"type":"number","exclusiveMinimum":0,"exclusiveMaximum":1},"no_duration":{"type":"boolean","default":false}' ;;
+    lossy-authenticity | rip-log-audit) extra=',"strict":{"type":"boolean","default":false}' ;;
   esac
   printf '{"type":"object","properties":{%s%s},"required":["paths"]}' \
     "$(mcp_shared_props_json 0)" "$extra"
@@ -723,11 +725,10 @@ mcp_catalog_text() {
 
 mcp_parse_run_args_from_json() {
   # Parse arguments object into globals:
-  #   MCP_ARG_NAME MCP_ARG_PATHS (array) MCP_ARG_ARGS (array)
+  #   MCP_ARG_PATHS (array) MCP_ARG_ARGS (array)
   #   MCP_ARG_JOBS MCP_ARG_DRY_RUN MCP_ARG_ALLOW_DESTRUCTIVE
   #   MCP_ARG_ALLOW_NETWORK MCP_ARG_QUIET
   local args_json=$1
-  MCP_ARG_NAME=
   MCP_ARG_PATHS=()
   MCP_ARG_ARGS=()
   MCP_ARG_JOBS=1
@@ -739,9 +740,6 @@ mcp_parse_run_args_from_json() {
   MCP_ARG_BLURAY_PATHLESS=false
 
   local v
-  if v=$(mcp_json_get_string "$args_json" name 2>/dev/null); then
-    MCP_ARG_NAME=$v
-  fi
 
   if mcp_json_after_key "$args_json" paths >/dev/null 2>&1; then
     mcp_json_get_string_array "$args_json" paths >/dev/null || return 1
@@ -902,6 +900,17 @@ mcp_parse_audit_args_from_json() {
         MCP_ARG_ARGS+=(--report "$value")
       fi
       ;;
+    album-incomplete)
+      if mcp_json_after_key "$json" duration_ratio >/dev/null 2>&1; then
+        value=$(mcp_json_get_number "$json" duration_ratio) || return 1
+        awk -v v="$value" 'BEGIN { exit !(v > 0 && v < 1) }' || return 1
+        MCP_ARG_ARGS+=(--duration-ratio "$value")
+      fi
+      mcp_bluray_add_bool_flag "$json" no_duration --no-duration || return 1
+      ;;
+    lossy-authenticity | rip-log-audit)
+      mcp_bluray_add_bool_flag "$json" strict --strict || return 1
+      ;;
   esac
 }
 
@@ -1030,11 +1039,24 @@ mcp_handle_tools_call() {
       return 0
       ;;
     run_tool)
-      mcp_parse_run_args_from_json "$args_json" || {
-        echo "invalid run_tool arguments" >&2
+      cli_name=$(mcp_json_get_string "$args_json" name) || {
+        echo "run_tool requires name" >&2
         return 1
       }
-      cli_name=$MCP_ARG_NAME
+      if [[ "$cli_name" == bluray-to-flac ]]; then
+        mcp_parse_bluray_args_from_json "$args_json" || {
+          echo "invalid run_tool arguments" >&2; return 1;
+        }
+      elif idx=$(mcp_resolve_index "$cli_name") && \
+        [[ "${MCP_TOOL_CATEGORY[idx]}" == audit ]]; then
+        mcp_parse_audit_args_from_json "$cli_name" "$args_json" || {
+          echo "invalid run_tool arguments" >&2; return 1;
+        }
+      else
+        mcp_parse_run_args_from_json "$args_json" || {
+          echo "invalid run_tool arguments" >&2; return 1;
+        }
+      fi
       [[ -n "$cli_name" ]] || {
         echo "run_tool requires name" >&2
         return 1
@@ -1049,7 +1071,9 @@ mcp_handle_tools_call() {
         }
       elif [[ "$tool_mcp" == archive_audit || "$tool_mcp" == lossy_audit || \
         "$tool_mcp" == silence_detect || "$tool_mcp" == path_audit || \
-        "$tool_mcp" == dynamics_report || "$tool_mcp" == disc_inventory ]]; then
+        "$tool_mcp" == dynamics_report || "$tool_mcp" == disc_inventory || \
+        "$tool_mcp" == album_incomplete || "$tool_mcp" == lossy_authenticity || \
+        "$tool_mcp" == rip_log_audit ]]; then
         mcp_parse_audit_args_from_json "$(mcp_mcp_to_cli_name "$tool_mcp")" "$args_json" || {
           echo "invalid $tool_mcp arguments" >&2
           return 1
