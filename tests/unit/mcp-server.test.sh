@@ -198,6 +198,39 @@ test_mcp_bluray_schema_exposes_archival_features() {
   assert_grep '"verify","audit"' "$schema"
 }
 
+test_mcp_audit_schemas_expose_custom_controls() {
+  _load_mcp
+  assert_grep '"snapshot_dir"' "$(mcp_audit_schema_json archive-audit)"
+  assert_grep '"min_kbps"' "$(mcp_audit_schema_json lossy-audit)"
+  assert_grep '"silence_seconds"' "$(mcp_audit_schema_json silence-detect)"
+  assert_grep '"detect_clipping"' "$(mcp_audit_schema_json silence-detect)"
+  assert_grep '"max_path"' "$(mcp_audit_schema_json path-audit)"
+  assert_grep '"report"' "$(mcp_audit_schema_json dynamics-report)"
+}
+
+test_mcp_builds_typed_audit_arguments() {
+  _load_mcp
+  mcp_parse_audit_args_from_json archive-audit \
+    '{"paths":["/archive"],"quick":true,"public_key":"pub","snapshot_dir":"/snap","baseline_dir":"/base"}'
+  mcp_build_cli_argv archive-audit
+  local joined
+  printf -v joined '%q ' "${MCP_CLI_ARGV[@]}"
+  assert_grep -- '--quick' "$joined"
+  assert_grep -- '--public-key pub' "$joined"
+  assert_grep -- '--snapshot-dir /snap' "$joined"
+  assert_grep -- '--baseline-dir /base' "$joined"
+
+  mcp_parse_audit_args_from_json silence-detect \
+    '{"paths":["/audio"],"silence_seconds":1.5,"silence_db":-45,"detect_clipping":false}'
+  mcp_build_cli_argv silence-detect
+  printf -v joined '%q ' "${MCP_CLI_ARGV[@]}"
+  assert_grep -- '--silence-sec 1.5' "$joined"
+  assert_grep -- '--silence-db -45' "$joined"
+  assert_grep -- '--no-clip' "$joined"
+  assert_exit 1 mcp_parse_audit_args_from_json lossy-audit \
+    '{"paths":["/audio"],"min_kbps":0}'
+}
+
 test_mcp_bluray_builds_full_conversion_argv() {
   _load_mcp
   mcp_parse_bluray_args_from_json \
@@ -312,6 +345,8 @@ test_mcp_server_initialize_and_tools_list() {
   assert_grep '"name":"bluray_to_flac"' "$T/msg.2"
   assert_grep '"archive_action"' "$T/msg.2"
   assert_grep '"preserve_streams"' "$T/msg.2"
+  assert_grep '"name":"archive_audit"' "$T/msg.2"
+  assert_grep '"snapshot_dir"' "$T/msg.2"
 }
 
 test_mcp_server_rejects_destructive_run_tool() {
