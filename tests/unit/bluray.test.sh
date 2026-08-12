@@ -224,10 +224,29 @@ test_captured_makemkv_warning_is_classified() {
   assert_grep 'corrupt or invalid' "$(bluray_extract_warnings "$transcript")"
 }
 
+test_makemkv_provenance_is_normalized() {
+  _load_bluray
+  # shellcheck source=/dev/null
+  source "$AU_REPO_ROOT/conversion/bluray-to-flac/lib/convert.sh"
+  mkdir -p "$T/work" "$T/archive/provenance"
+  cp -- "$AU_REPO_ROOT/tests/assets/makemkv/robot-info.txt" \
+    "$T/work/.makemkv-info.txt"
+  cp -- "$AU_REPO_ROOT/tests/assets/makemkv/robot-warning.txt" \
+    "$T/work/makemkv.err"
+  _bluray_persist_transport_logs "$T/work" "$T/archive"
+  assert_grep $'^title\tduration\tbytes\tplaylist\tsegments\tfilename$' \
+    "$T/archive/provenance/makemkv-titles.tsv"
+  assert_grep $'^1\t1:35:00\t30000000000\t\t\ttitle_t01.mkv$' \
+    "$T/archive/provenance/makemkv-titles.tsv"
+  assert_grep $'^warning\t5004\t0\tThe source file is corrupt' \
+    "$T/archive/provenance/makemkv-messages.tsv"
+}
+
 test_resume_reuses_complete_staged_titles() {
   _load_bluray
   mkdir -p "$T/disc/BDMV" "$T/out"
   : >"$T/out/title.mkv"
+  bluray_stage_write_checksums "$T/out"
   AUDIO_UTILS_BD_RESUME=1
   export AUDIO_UTILS_BD_RESUME
   bluray_media_readable() { return 0; }
@@ -235,6 +254,34 @@ test_resume_reuses_complete_staged_titles() {
   local item
   IFS= read -r -d '' item < <(bluray_decrypt_or_copy "$T/disc" "$T/out")
   assert_eq "$item" "$T/out/title.mkv"
+}
+
+test_resume_rejects_corrupt_staged_title() {
+  _load_bluray
+  mkdir -p "$T/disc/BDMV" "$T/out"
+  printf original >"$T/out/title.mkv"
+  bluray_stage_write_checksums "$T/out"
+  printf damage >>"$T/out/title.mkv"
+  AUDIO_UTILS_BD_RESUME=1
+  export AUDIO_UTILS_BD_RESUME
+  bluray_media_readable() { return 0; }
+  assert_exit 1 bluray_decrypt_or_copy "$T/disc" "$T/out"
+}
+
+test_archive_abort_does_not_publish_session_metadata() {
+  _load_bluray
+  # shellcheck source=/dev/null
+  source "$AU_REPO_ROOT/conversion/bluray-to-flac/lib/convert.sh"
+  mkdir -p "$T/archive/provenance"
+  printf old >"$T/archive/provenance/archive-manifest.jsonl"
+  AUDIO_UTILS_BD_SESSION_MANIFEST="$T/archive/provenance/.session.jsonl"
+  AUDIO_UTILS_BD_SESSION_VERSIONS="$T/archive/provenance/.session.versions"
+  printf new >"$AUDIO_UTILS_BD_SESSION_MANIFEST"
+  printf versions >"$AUDIO_UTILS_BD_SESSION_VERSIONS"
+  _bluray_archive_abort_metadata
+  assert_eq "$(<"$T/archive/provenance/archive-manifest.jsonl")" old
+  assert_no_file "$AUDIO_UTILS_BD_SESSION_MANIFEST"
+  assert_no_file "$AUDIO_UTILS_BD_SESSION_VERSIONS"
 }
 
 test_stage_identity_binds_title_selection() {
