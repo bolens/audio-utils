@@ -32,7 +32,7 @@ plugin_after_flags() {
 }
 
 plugin_require_deps() {
-  require_cmds flock
+  require_cmds ffmpeg ffprobe flock
   command -v iconv >/dev/null 2>&1 || true
 }
 

@@ -105,6 +105,20 @@ test_audiobook_audit_flags_chapterless() {
   assert_grep "no-chapters\|missing-" "$(tool_out)"
 }
 
+test_audiobook_audit_flags_track_gaps_and_duplicates() {
+  require_cmd flac metaflac ffmpeg ffprobe flock
+  mkdir -p "$T/book"
+  _mk_chapter_flac "$T/book/one.flac" One 1 1
+  _mk_chapter_flac "$T/book/three.flac" Three 3 1
+  _mk_chapter_flac "$T/book/duplicate.flac" Duplicate 3 1
+  ffmpeg -nostdin -v error -y -f lavfi -i 'color=c=red:size=32x32:d=1' \
+    -frames:v 1 "$T/book/cover.jpg"
+  run_tool util/audiobook/audiobook-audit/audiobook-audit.sh "$T/book"
+  assert_eq "$(tool_rc)" 1
+  assert_grep 'duplicate-tracknumbers' "$T/out"
+  assert_grep 'track-gaps' "$T/out"
+}
+
 test_flac_to_aac_default_quality_96() {
   require_cmd flac metaflac ffmpeg ffprobe flock
   require_ffmpeg_encoder aac

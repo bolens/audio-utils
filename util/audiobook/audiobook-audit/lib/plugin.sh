@@ -35,8 +35,7 @@ plugin_after_flags() {
 }
 
 plugin_require_deps() {
-  require_cmds ffprobe flock
-  command -v ffmpeg >/dev/null 2>&1 || true
+  require_cmds ffmpeg ffprobe flock
   command -v metaflac >/dev/null 2>&1 || true
 }
 

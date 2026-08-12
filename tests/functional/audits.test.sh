@@ -13,6 +13,11 @@ _stage_album() {
   cp "$src/album/"*.flac "$T/album/"
 }
 
+_audit_cover() {
+  ffmpeg -nostdin -v error -y -f lavfi -i 'color=c=blue:size=32x32:d=1' \
+    -frames:v 1 "$1"
+}
+
 test_album_audit_clean_passes() {
   require_cmd flac metaflac ffmpeg ffprobe flock
   _stage_album
@@ -50,6 +55,22 @@ test_path_audit_clean_passes_bad_name_fails() {
   assert_grep "bad:name" "$T/failures.log"
 }
 
+test_path_audit_checks_ancestors_and_case_collisions() {
+  require_cmd flock
+  _stage_album
+  mkdir -p "$T/bad:parent/album" "$T/collision"
+  cp "$T/album/01 - Track One.flac" "$T/bad:parent/album/track.flac"
+  run_tool util/audit/path-audit/path-audit.sh "$T/bad:parent/album"
+  assert_eq "$(tool_rc)" 1
+  assert_grep 'dir-illegal-chars' "$T/out"
+
+  cp "$T/album/01 - Track One.flac" "$T/collision/Track.flac"
+  cp "$T/album/01 - Track One.flac" "$T/collision/track.FLAC"
+  run_tool util/audit/path-audit/path-audit.sh -j 1 "$T/collision"
+  assert_eq "$(tool_rc)" 1
+  assert_grep 'casefold-collision' "$T/out"
+}
+
 test_silence_detect_flags_leading_silence() {
   require_cmd flac metaflac ffmpeg ffprobe flock
   mkdir -p "$T/album"
@@ -78,7 +99,7 @@ test_lossy_audit_passes_tagged_with_cover() {
   src=$(fixture lossy)
   mkdir -p "$T/album"
   cp "$src/track.mp3" "$T/album/"
-  printf 'jpg' >"$T/album/cover.jpg"
+  _audit_cover "$T/album/cover.jpg"
   # A pure-sine VBR MP3 encodes around 35 kbps — keep the floor below that.
   run_tool util/audit/lossy-audit/lossy-audit.sh -j 1 --min-kbps=16 "$T/album"
   assert_eq "$(tool_rc)" 0 "tagged+cover rc ($(tool_out | tail -3))"
@@ -93,12 +114,35 @@ test_lossy_audit_flags_missing_cover_and_low_bitrate() {
   run_tool util/audit/lossy-audit/lossy-audit.sh -j 1 --min-kbps=16 \
     -L "$T/failures.log" "$T/nocover"
   assert_eq "$(tool_rc)" 1 "missing cover rc ($(tool_out | tail -3))"
-  assert_grep "missing-cover" "$T/failures.log"
+  assert_grep "missing-or-invalid-cover" "$T/failures.log"
 
   cp "$src/track.mp3" "$T/lowrate/"
-  printf 'jpg' >"$T/lowrate/cover.jpg"
+  _audit_cover "$T/lowrate/cover.jpg"
   run_tool util/audit/lossy-audit/lossy-audit.sh -j 1 --min-kbps=1000 "$T/lowrate"
   assert_eq "$(tool_rc)" 1 "bitrate floor rc ($(tool_out | tail -3))"
+}
+
+test_silence_detect_rejects_decode_failure() {
+  require_cmd ffmpeg ffprobe flock awk
+  mkdir -p "$T/bad"
+  printf 'not audio' >"$T/bad/broken.wav"
+  run_tool util/audit/silence-detect/silence-detect.sh -j 1 "$T/bad"
+  assert_eq "$(tool_rc)" 1
+  assert_grep 'duration probe failed\|audio decode failed' "$T/out"
+}
+
+test_lossy_audit_rejects_truncated_payload_and_invalid_cover() {
+  require_cmd ffmpeg ffprobe flock
+  require_ffmpeg_encoder libmp3lame
+  mkdir -p "$T/bad"
+  ffmpeg -nostdin -v error -y -f lavfi -i 'sine=duration=4' -c:a libmp3lame \
+    -metadata artist=A -metadata album=B -metadata title=C -metadata track=1 \
+    "$T/bad/truncated.mp3"
+  truncate -s 1024 "$T/bad/truncated.mp3"
+  printf invalid >"$T/bad/cover.jpg"
+  run_tool util/audit/lossy-audit/lossy-audit.sh --min-kbps=1 "$T/bad"
+  assert_eq "$(tool_rc)" 1
+  assert_grep 'audio decode failed\|missing-or-invalid-cover' "$T/out"
 }
 
 test_audit_numeric_options_reject_malformed_values() {

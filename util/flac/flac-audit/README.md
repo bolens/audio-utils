@@ -6,7 +6,7 @@ Fails a file when:
 
 - `flac -t` fails
 - missing core tags (`ARTIST`, `ALBUM`, `TITLE`, `TRACKNUMBER`)
-- no embedded picture **and** no folder cover (`cover.jpg` / `folder.jpg` / …)
+- no decodable embedded picture or folder cover (`cover.jpg` / `folder.jpg` / …)
 - leftover sibling `.wav` / `.aiff` / `.aif` / `.caf` beside the FLAC
 
 Part of **[audio-utils](../../../)**. See [docs/adding-a-util.md](../../../docs/adding-a-util.md).

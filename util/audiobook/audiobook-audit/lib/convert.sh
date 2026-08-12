@@ -21,13 +21,14 @@ _aba_list_audio() {
 _aba_audit_unit() {
   local unit=$1
   local -a issues=() files=()
-  local f title artist narrator series series_part codec n track
-  local -A series_seen=() rates=()
-  local missing_title=0 missing_track=0 rate
+  local f title artist narrator series series_part codec n track num total rate
+  local -A series_seen=() rates=() tracks_seen=()
+  local missing_title=0 missing_track=0 duplicate_track=0 max_track=0
 
   if [[ -f "$unit" ]]; then
     case "${unit,,}" in
       *.m4b)
+        audio_decode_ok "$unit" || issues+=("audio-decode-failed")
         title=$(audio_meta_get "$unit" TITLE)
         [[ -n "$title" ]] || title=$(audio_meta_get "$unit" ALBUM)
         [[ -n "$title" ]] || issues+=("missing-title")
@@ -36,7 +37,7 @@ _aba_audit_unit() {
         [[ -n "$artist" ]] || issues+=("missing-author")
         narrator=$(audio_meta_get "$unit" NARRATOR)
         [[ -n "$narrator" ]] || issues+=("missing-narrator")
-        audio_has_cover "$unit" || issues+=("missing-cover")
+        audio_valid_cover "$unit" || issues+=("missing-or-invalid-cover")
         n=$(chapters_count "$unit" 2>/dev/null || echo 0)
         if [[ "${n:-0}" -eq 0 ]]; then
           issues+=("no-chapters")
@@ -76,6 +77,7 @@ _aba_audit_unit() {
     fi
     for f in "${files[@]}"; do
       case "${f,,}" in *.m4b) continue ;; esac
+      audio_decode_ok "$f" || issues+=("audio-decode-failed")
       title=$(audio_meta_get "$f" TITLE)
       [[ -n "$title" ]] || ((missing_title++)) || true
       artist=$(audio_meta_get "$f" ALBUMARTIST)
@@ -94,7 +96,17 @@ _aba_audit_unit() {
       [[ -z "$rate" ]] || rates["$rate"]=1
       track=$(audio_meta_get "$f" TRACKNUMBER)
       [[ -n "$track" ]] || track=$(audio_meta_get "$f" track)
-      [[ "$track" =~ ^[0-9]+ ]] || ((missing_track++)) || true
+      track=${track%%/*}
+      if [[ "$track" =~ ^[0-9]+$ ]]; then
+        num=$((10#$track))
+        if [[ -n "${tracks_seen[$num]:-}" ]]; then
+          ((duplicate_track++)) || true
+        fi
+        tracks_seen[$num]=1
+        ((num > max_track)) && max_track=$num
+      else
+        ((missing_track++)) || true
+      fi
     done
     # Deduplicate issue labels that may repeat per file
     local -A uniq=()
@@ -107,12 +119,14 @@ _aba_audit_unit() {
     done
     issues=("${deduped[@]}")
 
-    audio_has_cover "${files[0]}" || {
-      [[ -f "$unit/cover.jpg" || -f "$unit/cover.png" || -f "$unit/folder.jpg" ]] || \
-        issues+=("missing-cover")
-    }
+    audio_valid_cover "${files[0]}" || issues+=("missing-or-invalid-cover")
     ((missing_title > 0)) && issues+=("empty-titles:$missing_title")
     ((missing_track > 0)) && issues+=("missing-tracknumbers:$missing_track")
+    ((duplicate_track > 0)) && issues+=("duplicate-tracknumbers:$duplicate_track")
+    total=${#tracks_seen[@]}
+    if ((total > 0)) && { ((max_track != total)) || [[ -z "${tracks_seen[1]:-}" ]]; }; then
+      issues+=("track-gaps:${total}/${max_track}")
+    fi
     if ((${#rates[@]} > 1)); then
       issues+=("mixed-sample-rates")
     fi

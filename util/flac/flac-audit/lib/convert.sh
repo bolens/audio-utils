@@ -13,21 +13,6 @@ _audit_tag_value() {
   fi
 }
 
-_audit_has_picture() {
-  metaflac --list --block-type=PICTURE -- "$1" 2>/dev/null | grep -q 'type: 6 (PICTURE)'
-}
-
-_audit_has_folder_cover() {
-  local dir=$1
-  local f
-  f=$(LC_ALL=C find -P "$dir" -maxdepth 1 -type f \
-    \( -iname 'cover.jpg' -o -iname 'cover.jpeg' -o -iname 'cover.png' \
-       -o -iname 'folder.jpg' -o -iname 'folder.jpeg' -o -iname 'folder.png' \
-       -o -iname 'front.jpg' -o -iname 'front.jpeg' -o -iname 'front.png' \) \
-    | head -n1)
-  [[ -n "$f" && -s "$f" ]]
-}
-
 _audit_leftover_pcm() {
   local flac=$1
   local base ext ue
@@ -50,9 +35,7 @@ _audit_leftover_pcm() {
 
 convert_one() {
   local flac="$1"
-  local dir issues=() missing_tags=() tag val leftover sha
-
-  dir=$(dirname -- "$flac")
+  local issues=() missing_tags=() tag val leftover sha
 
   if [[ "${DRY_RUN:-0}" -eq 1 ]]; then
     log_progress "would audit: $flac"
@@ -77,8 +60,8 @@ convert_one() {
     issues+=("missing-tags:${missing_tags[*]}")
   fi
 
-  if ! _audit_has_picture "$flac" && ! _audit_has_folder_cover "$dir"; then
-    issues+=("missing-cover")
+  if ! audio_valid_cover "$flac"; then
+    issues+=("missing-or-invalid-cover")
   fi
 
   if leftover=$(_audit_leftover_pcm "$flac"); then

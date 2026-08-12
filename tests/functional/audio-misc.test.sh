@@ -40,6 +40,17 @@ test_gapless_flags_adts_aac_and_bare_m4a() {
   assert_grep "no-itunsmpb" "$T/fails2.log"
 }
 
+test_gapless_rejects_malformed_itunsmpb() {
+  require_cmd ffmpeg ffprobe flock
+  require_ffmpeg_encoder aac
+  mkdir -p "$T/m4a"
+  ffmpeg -nostdin -v error -y -f lavfi -i 'sine=duration=1' -c:a aac \
+    -movflags use_metadata_tags -metadata iTunSMPB='not gapless data' "$T/m4a/bad.m4a"
+  run_tool util/audit/gapless-audit/gapless-audit.sh "$T/m4a"
+  assert_eq "$(tool_rc)" 1
+  assert_grep 'invalid-itunsmpb' "$T/out"
+}
+
 # --- spectrogram-export ---------------------------------------------------------
 
 test_spectrogram_renders_png_beside_source() {
@@ -72,6 +83,26 @@ test_spectrogram_skips_existing_without_overwrite() {
   assert_eq "$(tool_rc)" 0 "-y rc"
   [[ "$(cat "$T/album/track.flac.spectrogram.png")" != "sentinel" ]] \
     || fail "-y must re-render"
+}
+
+test_visual_exports_preserve_existing_output_on_failure() {
+  require_cmd flac metaflac ffmpeg ffprobe flock
+  local src
+  src=$(fixture flac_tagged)
+  mkdir -p "$T/album" "$T/bin"
+  cp "$src/track.flac" "$T/album/"
+  printf sentinel >"$T/album/track.flac.spectrogram.png"
+  printf sentinel >"$T/album/track.flac.waveform.png"
+  printf '%s\n' '#!/usr/bin/env bash' 'exit 1' >"$T/bin/ffmpeg"
+  chmod +x "$T/bin/ffmpeg"
+  PATH="$T/bin:$PATH" run_tool \
+    util/audit/spectrogram-export/spectrogram-export.sh -y "$T/album"
+  assert_eq "$(tool_rc)" 1
+  assert_eq "$(<"$T/album/track.flac.spectrogram.png")" sentinel
+  PATH="$T/bin:$PATH" run_tool \
+    util/audit/waveform-export/waveform-export.sh -y "$T/album"
+  assert_eq "$(tool_rc)" 1
+  assert_eq "$(<"$T/album/track.flac.waveform.png")" sentinel
 }
 
 # --- audio-dupes (md5 mode) ------------------------------------------------------
