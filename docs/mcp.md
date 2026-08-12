@@ -73,6 +73,12 @@ Archive verification and full audits do not need dummy input paths:
 Device conversion likewise accepts `"device": "/dev/sr0"` without `paths`.
 The generic `args` array remains available for forward-compatible CLI flags.
 
+Audit tools expose their policy controls as typed MCP fields. In particular,
+`archive_audit` exposes `quick`, `public_key`, `snapshot_dir`, and
+`baseline_dir`; lossy, silence, path, dynamics, and disc inventory tools expose
+their numeric thresholds and report destinations. The schemas enforce the same
+ranges as the corresponding CLIs while retaining generic `args` compatibility.
+
 ## Direct stdio
 
 ```bash
