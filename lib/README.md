@@ -35,3 +35,5 @@ add a matching `# shellcheck source=` directive.
   `cli/run_parallel.sh`.
 - Everything must pass `shellcheck -x -a` (run `make check-lib` from the
   repo root).
+- A failing optional `plugin_finalize` makes the run fail. Finalizers that
+  publish requested reports must return nonzero if atomic publication fails.

@@ -451,15 +451,18 @@ audio_utils_run() {
 
   ((fail += pre_fail)) || true
   elapsed=$(( $(date +%s) - PROGRESS_START ))
+  audio_utils_finalize_run_logs
+  if declare -F plugin_finalize >/dev/null 2>&1; then
+    if ! plugin_finalize "$ok" "$fail"; then
+      log_err "Error: finalization failed"
+      ((fail++)) || true
+    fi
+  fi
   log_always ""
   if [[ "$DELETE_EXISTING" -eq 1 ]]; then
     log_always "Done. deleted/ok=$ok kept_no_${AU_DEST_EXT}=$kept failed=$fail elapsed=$(fmt_dur "$elapsed")"
   else
     log_always "Done. ok=$ok failed=$fail elapsed=$(fmt_dur "$elapsed")"
-  fi
-  audio_utils_finalize_run_logs
-  if declare -F plugin_finalize >/dev/null 2>&1; then
-    plugin_finalize "$ok" "$fail" || true
   fi
   [[ "$fail" -eq 0 ]]
 }
