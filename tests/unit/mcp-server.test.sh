@@ -182,6 +182,69 @@ test_mcp_safety_destructive_and_network() {
 
   mcp_check_run_safety flac-verify true false -- -d
   mcp_check_run_safety tags-lookup false true --
+  mcp_check_run_safety bluray-to-flac false false -- -D /dev/sr0
+}
+
+test_mcp_bluray_schema_exposes_archival_features() {
+  _load_mcp
+  local schema
+  schema=$(mcp_bluray_schema_json)
+  for key in device title minlength allow_float_reduction split_chapters \
+    stage_dir archive_action archive_path preserve_streams sign_key \
+    sign_public_key par2_percent seal; do
+    assert_grep "\"$key\"" "$schema"
+  done
+  assert_grep '"maximum":100' "$schema"
+  assert_grep '"verify","audit"' "$schema"
+}
+
+test_mcp_bluray_builds_full_conversion_argv() {
+  _load_mcp
+  mcp_parse_bluray_args_from_json \
+    '{"paths":["/disc"],"device":"/dev/sr0","title":3,"minlength":30,"allow_float_reduction":true,"split_chapters":true,"stage_dir":"/stage","preserve_streams":true,"sign_key":"/key","sign_public_key":"pub","par2_percent":10,"seal":true,"quiet":false}'
+  mcp_build_cli_argv bluray-to-flac
+  local joined
+  printf -v joined '%q ' "${MCP_CLI_ARGV[@]}"
+  assert_grep -- '-D /dev/sr0' "$joined"
+  assert_grep -- '--title 3' "$joined"
+  assert_grep -- '--minlength 30' "$joined"
+  assert_grep -- '--allow-float-reduction' "$joined"
+  assert_grep -- '--split-chapters' "$joined"
+  assert_grep -- '--stage-dir /stage' "$joined"
+  assert_grep -- '--preserve-streams' "$joined"
+  assert_grep -- '--sign-key /key' "$joined"
+  assert_grep -- '--par2-percent 10' "$joined"
+  assert_grep -- '--seal' "$joined"
+  assert_eq "${MCP_CLI_ENV[0]}" 'AUDIO_UTILS_BD_SIGN_PUBKEY=pub'
+}
+
+test_mcp_bluray_archive_action_is_pathless() {
+  _load_mcp
+  mcp_parse_bluray_args_from_json \
+    '{"archive_action":"audit","archive_path":"/archive","sign_public_key":"pub"}'
+  assert_eq "${#MCP_ARG_PATHS[@]}" 0
+  assert_eq "$MCP_ARG_BLURAY_PATHLESS" true
+  mcp_build_cli_argv bluray-to-flac
+  assert_eq "${MCP_CLI_ARGV[0]}" -q
+  assert_eq "${MCP_CLI_ARGV[1]}" --audit-archive
+  assert_eq "${MCP_CLI_ARGV[2]}" /archive
+  assert_exit 1 mcp_parse_bluray_args_from_json \
+    '{"paths":["/input"],"archive_action":"verify","archive_path":"/archive"}'
+  assert_exit 1 mcp_parse_bluray_args_from_json '{"par2_percent":101}'
+  assert_exit 1 mcp_parse_bluray_args_from_json '{"seal":"yes"}'
+  assert_exit 1 mcp_parse_bluray_args_from_json '{"stage_dir":false}'
+}
+
+test_mcp_server_runs_pathless_bluray_archive_action() {
+  mkdir -p "$T/archive"
+  _rpc "$T/out" \
+    '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2024-11-05","capabilities":{},"clientInfo":{"name":"test","version":"0"}}}' \
+    "{\"jsonrpc\":\"2.0\",\"id\":8,\"method\":\"tools/call\",\"params\":{\"name\":\"bluray_to_flac\",\"arguments\":{\"archive_action\":\"verify\",\"archive_path\":\"$T/archive\"}}}"
+  _read_all_messages "$T/out"
+  ((MCP_MSG_COUNT >= 2)) || fail "expected ≥2 responses"
+  assert_grep 'exit_code=1' "$T/msg.2"
+  assert_grep 'archive is incomplete' "$T/msg.2"
+  assert_not_grep 'paths required' "$T/msg.2"
 }
 
 test_mcp_dispatch_uses_private_error_file() {
@@ -246,6 +309,9 @@ test_mcp_server_initialize_and_tools_list() {
   assert_grep '"name":"flac_verify"' "$T/msg.2"
   assert_grep '"name":"wav_to_flac"' "$T/msg.2"
   assert_grep '"name":"run_tool"' "$T/msg.2"
+  assert_grep '"name":"bluray_to_flac"' "$T/msg.2"
+  assert_grep '"archive_action"' "$T/msg.2"
+  assert_grep '"preserve_streams"' "$T/msg.2"
 }
 
 test_mcp_server_rejects_destructive_run_tool() {

@@ -521,10 +521,12 @@ mcp_resolve_script() {
 # --- safety / run -------------------------------------------------------------
 
 mcp_args_are_destructive() {
-  local a
+  local cli_name=$1 a
+  shift
   for a in "$@"; do
     case "$a" in
-      -d | -D | --apply) return 0 ;;
+      -d | --apply) return 0 ;;
+      -D) [[ "$cli_name" == bluray-to-flac ]] || return 0 ;;
     esac
   done
   return 1
@@ -541,7 +543,8 @@ mcp_check_run_safety() {
     return 2
   fi
 
-  if mcp_args_are_destructive "$@" && [[ "$allow_destructive" != true && "$allow_destructive" != 1 ]]; then
+  if mcp_args_are_destructive "$cli_name" "$@" && \
+    [[ "$allow_destructive" != true && "$allow_destructive" != 1 ]]; then
     echo "destructive flags (-d/-D/--apply) require allow_destructive=true" >&2
     return 2
   fi
@@ -636,6 +639,25 @@ mcp_tool_schema_json() {
     "$(mcp_shared_props_json "$include_name")" "$required"
 }
 
+mcp_bluray_schema_json() {
+  printf '%s' '{"type":"object","properties":{'
+  mcp_shared_props_json 0
+  printf '%s' ',"device":{"type":"string","description":"Blu-ray device (-D)"}'
+  printf '%s' ',"title":{"oneOf":[{"type":"integer","minimum":0},{"const":"all"}],"default":"all","description":"MakeMKV title selection"}'
+  printf '%s' ',"minlength":{"type":"integer","minimum":0,"description":"Minimum authored-title length in seconds"}'
+  printf '%s' ',"allow_float_reduction":{"type":"boolean","default":false,"description":"Permit verified float PCM to 24-bit conversion"}'
+  printf '%s' ',"split_chapters":{"type":"boolean","default":false,"description":"Create verified chapter FLACs"}'
+  printf '%s' ',"stage_dir":{"type":"string","description":"Keep and checksum reusable MakeMKV title MKVs"}'
+  printf '%s' ',"archive_action":{"type":"string","enum":["verify","audit"],"description":"Verify or fully audit an existing archive"}'
+  printf '%s' ',"archive_path":{"type":"string","description":"Archive directory for archive_action"}'
+  printf '%s' ',"preserve_streams":{"type":"boolean","default":false,"description":"Preserve original codec payloads as .source.mka"}'
+  printf '%s' ',"sign_key":{"type":"string","description":"Minisign secret key used to sign SHA256SUMS"}'
+  printf '%s' ',"sign_public_key":{"type":"string","description":"Minisign public key used during archive verification"}'
+  printf '%s' ',"par2_percent":{"type":"integer","minimum":0,"maximum":100,"description":"PAR2 recovery-data percentage"}'
+  printf '%s' ',"seal":{"type":"boolean","default":false,"description":"Flush and make archive metadata read-only"}'
+  printf '%s' '},"anyOf":[{"required":["paths"]},{"required":["device"]},{"required":["archive_action","archive_path"]}]}'
+}
+
 # --- build tools/list ---------------------------------------------------------
 
 mcp_tools_list_json() {
@@ -656,10 +678,16 @@ mcp_tools_list_json() {
     else
       desc="${MCP_TOOL_SUMMARY[i]} [${MCP_TOOL_KIND[i]}: ${MCP_TOOL_NAMES[i]}]"
     fi
+    local schema
+    if [[ "${MCP_TOOL_NAMES[i]}" == bluray-to-flac ]]; then
+      schema=$(mcp_bluray_schema_json)
+    else
+      schema=$(mcp_tool_schema_json 0)
+    fi
     parts+=("$(printf '{"name":%s,"description":%s,"inputSchema":%s}' \
       "$(mcp_json_string "$mcp_name")" \
       "$(mcp_json_string "$desc")" \
-      "$(mcp_tool_schema_json 0)")")
+      "$schema")")
   done
 
   local IFS=,
@@ -690,6 +718,8 @@ mcp_parse_run_args_from_json() {
   MCP_ARG_ALLOW_DESTRUCTIVE=false
   MCP_ARG_ALLOW_NETWORK=false
   MCP_ARG_QUIET=true
+  MCP_CLI_ENV=()
+  MCP_ARG_BLURAY_PATHLESS=false
 
   local v
   if v=$(mcp_json_get_string "$args_json" name 2>/dev/null); then
@@ -727,6 +757,71 @@ mcp_parse_run_args_from_json() {
   fi
 }
 
+mcp_bluray_add_bool_flag() {
+  local json=$1 key=$2 flag=$3 value
+  if mcp_json_after_key "$json" "$key" >/dev/null 2>&1; then
+    value=$(mcp_json_get_bool "$json" "$key") || return 1
+    [[ "$value" == true ]] && MCP_ARG_ARGS+=("$flag")
+  fi
+}
+
+mcp_parse_bluray_args_from_json() {
+  local json=$1 value action archive
+  mcp_parse_run_args_from_json "$json" || return 1
+
+  if mcp_json_after_key "$json" device >/dev/null 2>&1; then
+    value=$(mcp_json_get_string "$json" device) || return 1
+    [[ -n "$value" ]] || return 1
+    MCP_ARG_ARGS+=(-D "$value")
+    MCP_ARG_BLURAY_PATHLESS=true
+  fi
+  if mcp_json_after_key "$json" title >/dev/null 2>&1; then
+    if value=$(mcp_json_get_string "$json" title 2>/dev/null); then
+      [[ "$value" == all ]] || return 1
+    else
+      value=$(mcp_json_get_number "$json" title) || return 1
+      [[ "$value" =~ ^[0-9]+$ ]] || return 1
+    fi
+    MCP_ARG_ARGS+=(--title "$value")
+  fi
+  for action in minlength par2_percent; do
+    if mcp_json_after_key "$json" "$action" >/dev/null 2>&1; then
+      value=$(mcp_json_get_number "$json" "$action") || return 1
+      [[ "$value" =~ ^[0-9]+$ ]] || return 1
+      [[ "$action" != par2_percent || "$value" -le 100 ]] || return 1
+      [[ "$action" == minlength ]] && MCP_ARG_ARGS+=(--minlength "$value") \
+        || MCP_ARG_ARGS+=(--par2-percent "$value")
+    fi
+  done
+  mcp_bluray_add_bool_flag "$json" allow_float_reduction --allow-float-reduction || return 1
+  mcp_bluray_add_bool_flag "$json" split_chapters --split-chapters || return 1
+  mcp_bluray_add_bool_flag "$json" preserve_streams --preserve-streams || return 1
+  mcp_bluray_add_bool_flag "$json" seal --seal || return 1
+  for action in stage_dir sign_key; do
+    if mcp_json_after_key "$json" "$action" >/dev/null 2>&1; then
+      value=$(mcp_json_get_string "$json" "$action") || return 1
+      [[ -n "$value" ]] || return 1
+      [[ "$action" == stage_dir ]] && MCP_ARG_ARGS+=(--stage-dir "$value") \
+        || MCP_ARG_ARGS+=(--sign-key "$value")
+    fi
+  done
+  if mcp_json_after_key "$json" sign_public_key >/dev/null 2>&1; then
+    value=$(mcp_json_get_string "$json" sign_public_key) || return 1
+    [[ -n "$value" ]] || return 1
+    MCP_CLI_ENV+=("AUDIO_UTILS_BD_SIGN_PUBKEY=$value")
+  fi
+  if mcp_json_after_key "$json" archive_action >/dev/null 2>&1 || \
+    mcp_json_after_key "$json" archive_path >/dev/null 2>&1; then
+    action=$(mcp_json_get_string "$json" archive_action) || return 1
+    archive=$(mcp_json_get_string "$json" archive_path) || return 1
+    [[ -n "$archive" && ( "$action" == verify || "$action" == audit ) ]] || return 1
+    ((${#MCP_ARG_PATHS[@]} == 0)) || return 1
+    [[ "$action" == verify ]] && MCP_ARG_ARGS+=(--verify-archive "$archive") \
+      || MCP_ARG_ARGS+=(--audit-archive "$archive")
+    MCP_ARG_BLURAY_PATHLESS=true
+  fi
+}
+
 mcp_build_cli_argv() {
   # Build argv into MCP_CLI_ARGV array from MCP_ARG_* globals + cli_name.
   local cli_name=$1
@@ -739,7 +834,9 @@ mcp_build_cli_argv() {
     MCP_CLI_ARGV+=(-n)
   fi
   if [[ -n "$MCP_ARG_JOBS" ]]; then
-    MCP_CLI_ARGV+=(-j "$MCP_ARG_JOBS")
+    if [[ "$cli_name" != bluray-to-flac || ${#MCP_ARG_PATHS[@]} -gt 0 ]]; then
+      MCP_CLI_ARGV+=(-j "$MCP_ARG_JOBS")
+    fi
   fi
   for a in "${MCP_ARG_ARGS[@]+"${MCP_ARG_ARGS[@]}"}"; do
     MCP_CLI_ARGV+=("$a")
@@ -862,15 +959,23 @@ mcp_handle_tools_call() {
       ;;
     *)
       # Per-format tool
-      mcp_parse_run_args_from_json "$args_json" || {
-        echo "invalid tool arguments" >&2
-        return 1
-      }
+      if [[ "$tool_mcp" == bluray_to_flac ]]; then
+        mcp_parse_bluray_args_from_json "$args_json" || {
+          echo "invalid bluray_to_flac arguments" >&2
+          return 1
+        }
+      else
+        mcp_parse_run_args_from_json "$args_json" || {
+          echo "invalid tool arguments" >&2
+          return 1
+        }
+      fi
       cli_name=$(mcp_mcp_to_cli_name "$tool_mcp")
       ;;
   esac
 
-  ((${#MCP_ARG_PATHS[@]} >= 1)) || {
+  ((${#MCP_ARG_PATHS[@]} >= 1)) || \
+    [[ "$cli_name" == bluray-to-flac && "$MCP_ARG_BLURAY_PATHLESS" == true ]] || {
     echo "paths required (at least one); refusing pathless AUDIO_UTILS_ROOTS run" >&2
     return 1
   }
@@ -889,7 +994,11 @@ mcp_handle_tools_call() {
   }
 
   mcp_build_cli_argv "$cli_name"
-  mcp_run_cli "$script" "${MCP_CLI_ARGV[@]}"
+  if ((${#MCP_CLI_ENV[@]} > 0)); then
+    mcp_run_cli env "${MCP_CLI_ENV[@]}" "$script" "${MCP_CLI_ARGV[@]}"
+  else
+    mcp_run_cli "$script" "${MCP_CLI_ARGV[@]}"
+  fi
   mcp_result_text "$(mcp_format_run_result)"
 }
 
