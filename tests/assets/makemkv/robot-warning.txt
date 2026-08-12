@@ -1,0 +1,3 @@
+MSG:1005,0,1,"MakeMKV v1.x started","%1","MakeMKV v1.x"
+MSG:5004,0,0,"The source file is corrupt or invalid at offset 12345"
+MSG:3025,0,0,"Title #1 was added"

@@ -8,12 +8,22 @@ _bluray_stream_field() {
 }
 
 _bluray_stream_pcm_codec() {
-  local src="$1" idx="$2" bits sample_fmt
+  local src="$1" idx="$2" bits sample_fmt codec
   bits=$(_bluray_stream_field "$src" "$idx" bits_per_raw_sample)
   [[ "$bits" =~ ^[1-9][0-9]*$ ]] || bits=$(_bluray_stream_field "$src" "$idx" bits_per_sample)
   sample_fmt=$(_bluray_stream_field "$src" "$idx" sample_fmt)
+  codec=$(_bluray_stream_field "$src" "$idx" codec_name)
+  case "$codec" in
+    pcm_f*)
+      [[ "${AUDIO_UTILS_BD_ALLOW_FLOAT:-0}" -eq 1 ]] || return 2
+      printf '%s\n' pcm_f32le
+      return 0
+      ;;
+  esac
   if [[ "$bits" == 16 || "$sample_fmt" == s16 || "$sample_fmt" == s16p ]]; then
     printf '%s\n' pcm_s16le
+  elif [[ "$bits" == 32 || "$codec" == pcm_s32* ]]; then
+    printf '%s\n' pcm_s32le
   else
     printf '%s\n' pcm_s24le
   fi
@@ -43,7 +53,7 @@ _bluray_dry_run_media() {
   fi
   for f in "${files[@]}"; do
     n=$(ffprobe -v error -select_streams a -show_entries stream=index \
-      -of csv=p=0 -- "$f" 2>/dev/null | grep -c . || true)
+      -of csv=p=0 -- "$f" 2>/dev/null | LC_ALL=C sort -u | grep -c . || true)
     if ((n < 1)); then
       log_err "would fail (no readable audio): $f"
       continue
@@ -87,16 +97,36 @@ _bluray_check_disk_preflight() {
   log_verbose "disk ok: source=$bytes free=$free need~=$need (x$factor)"
 }
 
+_bluray_stage_identity() {
+  local path="$1" kind="$2" disc_id="${3:-}" material
+  case "$kind" in
+    device) material="device:$disc_id" ;;
+    disc_image) material="iso:$(file_sha256 "$path")" ;;
+    bdmv)
+      material=$(find -P "$path" -type f \
+        \( -iname 'index.bdmv' -o -iname 'MovieObject.bdmv' -o -path '*/PLAYLIST/*.mpls' \) \
+        -print0 2>/dev/null | LC_ALL=C sort -z | xargs -0 -r sha256sum --)
+      [[ -n "$material" ]] || material="bdmv-path:$(au_abspath "$path")"
+      ;;
+    *) return 1 ;;
+  esac
+  au_sha256_str "$material|title=${AUDIO_UTILS_BD_TITLE:-all}|min=${AUDIO_UTILS_BD_MIN_LENGTH:-0}"
+}
+
 _bluray_tag_stream_provenance() {
   local flac="$1" src="$2" idx="$3" source_audio_md5="$4"
-  local field value codec profile lossy=0
+  local field value codec profile source_class=unknown
   codec=$(_bluray_stream_field "$src" "$idx" codec_name)
   profile=$(_bluray_stream_field "$src" "$idx" profile)
   metaflac --remove-tag=SOURCE_CODEC --remove-tag=SOURCE_PROFILE \
     --remove-tag=SOURCE_LANGUAGE --remove-tag=SOURCE_TITLE \
     --remove-tag=SOURCE_CHANNEL_LAYOUT --remove-tag=SOURCE_SHA256 \
     --remove-tag=SOURCE_AUDIO_MD5 \
-    --remove-tag=SOURCE_STREAM --remove-tag=LOSSY_SOURCE -- "$flac"
+    --remove-tag=SOURCE_STREAM --remove-tag=SOURCE_CLASS \
+    --remove-tag=SOURCE_CHANNELS --remove-tag=SOURCE_SAMPLE_RATE \
+    --remove-tag=SOURCE_BITS_PER_SAMPLE --remove-tag=OUTPUT_BITS_PER_SAMPLE \
+    --remove-tag=OBJECT_AUDIO_LOST --remove-tag=PRECISION_REDUCED \
+    --remove-tag=LOSSY_SOURCE -- "$flac"
   metaflac --set-tag="SOURCE_AUDIO_MD5=$source_audio_md5" \
     --set-tag="SOURCE_STREAM=$idx" -- "$flac"
   [[ -n "$codec" ]] && metaflac --set-tag="SOURCE_CODEC=$codec" -- "$flac"
@@ -108,14 +138,226 @@ _bluray_tag_stream_provenance() {
   done
   value=$(_bluray_stream_field "$src" "$idx" channel_layout)
   [[ -n "$value" ]] && metaflac --set-tag="SOURCE_CHANNEL_LAYOUT=$value" -- "$flac"
+  for field in channels sample_rate bits_per_raw_sample; do
+    value=$(_bluray_stream_field "$src" "$idx" "$field")
+    [[ -n "$value" && "$value" != N/A && "$value" != 0 ]] || continue
+    case "$field" in
+      channels) field=SOURCE_CHANNELS ;;
+      sample_rate) field=SOURCE_SAMPLE_RATE ;;
+      bits_per_raw_sample) field=SOURCE_BITS_PER_SAMPLE ;;
+    esac
+    metaflac --set-tag="$field=$value" -- "$flac"
+  done
+  metaflac --set-tag="OUTPUT_BITS_PER_SAMPLE=$(metaflac --show-bps "$flac")" -- "$flac"
   case "$codec" in
-    aac|ac3|eac3|mp2|mp3|vorbis|opus) lossy=1 ;;
-    dts) [[ "${profile,,}" == *"ma"* ]] || lossy=1 ;;
+    pcm_*|flac|truehd|mlp) source_class=lossless ;;
+    aac|ac3|eac3|mp2|mp3|vorbis|opus) source_class=lossy ;;
+    dts)
+      if [[ "${profile,,}" == *"ma"* ]]; then source_class=lossless
+      else source_class=lossy
+      fi
+      ;;
   esac
-  if ((lossy)); then
+  if [[ "${profile,,}" == *atmos* || "${profile,,}" == *dts:x* ]]; then
+    metaflac --set-tag=OBJECT_AUDIO_LOST=1 -- "$flac"
+  fi
+  metaflac --set-tag="SOURCE_CLASS=$source_class" -- "$flac"
+  [[ "$codec" == pcm_f* ]] && metaflac --set-tag=PRECISION_REDUCED=1 -- "$flac"
+  if [[ "$source_class" == lossy ]]; then
     metaflac --set-tag=LOSSY_SOURCE=1 -- "$flac"
     log_info "note: stream a:$idx uses lossy source codec $codec${profile:+ ($profile)}"
   fi
+}
+
+_bluray_verify_decode_format() {
+  local src="$1" idx="$2" wav="$3" src_rate src_channels wav_rate wav_channels
+  local duration_ts time_base numerator denominator wav_samples
+  src_rate=$(_bluray_stream_field "$src" "$idx" sample_rate)
+  src_channels=$(_bluray_stream_field "$src" "$idx" channels)
+  wav_rate=$(audio_sample_rate "$wav")
+  wav_channels=$(audio_channels "$wav")
+  if [[ "$src_rate" =~ ^[0-9]+$ && "$wav_rate" != "$src_rate" ]]; then
+    log_err "VERIFY FAIL (sample rate changed $src_rate -> $wav_rate): $src#a$idx"
+    return 1
+  fi
+  if [[ "$src_channels" =~ ^[0-9]+$ && "$wav_channels" != "$src_channels" ]]; then
+    log_err "VERIFY FAIL (channel count changed $src_channels -> $wav_channels): $src#a$idx"
+    return 1
+  fi
+  duration_ts=$(_bluray_stream_field "$src" "$idx" duration_ts)
+  time_base=$(_bluray_stream_field "$src" "$idx" time_base)
+  numerator=${time_base%/*}
+  denominator=${time_base#*/}
+  if [[ "$duration_ts" =~ ^[0-9]+$ && "$numerator" == 1 && \
+    "$denominator" == "$src_rate" ]]; then
+    wav_samples=$(audio_samples "$wav")
+    if [[ "$wav_samples" =~ ^[0-9]+$ && "$wav_samples" != "$duration_ts" ]]; then
+      log_err "VERIFY FAIL (sample count changed $duration_ts -> $wav_samples): $src#a$idx"
+      return 1
+    fi
+  fi
+}
+
+_bluray_chapter_frames() {
+  awk -v s="$1" 'BEGIN {
+    frames=int((s * 75) + 0.5); mm=int(frames/(75*60));
+    ss=int(frames/75)%60; ff=frames%75;
+    printf "%02d:%02d:%02d", mm, ss, ff
+  }'
+}
+
+_bluray_export_chapters() {
+  local src="$1" flac_out="$2" list ffmeta json cue line idx start end title safe_title first=1
+  local cue_enabled=1
+  list="${flac_out}.chapters"
+  ffmeta="${flac_out}.ffmetadata"
+  json="${flac_out}.chapters.json"
+  cue="${flac_out}.cue"
+  if ! chapters_list "$src" >"$list" || [[ ! -s "$list" ]]; then
+    rm -f -- "$list"
+    return 0
+  fi
+  chapters_write_ffmetadata "$ffmeta" <"$list" || return 1
+  printf '[\n' >"$json"
+  if [[ "$(basename -- "$flac_out")" == *$'\n'* ]]; then
+    cue_enabled=0
+    log_info "note: CUE omitted because its FILE name contains a newline: $flac_out"
+  else
+    printf 'REM Generated by bluray-to-flac\nFILE "%s" FLAC\n' "$(basename -- "$flac_out")" >"$cue"
+  fi
+  while IFS= read -r line || [[ -n "$line" ]]; do
+    IFS='|' read -r idx start end title <<<"$line"
+    ((first)) || printf ',\n' >>"$json"
+    first=0
+    printf '  {"index":%s,"start":%s,"end":%s,"title":%s}' \
+      "$idx" "$start" "${end:-null}" "$(json_str "$title")" >>"$json"
+    if ((cue_enabled)); then
+      safe_title=${title//\"/\'}
+      printf '  TRACK %02d AUDIO\n    TITLE "%s"\n    INDEX 01 %s\n' \
+        "$idx" "$safe_title" "$(_bluray_chapter_frames "$start")" >>"$cue"
+    fi
+  done <"$list"
+  printf '\n]\n' >>"$json"
+  rm -f -- "$list"
+}
+
+_bluray_split_chapters() {
+  local src="$1" flac_out="$2" tmpdir="$3" outdir="$4" audit_src="$5"
+  local source_title="$6" source_stream="$7" list line idx start end title safe dir
+  local bps pcm wav dest tags ctmp
+  local -a trim chapter_enc
+  [[ "${AUDIO_UTILS_BD_SPLIT_CHAPTERS:-0}" -eq 1 ]] || return 0
+  list="${tmpdir}/chapters.list"
+  chapters_list "$src" >"$list" || return 1
+  [[ -s "$list" ]] || return 0
+  dir="${flac_out%.flac}.chapters"
+  mkdir -p -- "$dir" || return 1
+  bps=$(metaflac --show-bps "$flac_out")
+  case "$bps" in
+    16) pcm=pcm_s16le ;;
+    24) pcm=pcm_s24le ;;
+    32) pcm=pcm_s32le ;;
+    *) return 1 ;;
+  esac
+  tags="${tmpdir}/chapter-tags.txt"
+  metaflac --export-tags-to="$tags" -- "$flac_out" || return 1
+  while IFS= read -r line || [[ -n "$line" ]]; do
+    IFS='|' read -r idx start end title <<<"$line"
+    safe=$(chapters_sanitize_filename "${title:-Chapter $idx}")
+    dest=$(printf '%s/%02d - %s.flac' "$dir" "$idx" "$safe")
+    ctmp="${tmpdir}/chapter-work-${idx}"
+    mkdir -p -- "$ctmp"
+    wav="${ctmp}/chapter.wav"
+    trim=(-ss "$start")
+    [[ -n "$end" ]] && trim+=(-to "$end")
+    if ! ffmpeg -v error -xerror -y "${trim[@]}" \
+      -i "$flac_out" -map 0:a:0 -c:a "$pcm" "$wav" 2>"${tmpdir}/chapter.err"; then
+      return 1
+    fi
+    if ! encode_flac_verified "$wav" "$ctmp" "$flac_out#chapter$idx" \
+      >"${tmpdir}/chapter.enc"; then
+      return 1
+    fi
+    au_mapfile0 chapter_enc "${tmpdir}/chapter.enc"
+    metaflac --import-tags-from="$tags" --remove-tag=TRACKNUMBER --remove-tag=TITLE \
+      --set-tag="TRACKNUMBER=$idx" --set-tag="TITLE=$title" -- "${chapter_enc[0]}" || return 1
+    flac -t --silent "${chapter_enc[0]}" || return 1
+    mv -f -- "${chapter_enc[0]}" "$dest"
+    _bluray_archive_record "$outdir" "$audit_src" \
+      "$source_title#chapter$idx" "$source_stream" "$dest" \
+      "$(audio_md5 "$dest")" || return 1
+    rm -rf -- "$ctmp"
+    rm -f -- "${tmpdir}/chapter.enc"
+  done <"$list"
+}
+
+_bluray_archive_init() {
+  local outdir="$1" input="$2" prov
+  prov="$outdir/provenance"
+  mkdir -p -- "$prov" || return 1
+  AUDIO_UTILS_BD_SESSION_ID="$(date -u +%Y%m%dT%H%M%SZ)-$$"
+  export AUDIO_UTILS_BD_SESSION_ID
+  {
+    printf '\n[session %s]\n' "$AUDIO_UTILS_BD_SESSION_ID"
+    printf 'created=%s\n' "$(au_iso_timestamp)"
+    printf 'input=%s\n' "$input"
+    printf 'audio_utils=%s\n' "$(audio_utils_version)"
+    ffmpeg -version 2>/dev/null | head -n1
+    ffprobe -version 2>/dev/null | head -n1
+    flac --version 2>/dev/null
+    metaflac --version 2>/dev/null
+    if bluray_makemkv_bin >/dev/null; then
+      "$(bluray_makemkv_bin)" --version 2>/dev/null | head -n1 || true
+    fi
+  } >>"$prov/tool-versions.txt"
+  [[ -f "$prov/archive-manifest.jsonl" ]] || : >"$prov/archive-manifest.jsonl"
+}
+
+_bluray_archive_record() {
+  local outdir="$1" input="$2" title="$3" idx="$4" flac="$5" md5="$6"
+  local sha samples rate channels bps rel
+  sha=$(file_sha256 "$flac")
+  samples=$(audio_samples "$flac")
+  rate=$(audio_sample_rate "$flac")
+  channels=$(audio_channels "$flac")
+  bps=$(metaflac --show-bps "$flac")
+  rel=${flac#"$outdir"/}
+  append_locked "$outdir/provenance/archive-manifest.jsonl" \
+    '{"timestamp":"%s","session":"%s","input":%s,"title":%s,"stream":%s,"flac":%s,"audio_md5":"%s","sha256":"%s","samples":%s,"sample_rate":%s,"channels":%s,"bits_per_sample":%s}\n' \
+    "$(au_iso_timestamp)" "${AUDIO_UTILS_BD_SESSION_ID:-unknown}" \
+    "$(json_str "$input")" "$(json_str "$title")" "$idx" \
+    "$(json_str "$rel")" "$md5" "$sha" "${samples:-0}" "${rate:-0}" \
+    "${channels:-0}" "${bps:-0}"
+}
+
+_bluray_persist_transport_logs() {
+  local media_work="$1" outdir="$2" f
+  for f in .makemkv-info.txt makemkv.err makemkv-warnings.log; do
+    [[ -f "$media_work/$f" ]] && cp -f -- "$media_work/$f" "$outdir/provenance/$f"
+  done
+}
+
+bluray_write_checksums() {
+  local outdir="$1" tmp
+  tmp="$outdir/.SHA256SUMS.tmp"
+  (
+    cd -- "$outdir"
+    find -P . -type f ! -name SHA256SUMS ! -name '.SHA256SUMS.tmp' \
+      \( -name '*.flac' -o -name '*.cue' -o -name '*.ffmetadata' \
+      -o -name '*.chapters.json' -o -path './provenance/*' \) -print0 \
+      | LC_ALL=C sort -z | xargs -0 -r sha256sum --
+  ) >"$tmp" || { rm -f -- "$tmp"; return 1; }
+  mv -f -- "$tmp" "$outdir/SHA256SUMS"
+  (cd -- "$outdir" && sha256sum -c --quiet SHA256SUMS)
+}
+
+bluray_verify_archive() {
+  local outdir="$1"
+  [[ -d "$outdir" && -s "$outdir/SHA256SUMS" ]] || {
+    log_err "Error: archive has no SHA256SUMS: $outdir"
+    return 1
+  }
+  (cd -- "$outdir" && sha256sum -c SHA256SUMS)
 }
 
 _bluray_existing_matches_source() {
@@ -174,7 +416,8 @@ _bluray_verify_decode_length() {
 _extract_media_streams() {
   local src="$1" outdir="$2" tmpdir="$3" source_root="$4" audit_src="$5"
   local base rel rel_dir n i wav flac_out pcm_codec source_audio_md5 title_note
-  local -a enc_out
+  local encode_src floatdir
+  local -a enc_out prep_out
   local fail=0
 
   base=$(basename -- "$src")
@@ -186,7 +429,7 @@ _extract_media_streams() {
   fi
   mkdir -p -- "$outdir/$rel_dir" || return 1
   title_note=${rel#./}
-  n=$(ffprobe -v error -select_streams a -show_entries stream=index -of csv=p=0 -- "$src" 2>/dev/null | grep -c . || true)
+  n=$(ffprobe -v error -select_streams a -show_entries stream=index -of csv=p=0 -- "$src" 2>/dev/null | LC_ALL=C sort -u | grep -c . || true)
   n=${n:-0}
   ((n >= 1)) || {
     log_fail "$src" "no audio streams"
@@ -195,7 +438,11 @@ _extract_media_streams() {
   for ((i = 0; i < n; i++)); do
     flac_out=$(_bluray_output_path "$src" "$outdir" "$source_root" "$i")
     wav="${tmpdir}/${base}.a${i}.wav"
-    pcm_codec=$(_bluray_stream_pcm_codec "$src" "$i")
+    if ! pcm_codec=$(_bluray_stream_pcm_codec "$src" "$i"); then
+      log_fail "$src" "float PCM requires --allow-float-reduction for a:$i"
+      fail=1
+      continue
+    fi
 
     if ! ffmpeg -v error -xerror -err_detect explode -y -i "$src" \
       -map "0:a:${i}" -c:a "$pcm_codec" "$wav" 2>"${tmpdir}/ex.err"; then
@@ -204,7 +451,24 @@ _extract_media_streams() {
       fail=1
       continue
     fi
-    source_audio_md5=$(audio_md5 "$wav")
+    if ! _bluray_verify_decode_format "$src" "$i" "$wav"; then
+      log_fail "$src" "decoded format verification failed for a:$i"
+      fail=1
+      continue
+    fi
+    encode_src=$wav
+    if [[ "$pcm_codec" == pcm_f32le ]]; then
+      floatdir="${tmpdir}/float-${i}"
+      mkdir -p -- "$floatdir"
+      if ! prepare_float "$wav" "$floatdir" pcm_f32le >"${tmpdir}/float.path"; then
+        log_fail "$src" "float precision reduction failed for a:$i"
+        fail=1
+        continue
+      fi
+      au_mapfile0 prep_out "${tmpdir}/float.path"
+      encode_src=${prep_out[0]}
+    fi
+    source_audio_md5=$(audio_md5 "$encode_src")
     if [[ -z "$source_audio_md5" ]]; then
       log_fail "$src" "decoded audio MD5 failed for a:$i"
       fail=1
@@ -220,6 +484,11 @@ _extract_media_streams() {
         log_progress "skip (source-bound flac ok): $flac_out"
         log_success "$audit_src" "$flac_out" "$source_audio_md5" "$(file_sha256 "$flac_out")" \
           "skipped-existing-ok;title=$title_note;stream=$i"
+        _bluray_export_chapters "$src" "$flac_out" || return 1
+        _bluray_split_chapters "$src" "$flac_out" "$tmpdir" "$outdir" \
+          "$audit_src" "$title_note" "$i" || return 1
+        _bluray_archive_record "$outdir" "$audit_src" "$title_note" "$i" \
+          "$flac_out" "$source_audio_md5" || return 1
         rm -f -- "$wav"
         continue
       fi
@@ -228,7 +497,7 @@ _extract_media_streams() {
       rm -f -- "$wav"
       continue
     fi
-    if ! encode_flac_verified "$wav" "$tmpdir" "$src#a$i" >"${tmpdir}/enc.out"; then
+    if ! encode_flac_verified "$encode_src" "$tmpdir" "$src#a$i" >"${tmpdir}/enc.out"; then
       log_fail "$src" "encode a:$i failed"
       fail=1
       continue
@@ -249,6 +518,23 @@ _extract_media_streams() {
     log_info "verified: $flac_out"
     log_success "$audit_src" "$flac_out" "${enc_out[2]}" "$(file_sha256 "$flac_out")" \
       "converted;title=$title_note;stream=$i"
+    if ! _bluray_export_chapters "$src" "$flac_out"; then
+      log_fail "$src" "chapter sidecar export failed for a:$i"
+      fail=1
+      continue
+    fi
+    if ! _bluray_split_chapters "$src" "$flac_out" "$tmpdir" "$outdir" \
+      "$audit_src" "$title_note" "$i"; then
+      log_fail "$src" "chapter splitting failed for a:$i"
+      fail=1
+      continue
+    fi
+    if ! _bluray_archive_record "$outdir" "$audit_src" "$title_note" "$i" \
+      "$flac_out" "${enc_out[2]}"; then
+      log_fail "$src" "archive manifest update failed for a:$i"
+      fail=1
+      continue
+    fi
     rm -f -- "$wav" \
       "${tmpdir}/pass1.flac" "${tmpdir}/pass2.flac" "${tmpdir}/pass3.flac" \
       "${tmpdir}/roundtrip.flac" "${tmpdir}/decoded.wav" "${tmpdir}/enc.out" 2>/dev/null || true
@@ -258,7 +544,7 @@ _extract_media_streams() {
 
 convert_one() {
   local path="$1"
-  local outdir tmpdir work media fail=0 kind disc_label source_root disc_id
+  local outdir tmpdir work media_work media fail=0 kind disc_label source_root disc_id stage_key stage_id
 
   kind=$(bluray_resolve_input "$path" 2>/dev/null) || kind=unknown
   if [[ "$kind" == unknown ]]; then
@@ -310,21 +596,43 @@ convert_one() {
 
   mkdir -p -- "$outdir" || return 1
   _bluray_check_disk_preflight "$path" "$kind" "$outdir" || return 1
+  _bluray_archive_init "$outdir" "$path" || return 1
   tmpdir=$(make_workdir "$outdir")
   work="${tmpdir}/media"
   mkdir -p -- "$work"
+  media_work=$work
+  if [[ -n "${AUDIO_UTILS_BD_STAGE_DIR:-}" && \
+    ( "$kind" == bdmv || "$kind" == device || "$kind" == disc_image ) ]]; then
+    if [[ "$kind" == device ]]; then
+      stage_id=$(_bluray_stage_identity "$path" "$kind" "$disc_id") || return 1
+    else
+      stage_id=$(_bluray_stage_identity "$path" "$kind") || return 1
+    fi
+    stage_key="source-${stage_id:0:16}"
+    media_work="${AUDIO_UTILS_BD_STAGE_DIR}/${stage_key}"
+    mkdir -p -- "$media_work" || return 1
+    if [[ -f "$media_work/.source-id" && "$(<"$media_work/.source-id")" != "$stage_id" ]]; then
+      log_fail "$path" "staging identity mismatch: $media_work"
+      return 1
+    fi
+    printf '%s\n' "$stage_id" >"$media_work/.source-id"
+    AUDIO_UTILS_BD_RESUME=1
+    export AUDIO_UTILS_BD_RESUME
+  fi
   cleanup() { unregister_tmpdir "$tmpdir"; rm -rf -- "$tmpdir" 2>/dev/null || true; }
 
   log_progress "bluray extract: $path (kind=$kind)"
 
-  if ! bluray_decrypt_or_copy "$path" "$work" >"${tmpdir}/media.list"; then
+  if ! bluray_decrypt_or_copy "$path" "$media_work" >"${tmpdir}/media.list"; then
     log_fail "$path" "decrypt/passthrough failed"
+    _bluray_persist_transport_logs "$media_work" "$outdir"
     cleanup
     return 1
   fi
   au_mapfile0 media "${tmpdir}/media.list"
   if ((${#media[@]} == 0)); then
     log_fail "$path" "no readable media after resolve"
+    _bluray_persist_transport_logs "$media_work" "$outdir"
     cleanup
     return 1
   fi
@@ -332,7 +640,7 @@ convert_one() {
   case "$kind" in
     media_dir) source_root=$path ;;
     media_file) source_root=$(dirname -- "$path") ;;
-    *) source_root=$work ;;
+    *) source_root=$media_work ;;
   esac
   for f in "${media[@]}"; do
     [[ -n "$f" ]] || continue
@@ -340,6 +648,11 @@ convert_one() {
       fail=1
     fi
   done
+
+  _bluray_persist_transport_logs "$media_work" "$outdir"
+  if ((fail == 0)); then
+    bluray_write_checksums "$outdir" || fail=1
+  fi
 
   cleanup
   ((fail == 0))

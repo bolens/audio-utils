@@ -167,6 +167,26 @@ test_decode_length_rejects_truncation() {
   _bluray_verify_decode_length source.mkv 0 decoded.wav
 }
 
+test_decode_format_checks_exact_samples_when_available() {
+  _load_bluray
+  # shellcheck source=/dev/null
+  source "$AU_REPO_ROOT/conversion/bluray-to-flac/lib/convert.sh"
+  _bluray_stream_field() {
+    case "$3" in
+      sample_rate) printf '%s\n' 48000 ;;
+      channels) printf '%s\n' 2 ;;
+      duration_ts) printf '%s\n' 48000 ;;
+      time_base) printf '%s\n' 1/48000 ;;
+    esac
+  }
+  audio_sample_rate() { printf '%s\n' 48000; }
+  audio_channels() { printf '%s\n' 2; }
+  audio_samples() { printf '%s\n' 47999; }
+  assert_exit 1 _bluray_verify_decode_format source.mkv 0 decoded.wav
+  audio_samples() { printf '%s\n' 48000; }
+  _bluray_verify_decode_format source.mkv 0 decoded.wav
+}
+
 test_source_duration_falls_back_to_matroska_tag() {
   _load_bluray
   # shellcheck source=/dev/null
@@ -189,6 +209,48 @@ test_expected_title_count_applies_minimum() {
   assert_eq "$(printf '%s\n' "$info" | bluray_expected_title_count all 30)" 1
   assert_eq "$(printf '%s\n' "$info" | bluray_expected_title_count all 0)" 2
   assert_eq "$(printf '%s\n' "$info" | bluray_expected_title_count 7 30)" 1
+}
+
+test_captured_makemkv_transcript_inventory() {
+  _load_bluray
+  local info="$AU_REPO_ROOT/tests/assets/makemkv/robot-info.txt"
+  assert_eq "$(bluray_expected_title_count all 0 <"$info")" 3
+  assert_eq "$(bluray_expected_title_count all 30 <"$info")" 2
+}
+
+test_captured_makemkv_warning_is_classified() {
+  _load_bluray
+  local transcript="$AU_REPO_ROOT/tests/assets/makemkv/robot-warning.txt"
+  assert_grep 'corrupt or invalid' "$(bluray_extract_warnings "$transcript")"
+}
+
+test_resume_reuses_complete_staged_titles() {
+  _load_bluray
+  mkdir -p "$T/disc/BDMV" "$T/out"
+  : >"$T/out/title.mkv"
+  AUDIO_UTILS_BD_RESUME=1
+  export AUDIO_UTILS_BD_RESUME
+  bluray_media_readable() { return 0; }
+  bluray_makemkv_backup() { fail 'MakeMKV should not run for complete stage'; }
+  local item
+  IFS= read -r -d '' item < <(bluray_decrypt_or_copy "$T/disc" "$T/out")
+  assert_eq "$item" "$T/out/title.mkv"
+}
+
+test_stage_identity_binds_title_selection() {
+  _load_bluray
+  # shellcheck source=/dev/null
+  source "$AU_REPO_ROOT/conversion/bluray-to-flac/lib/convert.sh"
+  mkdir -p "$T/disc/BDMV/PLAYLIST"
+  printf x >"$T/disc/BDMV/index.bdmv"
+  printf y >"$T/disc/BDMV/PLAYLIST/00001.mpls"
+  AUDIO_UTILS_BD_TITLE=all
+  AUDIO_UTILS_BD_MIN_LENGTH=0
+  local all one
+  all=$(_bluray_stage_identity "$T/disc" bdmv)
+  AUDIO_UTILS_BD_TITLE=1
+  one=$(_bluray_stage_identity "$T/disc" bdmv)
+  [[ "$all" != "$one" ]] || fail "stage identity ignored title selection"
 }
 
 test_makemkv_backup_rejects_partial_title_inventory() {

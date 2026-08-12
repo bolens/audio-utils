@@ -104,6 +104,16 @@ test_bluray_preserves_16_bit_depth_and_stream_provenance() {
   assert_grep '^SOURCE_TITLE=Main Program$' "$(metaflac --export-tags-to=- "$out")"
   assert_grep '^SOURCE_AUDIO_MD5=[0-9a-f]\{32\}$' "$(metaflac --export-tags-to=- "$out")"
   assert_grep '^SOURCE_STREAM=0$' "$(metaflac --export-tags-to=- "$out")"
+  assert_grep '^SOURCE_CLASS=lossless$' "$(metaflac --export-tags-to=- "$out")"
+  assert_grep '^SOURCE_SAMPLE_RATE=[0-9]' "$(metaflac --export-tags-to=- "$out")"
+  assert_file "$T/media/flac/provenance/archive-manifest.jsonl"
+  assert_file "$T/media/flac/provenance/tool-versions.txt"
+  assert_file "$T/media/flac/SHA256SUMS"
+  assert_grep 'program.mkv.a0.flac' "$T/media/flac/SHA256SUMS"
+
+  run_tool conversion/bluray-to-flac/bluray-to-flac.sh \
+    --verify-archive "$T/media/flac"
+  assert_eq "$(tool_rc)" 0 "archive checksum verification"
 }
 
 test_bluray_marks_lossy_sources() {
@@ -209,6 +219,62 @@ test_bluray_accepts_metadata_only_source_remux() {
   assert_eq "$(tool_rc)" 0 "metadata-only remux should retain identical audio"
   assert_grep 'skip (source-bound flac ok)' "$T/out"
   assert_eq "$(metaflac --show-tag=SOURCE_AUDIO_MD5 "$T/media/show.mkv.a0.flac")" "$old_md5"
+}
+
+test_bluray_exports_chapter_sidecars() {
+  require_cmd flac metaflac ffmpeg ffprobe flock
+  local fixture_dir src out meta
+  fixture_dir=$(fixture wav_sine)
+  mkdir -p "$T/media"
+  src="$T/media/concert.mkv"
+  out="$T/media/concert.mkv.a0.flac"
+  meta="$T/chapters.ffmeta"
+  printf '%s\n' ';FFMETADATA1' '[CHAPTER]' 'TIMEBASE=1/1000' \
+    'START=0' 'END=500' 'title=Intro' '[CHAPTER]' 'TIMEBASE=1/1000' \
+    'START=500' 'END=1000' 'title=Song' >"$meta"
+  ffmpeg -nostdin -v error -y -i "$fixture_dir/sine.wav" -i "$meta" \
+    -map 0:a:0 -map_chapters 1 -c:a flac "$src"
+  run_tool conversion/bluray-to-flac/bluray-to-flac.sh "$src"
+  assert_eq "$(tool_rc)" 0 "rc ($(tool_out | tail -5))"
+  assert_file "$out.ffmetadata"
+  assert_file "$out.chapters.json"
+  assert_file "$out.cue"
+  assert_grep 'title=Intro' "$out.ffmetadata"
+  assert_grep '"title":"Song"' "$out.chapters.json"
+  assert_grep 'INDEX 01 00:00:00' "$out.cue"
+
+  run_tool conversion/bluray-to-flac/bluray-to-flac.sh -y --split-chapters "$src"
+  assert_eq "$(tool_rc)" 0 "chapter split rc ($(tool_out | tail -8))"
+  assert_file "$T/media/concert.mkv.a0.chapters/01 - Intro.flac"
+  assert_file "$T/media/concert.mkv.a0.chapters/02 - Song.flac"
+  flac -t --silent "$T/media/concert.mkv.a0.chapters/01 - Intro.flac"
+}
+
+test_bluray_preserves_32_bit_integer_pcm() {
+  require_cmd flac metaflac ffmpeg ffprobe flock
+  mkdir -p "$T/media"
+  ffmpeg -nostdin -v error -y -f lavfi -i 'sine=duration=1' \
+    -c:a pcm_s32le "$T/media/pcm32.mkv"
+  run_tool conversion/bluray-to-flac/bluray-to-flac.sh "$T/media/pcm32.mkv"
+  assert_eq "$(tool_rc)" 0 "rc ($(tool_out | tail -5))"
+  assert_eq "$(metaflac --show-bps "$T/media/pcm32.mkv.a0.flac")" 32
+}
+
+test_bluray_float_pcm_requires_explicit_reduction() {
+  require_cmd flac metaflac ffmpeg ffprobe flock
+  mkdir -p "$T/media"
+  ffmpeg -nostdin -v error -y -f lavfi -i 'sine=duration=1' \
+    -c:a pcm_f32le "$T/media/float.mkv"
+  run_tool conversion/bluray-to-flac/bluray-to-flac.sh "$T/media/float.mkv"
+  assert_eq "$(tool_rc)" 1
+  assert_grep 'requires --allow-float-reduction' "$T/out"
+  run_tool conversion/bluray-to-flac/bluray-to-flac.sh \
+    --allow-float-reduction "$T/media/float.mkv"
+  assert_eq "$(tool_rc)" 0 "rc ($(tool_out | tail -8))"
+  local tags
+  tags=$(metaflac --export-tags-to=- "$T/media/float.mkv.a0.flac")
+  assert_grep '^PRECISION_REDUCED=1$' "$tags"
+  assert_eq "$(metaflac --show-bps "$T/media/float.mkv.a0.flac")" 24
 }
 
 # --- disc-inventory --------------------------------------------------------------
