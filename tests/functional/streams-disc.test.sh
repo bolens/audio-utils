@@ -167,6 +167,18 @@ test_archive_audit_detects_semantic_manifest_tampering() {
   assert_eq "$(tool_rc)" 1 "full audit must reject forged manifest semantics"
 }
 
+test_archive_audit_accepts_historical_manifest_sessions() {
+  require_cmd flac metaflac ffmpeg ffprobe flock
+  mkdir -p "$T/media"
+  _mk_mkv "$T/media/program.mkv" 1
+  run_tool conversion/bluray-to-flac/bluray-to-flac.sh "$T/media/program.mkv"
+  assert_eq "$(tool_rc)" 0
+  run_tool conversion/bluray-to-flac/bluray-to-flac.sh "$T/media/program.mkv"
+  assert_eq "$(tool_rc)" 0
+  run_tool util/audit/archive-audit/archive-audit.sh "$T/media"
+  assert_eq "$(tool_rc)" 0 "append-only historical sessions remain valid"
+}
+
 test_bluray_preserves_original_stream_bit_for_bit() {
   require_cmd flac metaflac ffmpeg ffprobe flock
   require_ffmpeg_encoder ac3

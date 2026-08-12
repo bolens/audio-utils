@@ -22,6 +22,11 @@ archive_manifest_verify() {
   local dir=$1 manifest="$1/provenance/archive-manifest.jsonl"
   local f rel encoded line sha md5 samples count=0 records
   [[ -s "$manifest" ]] || return 1
+  while IFS= read -r line || [[ -n "$line" ]]; do
+    [[ "$line" == \{*\} && "$line" == *'"session":'* && \
+      "$line" == *'"flac":'* && "$line" == *'"audio_md5":'* && \
+      "$line" == *'"sha256":'* && "$line" == *'"samples":'* ]] || return 1
+  done <"$manifest"
   while IFS= read -r -d '' f; do
     rel=${f#"$dir"/}
     encoded=$(json_str "$rel")
@@ -35,7 +40,10 @@ archive_manifest_verify() {
     ((count++)) || true
   done < <(find -P "$dir" -type f -name '*.flac' -print0)
   records=$(grep -c '"flac":' "$manifest" || true)
-  ((count > 0 && records == count))
+  # The manifest is an append-only session history, so reruns can legitimately
+  # leave several records for one current FLAC. Every current file was checked
+  # against its latest record above; older records remain preservation evidence.
+  ((count > 0 && records >= count))
 }
 
 archive_preserved_streams_verify() {
