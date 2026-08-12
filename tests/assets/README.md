@@ -51,3 +51,11 @@ build/mac tone.wav tone.ape -c2000
 
 Decoded audio MD5 must equal the same source WAV MD5 as above:
 `ba7ed542b5cf1c48269e1b81681b54ee`.
+
+## makemkv robot transcripts
+
+`makemkv/robot-info.txt` and `makemkv/robot-warning.txt` are sanitized textual
+fixtures modeled on MakeMKV robot-mode output. They contain no media, keys,
+disc dumps, or identifying source data. Unit tests use them to lock down title
+inventory, duration filtering, and archival-warning classification without
+requiring an optical drive or MakeMKV in CI.

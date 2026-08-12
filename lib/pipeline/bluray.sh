@@ -45,7 +45,7 @@ bluray_disc_root() {
 bluray_media_readable() {
   local f="$1" n
   [[ -f "$f" ]] || return 1
-  n=$(ffprobe -v error -select_streams a -show_entries stream=index -of csv=p=0 -- "$f" 2>/dev/null | grep -c . || true)
+  n=$(ffprobe -v error -select_streams a -show_entries stream=index -of csv=p=0 -- "$f" 2>/dev/null | LC_ALL=C sort -u | grep -c . || true)
   ((n >= 1))
 }
 
@@ -170,6 +170,10 @@ bluray_expected_title_count() {
   '
 }
 
+bluray_extract_warnings() {
+  grep -iE 'read error|corrupt|failed|fatal|hash check failed' "$1" 2>/dev/null
+}
+
 # Extract authored titles from DEVICE_OR_DISC to OUTDIR (mkv files).
 # Args: SOURCE OUTDIR
 bluray_makemkv_backup() {
@@ -191,6 +195,7 @@ bluray_makemkv_backup() {
     log_err "Error: MakeMKV could not inventory $source"
     return 1
   }
+  printf '%s\n' "$info" >"$outdir/.makemkv-info.txt"
   expected=$(printf '%s\n' "$info" | bluray_expected_title_count "$title_spec" "$min_length")
   if ! "$bin" --robot "--minlength=$min_length" mkv \
     "$source" "$title_spec" "$outdir" >"$err" 2>&1; then
@@ -198,6 +203,11 @@ bluray_makemkv_backup() {
     log_err "FAILED makemkvcon: $source -> $outdir"
     [[ -s "$err" ]] && { log_err "  makemkv stderr:"; sed 's/^/  | /' "$err" | head -n 40 >&2; }
     return 1
+  fi
+  if bluray_extract_warnings "$err" >"$outdir/makemkv-warnings.log"; then
+    log_info "warning: MakeMKV reported archival warnings; see provenance/makemkv-warnings.log"
+  else
+    rm -f -- "$outdir/makemkv-warnings.log"
   fi
   created=$(find -P "$outdir" -maxdepth 3 -type f -iname '*.mkv' -printf . 2>/dev/null | wc -c)
   if [[ "$expected" =~ ^[1-9][0-9]*$ ]] && ((created < expected)); then
@@ -224,6 +234,23 @@ bluray_decrypt_or_copy() {
   mkdir -p -- "$outdir" || return 1
 
   kind=$(bluray_resolve_input "$src" 2>/dev/null) || kind=unknown
+
+  if [[ "${AUDIO_UTILS_BD_RESUME:-0}" -eq 1 ]]; then
+    while IFS= read -r -d '' f; do
+      if bluray_media_readable "$f"; then
+        printf '%s\0' "$f"
+        readable=1
+      else
+        unreadable=1
+      fi
+    done < <(bluray_list_plain_media --print0 "$outdir")
+    if ((readable && !unreadable)); then
+      log_info "resume: reusing staged MakeMKV titles under $outdir"
+      return 0
+    fi
+    readable=0
+    unreadable=0
+  fi
 
   case "$kind" in
     media_file)

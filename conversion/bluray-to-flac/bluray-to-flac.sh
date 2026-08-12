@@ -11,6 +11,10 @@
 #   -D DEVICE  Blu-ray device
 #   --title N|all       MakeMKV title selection (default: all)
 #   --minlength SEC     Ignore shorter MakeMKV titles (default: 0 keeps all)
+#   --allow-float-reduction  Permit verified float PCM -> 24-bit conversion
+#   --split-chapters    Also create verified per-chapter FLAC tracks
+#   --stage-dir DIR     Keep/reuse MakeMKV title MKVs under DIR
+#   --verify-archive DIR  Verify DIR/SHA256SUMS and exit
 #   -f FILE  -L FILE  -S FILE  --dirs0  -n  -y  -q  -v  -h  --version
 #   -j N       Accepted for CLI parity; extract is serial per title (ignored)
 #
@@ -38,6 +42,10 @@ DELETE_SOURCE=0
 BD_DEVICE="${AUDIO_UTILS_BD_DEVICE:-}"
 AUDIO_UTILS_BD_TITLE="${AUDIO_UTILS_BD_TITLE:-all}"
 AUDIO_UTILS_BD_MIN_LENGTH="${AUDIO_UTILS_BD_MIN_LENGTH:-0}"
+AUDIO_UTILS_BD_ALLOW_FLOAT="${AUDIO_UTILS_BD_ALLOW_FLOAT:-0}"
+AUDIO_UTILS_BD_STAGE_DIR="${AUDIO_UTILS_BD_STAGE_DIR:-}"
+AUDIO_UTILS_BD_SPLIT_CHAPTERS="${AUDIO_UTILS_BD_SPLIT_CHAPTERS:-0}"
+VERIFY_ARCHIVE=""
 
 usage() {
       sed -n '2,18p' "$0" | sed 's/^# \?//'
@@ -83,6 +91,18 @@ while (($# > 0)); do
       AUDIO_UTILS_BD_MIN_LENGTH=$2
       shift 2
       ;;
+    --allow-float-reduction) AUDIO_UTILS_BD_ALLOW_FLOAT=1; shift ;;
+    --split-chapters) AUDIO_UTILS_BD_SPLIT_CHAPTERS=1; shift ;;
+    --stage-dir)
+      [[ $# -ge 2 && -n "$2" ]] || { echo "Error: --stage-dir needs a directory" >&2; usage 2; }
+      AUDIO_UTILS_BD_STAGE_DIR=$2
+      shift 2
+      ;;
+    --verify-archive)
+      [[ $# -ge 2 && -n "$2" ]] || { echo "Error: --verify-archive needs a directory" >&2; usage 2; }
+      VERIFY_ARCHIVE=$2
+      shift 2
+      ;;
     -n) DRY_RUN=1; shift ;;
     -y) OVERWRITE=1; shift ;;
     -q) QUIET=1; shift ;;
@@ -106,6 +126,14 @@ done
   echo "Error: AUDIO_UTILS_BD_MIN_LENGTH needs a non-negative integer" >&2
   exit 2
 }
+[[ "$AUDIO_UTILS_BD_ALLOW_FLOAT" == 0 || "$AUDIO_UTILS_BD_ALLOW_FLOAT" == 1 ]] || {
+  echo "Error: AUDIO_UTILS_BD_ALLOW_FLOAT needs 0 or 1" >&2
+  exit 2
+}
+[[ "$AUDIO_UTILS_BD_SPLIT_CHAPTERS" == 0 || "$AUDIO_UTILS_BD_SPLIT_CHAPTERS" == 1 ]] || {
+  echo "Error: AUDIO_UTILS_BD_SPLIT_CHAPTERS needs 0 or 1" >&2
+  exit 2
+}
 if [[ -n "${AUDIO_UTILS_BD_DISC_ID:-}" && \
   ! "$AUDIO_UTILS_BD_DISC_ID" =~ ^[A-Za-z0-9][A-Za-z0-9._-]*$ ]]; then
   echo "Error: AUDIO_UTILS_BD_DISC_ID contains unsafe characters" >&2
@@ -119,11 +147,17 @@ fi
 
 export DRY_RUN OVERWRITE DELETE_SOURCE QUIET VERBOSE
 export AUDIO_UTILS_BD_TITLE AUDIO_UTILS_BD_MIN_LENGTH AUDIO_UTILS_BD_DISC_ID
+export AUDIO_UTILS_BD_ALLOW_FLOAT AUDIO_UTILS_BD_STAGE_DIR
+export AUDIO_UTILS_BD_SPLIT_CHAPTERS
 : "${FAIL_LOG:=$(audio_utils_state_dir bluray-to-flac)/failures.log}"
 : "${SUCCESS_LOG:=$(audio_utils_state_dir bluray-to-flac)/success.csv}"
 export FAIL_LOG SUCCESS_LOG
 
 plugin_require_deps || exit 2
+if [[ -n "$VERIFY_ARCHIVE" ]]; then
+  bluray_verify_archive "$VERIFY_ARCHIVE" || exit 1
+  exit 0
+fi
 init_success_log || exit 2
 
 PATHS=()
