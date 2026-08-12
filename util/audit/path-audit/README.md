@@ -11,6 +11,25 @@ Fix offenders with [`util/flac-rename`](../../flac/flac-rename/) or by hand.
 
 Part of **[audio-utils](../../../)**.
 
+## Choosing a target policy
+
+Default checks focus on component portability. Add `--max-path 260` for a
+legacy Windows-style byte budget or choose a limit matching the actual target
+and mount point.
+
+```bash
+./path-audit.sh /path/to/library
+./path-audit.sh --max-path 260 /path/to/library
+```
+
+Case-fold and normalization collisions matter even on a case-sensitive Linux
+source because two distinct names may collapse when copied elsewhere. `iconv`
+improves UTF-8 validation and `uconv` enables NFC collision checks; unavailable
+optional tools reduce those checks but do not make names portable by default.
+
+The audit is read-only and rejects `-d`, `-D`, and `-y`. Rename in controlled
+batches, update playlists/CUE references, and rerun after fixes.
+
 <!-- BEGIN GENERATED COMMAND REFERENCE -->
 ## Command reference
 

@@ -15,6 +15,26 @@ this tool only measures and reports.
 
 Part of **[audio-utils](../../../)**.
 
+## Measurements and thresholds
+
+Each file is fully analyzed by FFmpeg's EBU R128 filter. Integrated loudness
+describes programme level, LRA describes loudness variation, and true peak
+estimates inter-sample overs. `--min-lra` controls which low-range files enter
+the brickwall-suspect summary; it is a review threshold, not a mastering verdict.
+
+```bash
+./dynamics-report.sh --min-lra 3 /path/to/library
+./dynamics-report.sh --report /tmp/dynamics.tsv /path/to/library
+```
+
+Workers collect measurements and the final summary is published atomically, so
+a failed report write does not masquerade as a complete survey. Decode or parse
+failures produce findings rather than empty measurements.
+
+The tool never changes gain or tags. ReplayGain utilities answer a different
+question—playback normalization—and should not be used to erase legitimate
+dynamics findings.
+
 <!-- BEGIN GENERATED COMMAND REFERENCE -->
 ## Command reference
 

@@ -9,6 +9,27 @@ render cannot destroy an existing output.
 
 Part of **[audio-utils](../../../)**.
 
+## Rendering and filenames
+
+The complete source filename is retained in the sidecar name—`song.mp3`
+becomes `song.mp3.spectrogram.png`—so adjacent files with different extensions
+cannot collide. Set `SPECTROGRAM_SIZE` to change the default `1024x512` image.
+
+```bash
+./spectrogram-export.sh -n /path/to/review
+SPECTROGRAM_SIZE=1600x800 ./spectrogram-export.sh /path/to/review
+```
+
+SoX is preferred for FLAC and PCM containers when installed; FFmpeg's
+`showspectrumpic` handles other formats and is the fallback. The image is
+rendered to a temporary path, checked as a nonempty decodable image, and moved
+atomically. Existing PNGs are skipped unless `-y` is supplied, and a failed
+replacement leaves the prior image intact.
+
+A spectrogram is evidence for human review, not an automatic authenticity
+verdict. Compare suspicious frequency cutoffs or codec artifacts with the
+source history and [`flac-authenticity`](../../flac/flac-authenticity/).
+
 <!-- BEGIN GENERATED COMMAND REFERENCE -->
 ## Command reference
 

@@ -13,6 +13,26 @@ Opus and Vorbis are gapless by design and not scanned.
 
 Part of **[audio-utils](../../../)**.
 
+## What the audit proves
+
+The checks validate that recognized encoder-delay and padding structures are
+present and parseable. They do not play adjacent tracks or prove that album
+boundaries are perceptually seamless; incorrect source segmentation can still
+carry structurally valid metadata.
+
+```bash
+./gapless-audit.sh /path/to/portable-library
+```
+
+MP3 parsing follows the first MPEG frame and expected side-information offset,
+which prevents unrelated ID3 text from masquerading as a LAME tag. M4A requires
+a valid `iTunSMPB` with nonzero delay or padding. Raw ADTS AAC is flagged by
+design because it lacks a container metadata location.
+
+This is read-only and rejects mutation flags. Re-encode or remux using a tool
+that preserves encoder delay, then rerun; do not “fix” a finding by inserting
+unverified text metadata alone.
+
 <!-- BEGIN GENERATED COMMAND REFERENCE -->
 ## Command reference
 
