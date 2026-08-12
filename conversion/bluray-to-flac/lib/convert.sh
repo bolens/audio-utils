@@ -354,7 +354,14 @@ _bluray_archive_init() {
   mkdir -p -- "$prov" || return 1
   chmod u+w -- "$prov" "$prov"/* "$outdir/SHA256SUMS" 2>/dev/null || true
   AUDIO_UTILS_BD_SESSION_ID="$(date -u +%Y%m%dT%H%M%SZ)-$$"
-  export AUDIO_UTILS_BD_SESSION_ID
+  if [[ -s "$prov/package-id" ]]; then
+    AUDIO_UTILS_BD_PACKAGE_ID=$(<"$prov/package-id")
+  else
+    AUDIO_UTILS_BD_PACKAGE_ID="archive-${AUDIO_UTILS_BD_SESSION_ID}"
+    printf '%s\n' "$AUDIO_UTILS_BD_PACKAGE_ID" >"$prov/package-id"
+  fi
+  [[ "$AUDIO_UTILS_BD_PACKAGE_ID" =~ ^[A-Za-z0-9._-]+$ ]] || return 1
+  export AUDIO_UTILS_BD_SESSION_ID AUDIO_UTILS_BD_PACKAGE_ID
   rm -f -- "$outdir/ARCHIVE_COMPLETE.json"
   AUDIO_UTILS_BD_SESSION_MANIFEST="$prov/.session-${AUDIO_UTILS_BD_SESSION_ID}.jsonl"
   AUDIO_UTILS_BD_SESSION_VERSIONS="$prov/.session-${AUDIO_UTILS_BD_SESSION_ID}.versions"
@@ -384,6 +391,7 @@ _bluray_archive_record() {
   channels=$(audio_channels "$flac")
   bps=$(metaflac --show-bps "$flac")
   rel=${flac#"$outdir"/}
+  rel=${rel#./}
   append_locked "$AUDIO_UTILS_BD_SESSION_MANIFEST" \
     '{"timestamp":"%s","session":"%s","input":%s,"title":%s,"stream":%s,"flac":%s,"audio_md5":"%s","sha256":"%s","samples":%s,"sample_rate":%s,"channels":%s,"bits_per_sample":%s}\n' \
     "$(au_iso_timestamp)" "${AUDIO_UTILS_BD_SESSION_ID:-unknown}" \
@@ -459,29 +467,34 @@ bluray_write_checksums() {
 }
 
 _bluray_archive_finalize() {
-  local outdir="$1" sum_sha pct key f
+  local outdir="$1" sum_sha pct key f signed=false preserved=false sealed=false
   local -a recovery_files=()
   _bluray_archive_commit_metadata "$outdir" || return 1
   bluray_write_checksums "$outdir" || return 1
+  rm -f -- "$outdir/SHA256SUMS.minisig"
   if [[ -n "${AUDIO_UTILS_BD_SIGN_KEY:-}" ]]; then
+    signed=true
     key=$AUDIO_UTILS_BD_SIGN_KEY
     minisign -S -s "$key" -m "$outdir/SHA256SUMS" \
       -x "$outdir/SHA256SUMS.minisig" >/dev/null || return 1
   fi
   pct=${AUDIO_UTILS_BD_PAR2_PERCENT:-0}
+  [[ "${AUDIO_UTILS_BD_PRESERVE_STREAMS:-0}" -eq 1 ]] && preserved=true
+  [[ "${AUDIO_UTILS_BD_SEAL:-0}" -eq 1 ]] && sealed=true
+  find -P "$outdir" -maxdepth 1 -type f -name 'archive*.par2' -delete
   if ((pct > 0)); then
     while IFS= read -r -d '' f; do recovery_files+=("$f"); done < <(
       find -P "$outdir" -type f \( -name '*.flac' -o -name '*.source.mka' \
         -o -name '*.cue' -o -name '*.ffmetadata' -o -name '*.chapters.json' \
         -o -name 'SHA256SUMS' -o -name 'SHA256SUMS.minisig' \
         -o -path '*/provenance/*' \) -print0)
-    find -P "$outdir" -maxdepth 1 -type f -name 'archive*.par2' -delete
     par2 create -q "-r$pct" "$outdir/archive" "${recovery_files[@]}" >/dev/null || return 1
   fi
   sync -f "$outdir" 2>/dev/null || sync
   sum_sha=$(file_sha256 "$outdir/SHA256SUMS")
-  printf '{"status":"complete","session":"%s","completed":"%s","sha256sums":"%s"}\n' \
-    "$AUDIO_UTILS_BD_SESSION_ID" "$(au_iso_timestamp)" "$sum_sha" \
+  printf '{"status":"complete","package_id":"%s","session":"%s","completed":"%s","sha256sums":"%s","signed":%s,"par2_percent":%s,"preserved_streams":%s,"sealed":%s}\n' \
+    "$AUDIO_UTILS_BD_PACKAGE_ID" "$AUDIO_UTILS_BD_SESSION_ID" "$(au_iso_timestamp)" "$sum_sha" \
+    "$signed" "$pct" "$preserved" "$sealed" \
     >"$outdir/ARCHIVE_COMPLETE.json"
   sync -f "$outdir/ARCHIVE_COMPLETE.json" 2>/dev/null || sync
   if [[ "${AUDIO_UTILS_BD_SEAL:-0}" -eq 1 ]]; then
