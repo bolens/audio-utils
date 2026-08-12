@@ -22,7 +22,7 @@ _aba_audit_unit() {
   local unit=$1
   local -a issues=() files=()
   local f title artist narrator series series_part codec n track num total rate
-  local -A series_seen=() rates=() tracks_seen=()
+  local -A series_seen=() rates=() tracks_seen=() totals_seen=()
   local missing_title=0 missing_track=0 duplicate_track=0 max_track=0
 
   if [[ -f "$unit" ]]; then
@@ -96,6 +96,11 @@ _aba_audit_unit() {
       [[ -z "$rate" ]] || rates["$rate"]=1
       track=$(audio_meta_get "$f" TRACKNUMBER)
       [[ -n "$track" ]] || track=$(audio_meta_get "$f" track)
+      if [[ "$track" == */* ]]; then
+        total=${track#*/}
+        [[ "$total" =~ ^[0-9]+$ && $((10#$total)) -gt 0 ]] && totals_seen[$((10#$total))]=1 \
+          || issues+=("invalid-track-total")
+      fi
       track=${track%%/*}
       if [[ "$track" =~ ^[0-9]+$ ]]; then
         num=$((10#$track))
@@ -126,6 +131,13 @@ _aba_audit_unit() {
     total=${#tracks_seen[@]}
     if ((total > 0)) && { ((max_track != total)) || [[ -z "${tracks_seen[1]:-}" ]]; }; then
       issues+=("track-gaps:${total}/${max_track}")
+    fi
+    if ((${#totals_seen[@]} > 1)); then
+      issues+=("mismatched-track-totals")
+    elif ((${#totals_seen[@]} == 1)); then
+      for n in "${!totals_seen[@]}"; do
+        ((n == total)) || issues+=("declared-track-total:${n}/${total}")
+      done
     fi
     if ((${#rates[@]} > 1)); then
       issues+=("mixed-sample-rates")

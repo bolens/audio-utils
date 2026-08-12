@@ -18,7 +18,8 @@ _gap_mp3_offset() {
 }
 
 _gap_check_mp3() {
-  local f=$1 offset window encoder_at b0 b1 b2 delay padding
+  local f=$1 offset window encoder_at b0 b1 b2 b3 h version mode crc side xing_at tag
+  local flags cursor delay padding encoder
   local -n _gap_issues=$2
   offset=$(_gap_mp3_offset "$f")
   window=$(dd if="$f" bs=8192 iflag=skip_bytes,count_bytes \
@@ -31,8 +32,30 @@ _gap_check_mp3() {
     *LAME* | *Lavc*) ;;
     *) _gap_issues+=("no-lame-tag") ;;
   esac
-  encoder_at=$(LC_ALL=C grep -aboE -m1 'LAME|Lavc' -- "$f" 2>/dev/null | cut -d: -f1)
-  if [[ "$encoder_at" =~ ^[0-9]+$ ]]; then
+  read -r b0 b1 b2 b3 < <(od -An -tu1 -j "$offset" -N 4 -- "$f")
+  if [[ ! "$b0 $b1 $b2 $b3" =~ ^[0-9]+\ [0-9]+\ [0-9]+\ [0-9]+$ ]]; then
+    _gap_issues+=("invalid-mp3-frame"); return
+  fi
+  h=$((b0 << 24 | b1 << 16 | b2 << 8 | b3))
+  (( (h & 0xffe00000) == 0xffe00000 )) || { _gap_issues+=("invalid-mp3-frame"); return; }
+  version=$(((h >> 19) & 3)); mode=$(((h >> 6) & 3)); crc=$(((h >> 16) & 1))
+  if ((version == 3)); then
+    if ((mode == 3)); then side=17; else side=32; fi
+  else
+    if ((mode == 3)); then side=9; else side=17; fi
+  fi
+  xing_at=$((offset + 4 + (crc == 0 ? 2 : 0) + side))
+  tag=$(dd if="$f" bs=1 skip="$xing_at" count=4 2>/dev/null)
+  [[ "$tag" == Xing || "$tag" == Info ]] || { _gap_issues+=("invalid-xing-location"); return; }
+  read -r b0 b1 b2 b3 < <(od -An -tu1 -j "$((xing_at + 4))" -N 4 -- "$f")
+  flags=$((b0 << 24 | b1 << 16 | b2 << 8 | b3)); cursor=$((xing_at + 8))
+  ((flags & 1)) && ((cursor += 4)) || true
+  ((flags & 2)) && ((cursor += 4)) || true
+  ((flags & 4)) && ((cursor += 100)) || true
+  ((flags & 8)) && ((cursor += 4)) || true
+  encoder=$(dd if="$f" bs=1 skip="$cursor" count=4 2>/dev/null)
+  if [[ "$encoder" == LAME || "$encoder" == Lavc ]]; then
+    encoder_at=$cursor
     read -r b0 b1 b2 < <(od -An -tu1 -j "$((encoder_at + 21))" -N 3 -- "$f")
     if [[ "$b0" =~ ^[0-9]+$ && "$b1" =~ ^[0-9]+$ && "$b2" =~ ^[0-9]+$ ]]; then
       delay=$((b0 << 4 | b1 >> 4))
@@ -44,6 +67,7 @@ _gap_check_mp3() {
       _gap_issues+=("invalid-delay-padding")
     fi
   else
+    _gap_issues+=("no-structural-lame-tag")
     _gap_issues+=("invalid-delay-padding")
   fi
 }

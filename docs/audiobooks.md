@@ -14,6 +14,10 @@ ffmetadata extract/embed).
 | [`conversion/m4b-to-tracks/`](../conversion/m4b-to-tracks/) | `.m4b` → per-chapter files |
 | [`util/audiobook/audiobook-audit/`](../util/audiobook/audiobook-audit/) | Cover / tags / chapters / series QC |
 
+For multi-file books, the audit normalizes `TRACKNUMBER[/TOTAL]`, requires a
+contiguous unique sequence, and reports inconsistent or incorrect declared
+totals.
+
 Related (not audiobook-specific): [`silence-split`](../util/flac/silence-split/)
 for long-file → numbered tracks; [`cue-to-flac`](../conversion/cue-to-flac/) /
 [`flac-cue-export`](../util/flac/flac-cue-export/) for CUE workflows;

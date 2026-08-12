@@ -37,6 +37,49 @@ cue_file_name_from_line() {
   printf '%s' "$name"
 }
 
+# Print every FILE operand as a NUL-delimited sequence.
+cue_list_file_names0() {
+  local cue_path=$1 line rest name
+  while IFS= read -r line || [[ -n "$line" ]]; do
+    line=${line%$'\r'}
+    line="${line#"${line%%[![:space:]]*}"}"
+    case "${line^^}" in
+      FILE[[:space:]]*)
+        rest=${line#*[Ff][Ii][Ll][Ee]}
+        name=$(cue_file_name_from_line "$rest")
+        [[ -n "$name" ]] || return 1
+        printf '%s\0' "$name"
+        ;;
+    esac
+  done <"$cue_path"
+}
+
+cue_resolve_named_image() {
+  local cue_path=$1 found=$2 cue_dir candidate stem ext base lower
+  local -a try_exts=(wav flac ape mp3 aiff aif wv tak bin)
+  cue_dir=$(cd "$(dirname -- "$cue_path")" && pwd) || return 1
+  [[ "$found" == /* ]] && candidate=$found || candidate="${cue_dir}/${found}"
+  if [[ -f "$candidate" ]]; then
+    printf '%s\n' "$(cd "$(dirname -- "$candidate")" && pwd)/$(basename -- "$candidate")"
+    return 0
+  fi
+  stem=${found%.*}
+  for ext in "${try_exts[@]}"; do
+    for candidate in "${cue_dir}/${stem}.${ext}" "${cue_dir}/${stem}.${ext^^}"; do
+      [[ -f "$candidate" ]] || continue
+      printf '%s\n' "$(cd "$(dirname -- "$candidate")" && pwd)/$(basename -- "$candidate")"
+      return 0
+    done
+  done
+  base=$(basename -- "$found"); lower=${base,,}
+  while IFS= read -r -d '' candidate; do
+    if [[ "$(basename -- "${candidate,,}")" == "$lower" ]]; then
+      printf '%s\n' "$candidate"; return 0
+    fi
+  done < <(find "$cue_dir" -maxdepth 1 -type f -print0 2>/dev/null)
+  return 1
+}
+
 # Sanitize a track title for use as a filename component.
 cue_sanitize_filename() {
   local s="$1" out c i
@@ -87,11 +130,7 @@ cue_resolve_image() {
     return 1
   fi
 
-  if [[ "$found" == /* ]]; then
-    candidate=$found
-  else
-    candidate="${cue_dir}/${found}"
-  fi
+  if cue_resolve_named_image "$cue_path" "$found"; then return 0; fi
 
   if [[ -f "$candidate" ]]; then
     printf '%s\n' "$(cd "$(dirname -- "$candidate")" && pwd)/$(basename -- "$candidate")"

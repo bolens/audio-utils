@@ -18,6 +18,9 @@ Album/
 
 ## Limits
 
+- `cue-audit` validates every `FILE` section in multi-file sheets, including
+  per-image decoding and `INDEX 01` bounds. `cue-to-flac` conversion remains a
+  single-image workflow.
 - No pregaps/`INDEX 00` gap handling beyond start at INDEX 01.
 - Non-UTF-8 CUE sheets may need conversion first.
 - Filename sanitization strips path separators and control chars.
