@@ -54,6 +54,25 @@ Example dry-run:
 
 Or via meta `run_tool` with `"name": "flac-verify"`.
 
+`bluray_to_flac` has a typed schema for its disc and preservation controls,
+including title/minimum-length selection, checksummed staging, chapter splits,
+original-stream preservation, minisign keys, PAR2 recovery data, and sealing.
+Archive verification and full audits do not need dummy input paths:
+
+```json
+{
+  "name": "bluray_to_flac",
+  "arguments": {
+    "archive_action": "audit",
+    "archive_path": "/archive/disc/flac",
+    "sign_public_key": "RW..."
+  }
+}
+```
+
+Device conversion likewise accepts `"device": "/dev/sr0"` without `paths`.
+The generic `args` array remains available for forward-compatible CLI flags.
+
 ## Direct stdio
 
 ```bash
