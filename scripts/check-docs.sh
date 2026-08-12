@@ -2,7 +2,7 @@
 # Validate repository-local Markdown paths, reference links, and heading anchors.
 set -euo pipefail
 
-ROOT=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
+ROOT=${AUDIO_UTILS_DOCS_ROOT:-$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)}
 fail=0
 
 anchor_exists() {
@@ -60,15 +60,41 @@ check_target() {
   fi
 }
 
-while IFS= read -r file; do
+extract_inline_targets() {
+  awk '
+    {
+      rest = $0
+      while (match(rest, /\]\(/)) {
+        start = RSTART
+        text = "]("; depth = 1; escaped = 0; end = 0
+        for (i = start + 2; i <= length(rest); i++) {
+          ch = substr(rest, i, 1)
+          if (escaped) { text = text ch; escaped = 0; continue }
+          if (ch == "\\") { text = text ch; escaped = 1; continue }
+          if (ch == "(") depth++
+          if (ch == ")") {
+            depth--
+            if (depth == 0) { end = i; break }
+          }
+          text = text ch
+        }
+        if (!end) break
+        print text ")"
+        rest = substr(rest, end + 1)
+      }
+    }
+  ' "$1"
+}
+
+while IFS= read -r -d '' file; do
   while IFS= read -r target; do
     check_target "$file" "$target"
   done < <(
     {
-      grep -oE '\]\([^)]+\)' "$file" 2>/dev/null || true
+      extract_inline_targets "$file"
       sed -nE 's/^\[[^]]+\]:[[:space:]]*<?([^ >]+)>?.*/\1/p' "$file"
     } | sort -u
   )
-done < <(find "$ROOT" -type f -name '*.md' -not -path '*/node_modules/*' -print)
+done < <(find "$ROOT" -type f -name '*.md' -not -path '*/node_modules/*' -print0)
 
 exit "$fail"

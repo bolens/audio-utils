@@ -80,13 +80,13 @@ check-mcp:
 	$(SHELLCHECK) $(MCP_SCRIPTS)
 
 check-docs:
-	bash scripts/check-docs.sh
+	scripts/check-docs.sh
 
 check-tool-readmes:
 	bash scripts/sync-tool-readmes.sh --check
 
 check-actions:
-	bash scripts/check-action-pins.sh
+	scripts/check-action-pins.sh
 
 check-tests:
 	$(SHELLCHECK) $(TEST_SCRIPTS)
@@ -117,7 +117,7 @@ clean-tests:
 	@echo "removed test fixture cache and stray test sandboxes"
 
 coverage:
-	bash scripts/coverage-audit.sh
+	scripts/coverage-audit.sh
 
 # Monkey's Audio (APE) codec management — no official Linux build exists.
 # Extra flags (e.g. --version, --sha256, --force): APE_FLAGS="..."
