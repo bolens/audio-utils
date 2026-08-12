@@ -6,6 +6,24 @@ Requires **libdvdcss**. Uses existing VOBs on disk (not a device ripper).
 
 Part of **[audio-utils](../../)**.
 
+## Input and verification
+
+Pass an already copied `VIDEO_TS` directory. The converter does not read an
+optical device or invoke `dvdbackup`; CSS support comes from installed system
+libraries. Menu `VTS_*_0.VOB` files are skipped and title audio is processed
+serially.
+
+```bash
+./dvd-to-flac.sh -n /path/to/DVD/VIDEO_TS
+./dvd-to-flac.sh /path/to/DVD/VIDEO_TS
+```
+
+Each readable audio stream becomes a verified FLAC beside the disc tree, with
+available codec/language metadata retained. Lossy AC-3 or DTS remains lossy in
+information content after decoding. The tool never deletes VOBs; failures leave
+the source tree intact. DVD-Audio CPPM is outside this path—use decrypted AOB
+media with `streams-to-flac`. See [disc workflows](../../docs/discs.md).
+
 <!-- BEGIN GENERATED COMMAND REFERENCE -->
 ## Command reference
 

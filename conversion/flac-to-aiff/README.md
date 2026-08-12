@@ -6,6 +6,18 @@ Verified FLAC → AIFF (bit-depth-matched big-endian PCM, dual-decode MD5, tags)
 make convert-quiet
 ```
 
+## Output and verification
+
+AIFF is uncompressed PCM, so outputs are much larger than FLAC. The converter
+selects bit-depth-matched big-endian PCM and compares independently decoded PCM
+MD5 before atomically installing the `.aiff` sibling.
+
+Existing AIFF files are skipped only when they probe correctly and contain the
+same samples. `-d` and cleanup-only `-D` use that strong check; normally retain
+FLAC as the archive master. Tags are copied where AIFF supports them, but custom
+Vorbis comments and pictures may not map perfectly. See
+[format verification](../../docs/formats.md).
+
 <!-- BEGIN GENERATED COMMAND REFERENCE -->
 ## Command reference
 

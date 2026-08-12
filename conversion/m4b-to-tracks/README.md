@@ -12,6 +12,19 @@ See [audiobooks](../../docs/audiobooks.md). Part of **[audio-utils](../../)**.
 make help
 ```
 
+## Chapter extraction
+
+The input must contain usable chapter metadata. Chapters become numbered files
+under a directory named after the book stem, with sanitized titles. AAC/ALAC
+can normally be stream-copied to `.m4a`; Opus falls back to `.opus` when MP4
+remuxing is unsupported.
+
+Chapter ranges and outputs are probed before completion, and book metadata is
+copied where the destination permits it. Existing valid tracks are retained.
+The source M4B is always kept and deletion flags are rejected, preserving its
+chapters, cover, and MP4-specific metadata. The tool does not infer chapters
+from silence or bypass DRM. See [audiobook workflows](../../docs/audiobooks.md).
+
 <!-- BEGIN GENERATED COMMAND REFERENCE -->
 ## Command reference
 
