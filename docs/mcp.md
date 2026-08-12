@@ -33,7 +33,7 @@ Restart Cursor (or reload MCP). The server exposes:
 
 | Gate | Default |
 |------|---------|
-| Paths | **Required** (≥1). No pathless `AUDIO_UTILS_ROOTS` batch from MCP |
+| Paths | Explicit `paths` (≥1) or `input_file` (`-f`) required. No implicit `AUDIO_UTILS_ROOTS` batch from MCP |
 | Destructive (`-d` / `-D` / `--apply`) | Blocked unless `allow_destructive=true` |
 | Network (`tags-lookup`) | Blocked unless `allow_network=true` |
 | Jobs | Default `-j 1` |
@@ -53,6 +53,13 @@ Example dry-run:
 ```
 
 Or via meta `run_tool` with `"name": "flac-verify"`.
+
+Per-tool schemas derive common supported controls from each CLI's live help:
+`input_file`, deletion/cleanup, clean/retag/overwrite modes, verbosity, and log
+paths appear only where the CLI supports them. Every other current or future
+tool-specific option remains available losslessly through `args`, using the
+exact tokens shown by `tool_help`. Destructive and network options still pass
+through the gates above.
 
 `bluray_to_flac` has a typed schema for its disc and preservation controls,
 including title/minimum-length selection, checksummed staging, chapter splits,

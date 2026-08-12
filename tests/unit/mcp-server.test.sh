@@ -212,6 +212,45 @@ test_mcp_audit_schemas_expose_custom_controls() {
   assert_grep '"strict"' "$(mcp_audit_schema_json rip-log-audit)"
 }
 
+test_mcp_tool_schemas_expose_supported_common_options() {
+  _load_mcp
+  local schema
+  schema=$(mcp_tool_schema_json 0 wav-to-flac)
+  for key in input_file delete_source cleanup_existing clean retag overwrite \
+    verbose failure_log success_log; do
+    assert_grep "\"$key\"" "$schema"
+  done
+  assert_grep 'full option parity' "$schema"
+  assert_grep '"required":["input_file"]' "$schema"
+
+  schema=$(mcp_tool_schema_json 0 flac-verify)
+  if grep -Fq '"delete_source"' <<<"$schema"; then
+    fail 'read-only flac-verify schema advertises delete_source'
+  fi
+}
+
+test_mcp_builds_typed_common_arguments() {
+  _load_mcp
+  mcp_parse_run_args_from_json \
+    '{"input_file":"/tmp/dirs","delete_source":true,"overwrite":true,"failure_log":"/tmp/fail","success_log":"/tmp/ok","verbose":true,"quiet":false}' \
+    wav-to-flac
+  assert_eq "$MCP_ARG_HAS_PATH_INPUT" true
+  mcp_build_cli_argv wav-to-flac
+  local joined
+  printf -v joined '%q ' "${MCP_CLI_ARGV[@]}"
+  assert_grep '-f /tmp/dirs' "$joined"
+  assert_grep '-d' "$joined"
+  assert_grep '-y' "$joined"
+  assert_grep '-L /tmp/fail' "$joined"
+  assert_grep '-S /tmp/ok' "$joined"
+  assert_grep '-v' "$joined"
+  assert_exit 1 mcp_parse_run_args_from_json \
+    '{"delete_source":true}' flac-verify
+
+  mcp_parse_run_args_from_json '{"args":["-f","/tmp/dirs"]}' wav-to-flac
+  assert_eq "$MCP_ARG_HAS_PATH_INPUT" true
+}
+
 test_mcp_builds_typed_audit_arguments() {
   _load_mcp
   mcp_parse_audit_args_from_json archive-audit \

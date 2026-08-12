@@ -405,6 +405,7 @@ mcp_read_message() {
 #   MCP_TOOL_CATEGORY[i]— category or empty
 #   MCP_TOOL_PATH[i]    — absolute entry script
 #   MCP_TOOL_SUMMARY[i] — one-line summary
+#   MCP_TOOL_HELP[i]    — live --help text used for option-aware schemas
 
 declare -ga MCP_TOOL_NAMES=()
 declare -ga MCP_TOOL_MCP=()
@@ -412,6 +413,7 @@ declare -ga MCP_TOOL_KIND=()
 declare -ga MCP_TOOL_CATEGORY=()
 declare -ga MCP_TOOL_PATH=()
 declare -ga MCP_TOOL_SUMMARY=()
+declare -ga MCP_TOOL_HELP=()
 
 mcp_cli_to_mcp_name() {
   printf '%s' "${1//-/_}"
@@ -454,6 +456,7 @@ mcp_discover() {
   MCP_TOOL_CATEGORY=()
   MCP_TOOL_PATH=()
   MCP_TOOL_SUMMARY=()
+  MCP_TOOL_HELP=()
 
   local dir name script kind category summary
   # conversion/<name>/
@@ -479,6 +482,7 @@ mcp_discover() {
     MCP_TOOL_CATEGORY+=("$category")
     MCP_TOOL_PATH+=("$script")
     MCP_TOOL_SUMMARY+=("$summary")
+    MCP_TOOL_HELP+=('')
   done
 
   # util/<category>/<name>/
@@ -497,6 +501,7 @@ mcp_discover() {
     MCP_TOOL_CATEGORY+=("$category")
     MCP_TOOL_PATH+=("$script")
     MCP_TOOL_SUMMARY+=("$summary")
+    MCP_TOOL_HELP+=('')
   done
 }
 
@@ -610,38 +615,74 @@ mcp_format_run_result() {
 
 # --- shared input schema JSON fragment ----------------------------------------
 
+mcp_tool_supports_flag() {
+  local tool=$1 flag=$2 idx help
+  idx=$(mcp_resolve_index "$tool") || return 1
+  help=${MCP_TOOL_HELP[idx]}
+  if [[ -z "$help" ]]; then
+    help=$("${MCP_TOOL_PATH[idx]}" --help 2>&1 || true)
+    MCP_TOOL_HELP[idx]=$help
+  fi
+  if grep -Ei "(${flag}.*reject|reject.*${flag})" <<<"$help" >/dev/null; then
+    return 1
+  fi
+  grep -Eq "(^|[[:space:]/])${flag}([=[:space:]/,]|$)" <<<"$help"
+}
+
 mcp_shared_props_json() {
-  # Optional: include_name=1 adds name property
+  # Optional: include_name=1 adds name; tool enables supported typed flags.
   local include_name=${1:-0}
+  local tool=${2:-}
   local props=''
   if [[ "$include_name" == 1 ]]; then
     props+='"name":{"type":"string","description":"CLI tool name (e.g. flac-verify, wav-to-flac)"},'
   fi
   props+='"paths":{"type":"array","items":{"type":"string"},"minItems":1,"description":"Directories or files to process (required; never empty)"},'
-  props+='"args":{"type":"array","items":{"type":"string"},"description":"Extra CLI flags"},'
+  props+='"args":{"type":"array","items":{"type":"string"},"description":"Additional CLI options, exactly as shown by tool_help; provides full option parity"},'
   props+='"jobs":{"type":"integer","default":1,"description":"Parallel jobs (-j N); default 1"},'
   props+='"dry_run":{"type":"boolean","default":false,"description":"Pass -n (dry run)"},'
   props+='"allow_destructive":{"type":"boolean","default":false,"description":"Allow -d/-D/--apply"},'
   props+='"allow_network":{"type":"boolean","default":false,"description":"Allow tags-lookup network"},'
   props+='"quiet":{"type":"boolean","default":true,"description":"Pass -q (default true)"}'
+  if [[ "$include_name" == 1 ]] || { [[ -n "$tool" ]] && mcp_tool_supports_flag "$tool" -f; }; then
+    props+=',"input_file":{"type":"string","description":"Read paths from FILE (-f)"}'
+  fi
+  if [[ -n "$tool" ]]; then
+    mcp_tool_supports_flag "$tool" -d && props+=',"delete_source":{"type":"boolean","default":false,"description":"Delete source after verified success (-d); requires allow_destructive"}'
+    if [[ "$tool" != bluray-to-flac ]] && mcp_tool_supports_flag "$tool" -D; then
+      props+=',"cleanup_existing":{"type":"boolean","default":false,"description":"Cleanup sources with verified outputs (-D); requires allow_destructive"}'
+    fi
+    mcp_tool_supports_flag "$tool" -c && props+=',"clean":{"type":"boolean","default":false,"description":"Pass the tool-specific -c operation"}'
+    mcp_tool_supports_flag "$tool" -R && props+=',"retag":{"type":"boolean","default":false,"description":"Retag existing outputs (-R)"}'
+    mcp_tool_supports_flag "$tool" -y && props+=',"overwrite":{"type":"boolean","default":false,"description":"Overwrite or apply the tool-specific -y behavior"}'
+    mcp_tool_supports_flag "$tool" -v && props+=',"verbose":{"type":"boolean","default":false,"description":"Verbose output (-v)"}'
+    mcp_tool_supports_flag "$tool" -L && props+=',"failure_log":{"type":"string","description":"Failure log path (-L)"}'
+    mcp_tool_supports_flag "$tool" -S && props+=',"success_log":{"type":"string","description":"Success log path (-S)"}'
+  fi
   printf '%s' "$props"
 }
 
 mcp_tool_schema_json() {
   local include_name=${1:-0}
-  local required
+  local tool=${2:-}
+  local required tail
   if [[ "$include_name" == 1 ]]; then
-    required='["name","paths"]'
+    required='["name"]'
+    tail=',"anyOf":[{"required":["paths"]},{"required":["input_file"]}]'
+  elif [[ -n "$tool" ]] && mcp_tool_supports_flag "$tool" -f; then
+    required='[]'
+    tail=',"anyOf":[{"required":["paths"]},{"required":["input_file"]}]'
   else
     required='["paths"]'
+    tail=''
   fi
-  printf '{"type":"object","properties":{%s},"required":%s}' \
-    "$(mcp_shared_props_json "$include_name")" "$required"
+  printf '{"type":"object","properties":{%s},"required":%s%s}' \
+    "$(mcp_shared_props_json "$include_name" "$tool")" "$required" "$tail"
 }
 
 mcp_bluray_schema_json() {
   printf '%s' '{"type":"object","properties":{'
-  mcp_shared_props_json 0
+  mcp_shared_props_json 0 bluray-to-flac
   printf '%s' ',"device":{"type":"string","description":"Blu-ray device (-D)"}'
   printf '%s' ',"title":{"oneOf":[{"type":"integer","minimum":0},{"const":"all"}],"default":"all","description":"MakeMKV title selection"}'
   printf '%s' ',"minlength":{"type":"integer","minimum":0,"description":"Minimum authored-title length in seconds"}'
@@ -655,7 +696,7 @@ mcp_bluray_schema_json() {
   printf '%s' ',"sign_public_key":{"type":"string","description":"Minisign public key used during archive verification"}'
   printf '%s' ',"par2_percent":{"type":"integer","minimum":0,"maximum":100,"description":"PAR2 recovery-data percentage"}'
   printf '%s' ',"seal":{"type":"boolean","default":false,"description":"Flush and make archive metadata read-only"}'
-  printf '%s' '},"anyOf":[{"required":["paths"]},{"required":["device"]},{"required":["archive_action","archive_path"]}]}'
+  printf '%s' '},"anyOf":[{"required":["paths"]},{"required":["input_file"]},{"required":["device"]},{"required":["archive_action","archive_path"]}]}'
 }
 
 mcp_audit_schema_json() {
@@ -671,8 +712,8 @@ mcp_audit_schema_json() {
     album-incomplete) extra=',"duration_ratio":{"type":"number","exclusiveMinimum":0,"exclusiveMaximum":1},"no_duration":{"type":"boolean","default":false}' ;;
     lossy-authenticity | rip-log-audit) extra=',"strict":{"type":"boolean","default":false}' ;;
   esac
-  printf '{"type":"object","properties":{%s%s},"required":["paths"]}' \
-    "$(mcp_shared_props_json 0)" "$extra"
+  printf '{"type":"object","properties":{%s%s},"anyOf":[{"required":["paths"]},{"required":["input_file"]}]}' \
+    "$(mcp_shared_props_json 0 "$tool")" "$extra"
 }
 
 # --- build tools/list ---------------------------------------------------------
@@ -701,7 +742,7 @@ mcp_tools_list_json() {
     elif [[ "${MCP_TOOL_CATEGORY[i]}" == audit ]]; then
       schema=$(mcp_audit_schema_json "${MCP_TOOL_NAMES[i]}")
     else
-      schema=$(mcp_tool_schema_json 0)
+      schema=$(mcp_tool_schema_json 0 "${MCP_TOOL_NAMES[i]}")
     fi
     parts+=("$(printf '{"name":%s,"description":%s,"inputSchema":%s}' \
       "$(mcp_json_string "$mcp_name")" \
@@ -728,7 +769,7 @@ mcp_parse_run_args_from_json() {
   #   MCP_ARG_PATHS (array) MCP_ARG_ARGS (array)
   #   MCP_ARG_JOBS MCP_ARG_DRY_RUN MCP_ARG_ALLOW_DESTRUCTIVE
   #   MCP_ARG_ALLOW_NETWORK MCP_ARG_QUIET
-  local args_json=$1
+  local args_json=$1 tool=${2:-}
   MCP_ARG_PATHS=()
   MCP_ARG_ARGS=()
   MCP_ARG_JOBS=1
@@ -738,6 +779,7 @@ mcp_parse_run_args_from_json() {
   MCP_ARG_QUIET=true
   MCP_CLI_ENV=()
   MCP_ARG_BLURAY_PATHLESS=false
+  MCP_ARG_HAS_PATH_INPUT=false
 
   local v
 
@@ -747,6 +789,7 @@ mcp_parse_run_args_from_json() {
       [[ -n "$v" ]] && MCP_ARG_PATHS+=("$v")
     done < <(mcp_json_get_string_array "$args_json" paths)
   fi
+  ((${#MCP_ARG_PATHS[@]} == 0)) || MCP_ARG_HAS_PATH_INPUT=true
 
   if mcp_json_after_key "$args_json" args >/dev/null 2>&1; then
     mcp_json_get_string_array "$args_json" args >/dev/null || return 1
@@ -754,6 +797,9 @@ mcp_parse_run_args_from_json() {
       [[ -n "$v" ]] && MCP_ARG_ARGS+=("$v")
     done < <(mcp_json_get_string_array "$args_json" args)
   fi
+  for v in "${MCP_ARG_ARGS[@]+"${MCP_ARG_ARGS[@]}"}"; do
+    [[ "$v" == -f ]] && MCP_ARG_HAS_PATH_INPUT=true
+  done
 
   if v=$(mcp_json_get_number "$args_json" jobs 2>/dev/null); then
     MCP_ARG_JOBS=$v
@@ -770,6 +816,37 @@ mcp_parse_run_args_from_json() {
   if v=$(mcp_json_get_bool "$args_json" quiet 2>/dev/null); then
     MCP_ARG_QUIET=$v
   fi
+
+  local key flag
+  for key in input_file failure_log success_log; do
+    if mcp_json_after_key "$args_json" "$key" >/dev/null 2>&1; then
+      v=$(mcp_json_get_string "$args_json" "$key") || return 1
+      [[ -n "$v" ]] || return 1
+      case "$key" in
+        input_file) flag=-f; MCP_ARG_HAS_PATH_INPUT=true ;;
+        failure_log) flag=-L ;;
+        success_log) flag=-S ;;
+      esac
+      [[ -z "$tool" ]] || mcp_tool_supports_flag "$tool" "$flag" || return 1
+      MCP_ARG_ARGS+=("$flag" "$v")
+    fi
+  done
+  for key in delete_source cleanup_existing clean retag overwrite verbose; do
+    if mcp_json_after_key "$args_json" "$key" >/dev/null 2>&1; then
+      v=$(mcp_json_get_bool "$args_json" "$key") || return 1
+      [[ "$v" == true ]] || continue
+      case "$key" in
+        delete_source) flag=-d ;;
+        cleanup_existing) flag=-D ;;
+        clean) flag=-c ;;
+        retag) flag=-R ;;
+        overwrite) flag=-y ;;
+        verbose) flag=-v ;;
+      esac
+      [[ -z "$tool" ]] || mcp_tool_supports_flag "$tool" "$flag" || return 1
+      MCP_ARG_ARGS+=("$flag")
+    fi
+  done
 }
 
 mcp_bluray_add_bool_flag() {
@@ -782,7 +859,7 @@ mcp_bluray_add_bool_flag() {
 
 mcp_parse_bluray_args_from_json() {
   local json=$1 value action archive
-  mcp_parse_run_args_from_json "$json" || return 1
+  mcp_parse_run_args_from_json "$json" bluray-to-flac || return 1
 
   if mcp_json_after_key "$json" device >/dev/null 2>&1; then
     value=$(mcp_json_get_string "$json" device) || return 1
@@ -839,7 +916,7 @@ mcp_parse_bluray_args_from_json() {
 
 mcp_parse_audit_args_from_json() {
   local tool=$1 json=$2 value
-  mcp_parse_run_args_from_json "$json" || return 1
+  mcp_parse_run_args_from_json "$json" "$tool" || return 1
   case "$tool" in
     archive-audit)
       mcp_bluray_add_bool_flag "$json" quick --quick || return 1
@@ -1053,7 +1130,7 @@ mcp_handle_tools_call() {
           echo "invalid run_tool arguments" >&2; return 1;
         }
       else
-        mcp_parse_run_args_from_json "$args_json" || {
+        mcp_parse_run_args_from_json "$args_json" "$cli_name" || {
           echo "invalid run_tool arguments" >&2; return 1;
         }
       fi
@@ -1079,16 +1156,17 @@ mcp_handle_tools_call() {
           return 1
         }
       else
-        mcp_parse_run_args_from_json "$args_json" || {
+        cli_name=$(mcp_mcp_to_cli_name "$tool_mcp")
+        mcp_parse_run_args_from_json "$args_json" "$cli_name" || {
           echo "invalid tool arguments" >&2
           return 1
         }
       fi
-      cli_name=$(mcp_mcp_to_cli_name "$tool_mcp")
+      cli_name=${cli_name:-$(mcp_mcp_to_cli_name "$tool_mcp")}
       ;;
   esac
 
-  ((${#MCP_ARG_PATHS[@]} >= 1)) || \
+  [[ "$MCP_ARG_HAS_PATH_INPUT" == true ]] || \
     [[ "$cli_name" == bluray-to-flac && "$MCP_ARG_BLURAY_PATHLESS" == true ]] || {
     echo "paths required (at least one); refusing pathless AUDIO_UTILS_ROOTS run" >&2
     return 1
