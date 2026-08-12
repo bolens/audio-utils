@@ -491,40 +491,15 @@ _bluray_archive_finalize() {
 }
 
 bluray_verify_archive() {
-  local outdir="$1" recorded actual
-  local -a mini_args
-  [[ -d "$outdir" && -s "$outdir/SHA256SUMS" && -s "$outdir/ARCHIVE_COMPLETE.json" ]] || {
+  local outdir="$1"
+  if ! archive_package_verify "$outdir"; then
     log_err "Error: archive is incomplete or has no SHA256SUMS: $outdir"
     return 1
-  }
-  recorded=$(sed -n 's/.*"sha256sums":"\([0-9a-f]*\)".*/\1/p' "$outdir/ARCHIVE_COMPLETE.json")
-  actual=$(file_sha256 "$outdir/SHA256SUMS")
-  [[ -n "$recorded" && "$recorded" == "$actual" ]] || return 1
-  (cd -- "$outdir" && sha256sum -c SHA256SUMS) || return 1
-  if [[ -f "$outdir/SHA256SUMS.minisig" ]]; then
-    command -v minisign >/dev/null 2>&1 || return 1
-    mini_args=(-Vm "$outdir/SHA256SUMS" -x "$outdir/SHA256SUMS.minisig")
-    [[ -n "${AUDIO_UTILS_BD_SIGN_PUBKEY:-}" ]] && mini_args+=(-P "$AUDIO_UTILS_BD_SIGN_PUBKEY")
-    minisign "${mini_args[@]}" >/dev/null || return 1
   fi
 }
 
 bluray_audit_archive() {
-  local outdir="$1" f decoded stored fail=0
-  bluray_verify_archive "$outdir" || fail=1
-  while IFS= read -r -d '' f; do
-    flac -t --silent "$f" || { log_err "invalid FLAC: $f"; fail=1; }
-    decoded=$(audio_md5 "$f")
-    stored=$(metaflac --show-md5sum -- "$f" 2>/dev/null)
-    [[ -n "$decoded" && "$decoded" == "$stored" ]] || {
-      log_err "decoded audio MD5 differs from FLAC STREAMINFO: $f"
-      fail=1
-    }
-  done < <(find -P "$outdir" -type f -name '*.flac' -print0)
-  if [[ -f "$outdir/archive.par2" ]]; then
-    command -v par2 >/dev/null 2>&1 && par2 verify "$outdir/archive.par2" >/dev/null || fail=1
-  fi
-  ((fail == 0))
+  archive_package_audit "$1"
 }
 
 _bluray_existing_matches_source() {

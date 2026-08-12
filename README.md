@@ -10,6 +10,7 @@ Docs: **[docs/](docs/)** — [requirements](docs/requirements.md) · [formats](d
 
 | Tool | Description |
 |------|-------------|
+| [`archive-audit/`](util/audit/archive-audit/) | Preservation packages (checksums, manifests, signatures, PAR2, snapshots) |
 | [`conversion/wav-to-flac/`](conversion/wav-to-flac/) / [`flac-to-wav/`](conversion/flac-to-wav/) | WAV ↔ FLAC |
 | [`conversion/aiff-to-flac/`](conversion/aiff-to-flac/) / [`flac-to-aiff/`](conversion/flac-to-aiff/) | AIFF ↔ FLAC |
 | [`conversion/wav-to-aiff/`](conversion/wav-to-aiff/) / [`aiff-to-wav/`](conversion/aiff-to-wav/) | WAV ↔ AIFF remux |
