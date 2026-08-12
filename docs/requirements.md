@@ -111,6 +111,7 @@ installs record both revisions for `keyfinder-status`.
 | hash-verify | `sha256sum` or `md5sum` |
 | pcm-cleanup | `flac`, `ffmpeg`/`ffprobe` |
 | cue-audit | shared `lib/media/cue.sh`; optional `iconv` for UTF-8 |
+| archive-audit | `ffmpeg`/`ffprobe`, `flac`, `metaflac`; optional **minisign** and **par2** when present in a package |
 | silence-detect | `ffmpeg`/`ffprobe`, `awk` |
 | disc-inventory | core set |
 | lossy-audit | `ffmpeg`/`ffprobe` |
@@ -127,7 +128,7 @@ installs record both revisions for `keyfinder-status`.
 | playlist-smart | `lib/media/playlist.sh`; `ffprobe`/`metaflac` for tag filters |
 | silence-split | `ffmpeg`/`ffprobe`, `flac`, `awk` |
 | silence-trim | `ffmpeg`/`ffprobe`, `flac`, `metaflac`, `awk` |
-| path-audit | coreutils; optional `iconv` (UTF-8 name check) |
+| path-audit | coreutils; optional `iconv` (UTF-8 name check) and `uconv` (Unicode NFC collision check) |
 | junk-cleanup | coreutils only |
 | perms-normalize | coreutils (`stat`, `chmod`) |
 | dynamics-report | `ffmpeg`/`ffprobe` (`ebur128` filter), `awk` |

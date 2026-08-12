@@ -118,11 +118,53 @@ test_bluray_preserves_16_bit_depth_and_stream_provenance() {
   run_tool conversion/bluray-to-flac/bluray-to-flac.sh \
     --audit-archive "$T/media/flac"
   assert_eq "$(tool_rc)" 0 "archive decoded-audio audit"
+  run_tool util/audit/archive-audit/archive-audit.sh "$T/media/flac"
+  assert_eq "$(tool_rc)" 0 "discoverable archive audit"
 
   printf damage >>"$out"
   run_tool conversion/bluray-to-flac/bluray-to-flac.sh \
     --verify-archive "$T/media/flac"
   assert_eq "$(tool_rc)" 1 "archive verification must detect later damage"
+}
+
+test_archive_audit_snapshots_and_detects_baseline_drift() {
+  require_cmd flac metaflac ffmpeg ffprobe flock
+  mkdir -p "$T/media" "$T/snapshots"
+  _mk_mkv "$T/media/program.mkv" 1
+  run_tool conversion/bluray-to-flac/bluray-to-flac.sh "$T/media/program.mkv"
+  assert_eq "$(tool_rc)" 0
+  run_tool util/audit/archive-audit/archive-audit.sh \
+    --snapshot-dir "$T/snapshots" "$T/media"
+  assert_eq "$(tool_rc)" 0
+  assert_eq "$(find "$T/snapshots" -name '*.tsv' | wc -l)" 1
+  run_tool util/audit/archive-audit/archive-audit.sh \
+    --baseline-dir "$T/snapshots" "$T/media"
+  assert_eq "$(tool_rc)" 0
+  printf drift >>"$T/media/program.mkv.a0.flac"
+  run_tool util/audit/archive-audit/archive-audit.sh \
+    --baseline-dir "$T/snapshots" "$T/media"
+  assert_eq "$(tool_rc)" 1
+}
+
+test_archive_audit_detects_semantic_manifest_tampering() {
+  require_cmd flac metaflac ffmpeg ffprobe flock
+  mkdir -p "$T/media"
+  _mk_mkv "$T/media/program.mkv" 1
+  run_tool conversion/bluray-to-flac/bluray-to-flac.sh "$T/media/program.mkv"
+  assert_eq "$(tool_rc)" 0
+  local manifest="$T/media/provenance/archive-manifest.jsonl" hash sums_hash
+  sed -i 's/"audio_md5":"[0-9a-f]*"/"audio_md5":"00000000000000000000000000000000"/' \
+    "$manifest"
+  hash=$(sha256sum "$manifest" | awk '{print $1}')
+  sed -i "s#^[0-9a-f]*  ./provenance/archive-manifest.jsonl#${hash}  ./provenance/archive-manifest.jsonl#" \
+    "$T/media/SHA256SUMS"
+  sums_hash=$(sha256sum "$T/media/SHA256SUMS" | awk '{print $1}')
+  sed -i "s/\"sha256sums\":\"[0-9a-f]*\"/\"sha256sums\":\"${sums_hash}\"/" \
+    "$T/media/ARCHIVE_COMPLETE.json"
+  run_tool util/audit/archive-audit/archive-audit.sh --quick "$T/media"
+  assert_eq "$(tool_rc)" 0 "quick audit checks package bytes only"
+  run_tool util/audit/archive-audit/archive-audit.sh "$T/media"
+  assert_eq "$(tool_rc)" 1 "full audit must reject forged manifest semantics"
 }
 
 test_bluray_preserves_original_stream_bit_for_bit() {
@@ -338,11 +380,14 @@ test_disc_inventory_counts_units_and_dedupes_video_ts() {
   cp "$src/album/CueAlbum.cue" "$src/album/CueAlbum.flac" "$T/lib/Album/"
 
   run_tool util/audit/disc-inventory/disc-inventory.sh -j 1 \
+    --report "$T/discs.tsv" \
     "$T/lib/Movie" "$T/lib/Concert" "$T/lib/Album"
   assert_eq "$(tool_rc)" 0 "rc ($(tool_out | tail -3))"
 
   assert_grep "video_ts" "$T/out"
   assert_grep "bdmv" "$T/out"
+  assert_file "$T/discs.tsv"
+  assert_grep $'^kind\tpath$' "$T/discs.tsv"
   assert_grep "cue" "$T/out"
   # Two IFOs in one VIDEO_TS → exactly one video_ts unit line.
   assert_eq "$(grep -c "video_ts.*Movie" "$T/out")" 1 "VIDEO_TS deduped"
