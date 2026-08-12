@@ -16,6 +16,28 @@ skipped. Pairs with [`flac-authenticity`](../flac-authenticity/) hi-res verdicts
 
 Part of **[audio-utils](../../../)**.
 
+## Planning and quality implications
+
+Report mode identifies only files that require an allowed transformation. Rate
+and depth are considered independently: under down-only policy, a component
+already at or below its target is left unchanged while the other may still be
+reduced.
+
+```bash
+./flac-resample.sh --rate 48000 --bits 24 /path/to/library
+./flac-resample.sh -n --apply --rate 44100 --bits 16 /path/to/library
+```
+
+`--allow-upsample` permits increasing rate or nominal depth, but cannot restore
+discarded bandwidth or precision. Bit-depth reduction can add quantization
+effects; choose targets intentionally rather than treating smaller files as an
+automatic improvement.
+
+Apply mode validates the source, writes a temporary FLAC, tests it, restores
+tags/artwork, and replaces the source only after success. The audio MD5 is
+expected to change because samples changed. Keep recoverable originals; `-y`,
+`-d`, and `-D` are rejected in favor of explicit `--apply`.
+
 <!-- BEGIN GENERATED COMMAND REFERENCE -->
 ## Command reference
 
