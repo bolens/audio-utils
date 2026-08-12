@@ -13,9 +13,10 @@ convert_one() {
     archive_package_audit "$dir" || { log_fail "$dir" "archive semantic/integrity audit failed"; return 1; }
   fi
 
-  key=$(au_sha256_str "$(au_abspath "$dir")")
+  key=$(sed -n 's/.*"package_id":"\([A-Za-z0-9._-]*\)".*/\1/p' "$marker")
+  [[ -n "$key" ]] || { log_fail "$dir" "missing package identifier"; return 1; }
   if [[ -n "${ARCHIVE_AUDIT_SNAPSHOT_DIR:-}" ]]; then
-    snapshot="$ARCHIVE_AUDIT_SNAPSHOT_DIR/$key.tsv"
+    snapshot="$ARCHIVE_AUDIT_SNAPSHOT_DIR/$key.jsonl"
     case "$(au_abspath "$snapshot")" in "$dir"/*)
       log_fail "$dir" "snapshot directory must be outside package"
       return 1
@@ -24,7 +25,7 @@ convert_one() {
     archive_snapshot_write "$dir" "$snapshot" || { log_fail "$dir" "snapshot write failed"; return 1; }
   fi
   if [[ -n "${ARCHIVE_AUDIT_BASELINE_DIR:-}" ]]; then
-    baseline="$ARCHIVE_AUDIT_BASELINE_DIR/$key.tsv"
+    baseline="$ARCHIVE_AUDIT_BASELINE_DIR/$key.jsonl"
     snapshot=$(audio_utils_mktemp "archive-current.XXXXXX") || return 1
     archive_snapshot_write "$dir" "$snapshot" || return 1
     if ! drift=$(archive_snapshot_compare "$baseline" "$snapshot"); then

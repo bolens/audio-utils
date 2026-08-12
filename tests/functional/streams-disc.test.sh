@@ -136,7 +136,7 @@ test_archive_audit_snapshots_and_detects_baseline_drift() {
   run_tool util/audit/archive-audit/archive-audit.sh \
     --snapshot-dir "$T/snapshots" "$T/media"
   assert_eq "$(tool_rc)" 0
-  assert_eq "$(find "$T/snapshots" -name '*.tsv' | wc -l)" 1
+  assert_eq "$(find "$T/snapshots" -name '*.jsonl' | wc -l)" 1
   run_tool util/audit/archive-audit/archive-audit.sh \
     --baseline-dir "$T/snapshots" "$T/media"
   assert_eq "$(tool_rc)" 0
@@ -144,6 +144,31 @@ test_archive_audit_snapshots_and_detects_baseline_drift() {
   run_tool util/audit/archive-audit/archive-audit.sh \
     --baseline-dir "$T/snapshots" "$T/media"
   assert_eq "$(tool_rc)" 1
+}
+
+test_archive_verification_rejects_checksum_path_escape() {
+  require_cmd flac metaflac ffmpeg ffprobe flock
+  mkdir -p "$T/media"
+  printf outside >"$T/outside"
+  printf '{"status":"complete","package_id":"p","session":"s","completed":"now","sha256sums":"%064d","signed":false,"par2_percent":0,"preserved_streams":false,"sealed":false}\n' 0 >"$T/media/ARCHIVE_COMPLETE.json"
+  sha256sum "$T/outside" | sed 's#  .*#  ../outside#' >"$T/media/SHA256SUMS"
+  local hash
+  hash=$(sha256sum "$T/media/SHA256SUMS" | awk '{print $1}')
+  sed -i "s/\"sha256sums\":\"[0-9]*\"/\"sha256sums\":\"$hash\"/" "$T/media/ARCHIVE_COMPLETE.json"
+  run_tool conversion/bluray-to-flac/bluray-to-flac.sh --verify-archive "$T/media"
+  assert_eq "$(tool_rc)" 1
+}
+
+test_archive_snapshot_encodes_control_characters_in_paths() {
+  require_cmd flac metaflac ffmpeg ffprobe flock
+  mkdir -p "$T/media" "$T/snapshots"
+  _mk_mkv "$T/media/program.mkv" 1
+  run_tool conversion/bluray-to-flac/bluray-to-flac.sh "$T/media/program.mkv"
+  assert_eq "$(tool_rc)" 0
+  printf x >"$T/media/extra"$'\t'$'line\nname'
+  run_tool util/audit/archive-audit/archive-audit.sh --snapshot-dir "$T/snapshots" "$T/media"
+  assert_eq "$(tool_rc)" 0
+  assert_grep 'extra\\tline\\nname' "$(find "$T/snapshots" -name '*.jsonl' -print -quit)"
 }
 
 test_archive_audit_detects_semantic_manifest_tampering() {

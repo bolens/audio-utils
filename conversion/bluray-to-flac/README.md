@@ -142,9 +142,13 @@ Each archive contains:
 - normalized MakeMKV title and message TSVs when MakeMKV was used;
 - `SHA256SUMS`, generated and immediately verified only after a successful run;
 - `ARCHIVE_COMPLETE.json`, written last after metadata publication, checksums,
-  optional signing/recovery data, and a filesystem flush.
+  optional signing/recovery data, and a filesystem flush. It carries a stable
+  package identifier and declares whether signatures, PAR2, preserved streams,
+  and sealing are required; later verification fails if declared artifacts are
+  missing or unexpected artifacts contradict that policy.
 
-An absent completion marker means the package is incomplete, even if some
+Checksum entries are restricted to relative paths inside the package. An absent
+or malformed completion marker means the package is incomplete, even if some
 outputs exist. Session provenance is published atomically and aborted sessions
 do not enter the permanent manifest. Use `--verify-archive DIR` for quick file
 integrity checks and `--audit-archive DIR` for a periodic full decode audit.
