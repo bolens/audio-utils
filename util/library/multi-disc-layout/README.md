@@ -11,6 +11,26 @@ Companion to [`util/flac/flac-rename`](../../flac/flac-rename/) (filenames) and
 
 Part of **[audio-utils](../../../)**.
 
+## Planning and collision safety
+
+Report mode derives each FLAC destination from its disc tags and shows files
+that should move. A custom prefix changes folder labels without changing disc
+numbers.
+
+```bash
+./multi-disc-layout.sh /path/to/albums
+./multi-disc-layout.sh -n --apply --prefix CD /path/to/albums
+```
+
+`--apply` creates the required disc directory and moves the FLAC. It does not
+rewrite tags, rename track filenames, or silently overwrite destination
+collisions. Files lacking coherent disc tags need correction before layout can
+be trusted.
+
+Generic `-y`, `-d`, and `-D` are rejected; movement requires explicit
+`--apply`. Update external playlists or CUE references after reorganizing and
+rerun `album-audit` on the resulting layout.
+
 <!-- BEGIN GENERATED COMMAND REFERENCE -->
 ## Command reference
 

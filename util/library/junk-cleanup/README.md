@@ -8,6 +8,26 @@ Companion to [`util/pcm-cleanup`](../pcm-cleanup/) (leftover PCM).
 
 Part of **[audio-utils](../../../)**.
 
+## Classification
+
+The scanner queues only known OS-generated names and zero-byte files. Ordinary
+audio and sidecar files are included in discovery so empty files can be found,
+but nonempty files outside the junk-name rules are skipped.
+
+```bash
+./junk-cleanup.sh /path/to/library
+./junk-cleanup.sh -n -d /path/to/library
+```
+
+Default mode reports findings and exits `1`; this makes it useful as a hygiene
+check in scheduled audits. `-d` removes exactly the classified findings. `-D`
+and `-y` are rejected because there is no sibling-verification workflow.
+
+Zero-byte files deserve particular review: an empty audio or metadata file may
+represent failed copying rather than harmless OS litter. Always inspect a dry
+run and maintain a backup before applying deletion. Empty directories are a
+separate concern handled by [`empty-dirs`](../empty-dirs/).
+
 <!-- BEGIN GENERATED COMMAND REFERENCE -->
 ## Command reference
 

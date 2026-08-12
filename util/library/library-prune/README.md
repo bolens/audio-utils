@@ -7,6 +7,32 @@ are reported (exit 1) or deleted with `-d`.
 
 Part of **[audio-utils](../../../)**.
 
+## Root mapping
+
+Portable paths are interpreted relative to `--portable-root` when supplied,
+then mapped beneath `--flac-root`. `--exts` controls acceptable master
+extensions and defaults to `flac`.
+
+```bash
+./library-prune.sh --portable-root /srv/portable \
+  --flac-root /srv/archive /srv/portable
+./library-prune.sh -n -d --portable-root /srv/portable \
+  --flac-root /srv/archive /srv/portable
+```
+
+## Deletion boundary
+
+Default mode reports every portable file whose relative stem has no master and
+returns exit status `1`. With `-d`, those reported portable files are deleted.
+The check is intentionally structural: it does not search by tags, hashes, or
+audio fingerprint, so a renamed or reorganized master makes the old portable
+path appear orphaned.
+
+Always run `-n -d` and inspect root mappings before applying deletion. `-D` and
+`-y` are rejected. This tool cleans derivative libraries only; never point the
+portable root at the archive master. See the forward completeness check in
+[`library-sync`](../library-sync/).
+
 <!-- BEGIN GENERATED COMMAND REFERENCE -->
 ## Command reference
 

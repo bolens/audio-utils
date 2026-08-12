@@ -12,6 +12,24 @@ Companion to [`util/library/library-prune`](../library-prune/) and
 
 Part of **[audio-utils](../../../)**.
 
+## Discovery and removal
+
+Only genuinely empty leaf directories—no files and no child directories—are
+queued. Report mode returns findings without changing the tree.
+
+```bash
+./find-empty-dirs.sh /path/to/library
+./empty-dirs.sh -n -d /path/to/library
+```
+
+With `-d`, removal uses `rmdir`, so a directory that gains content between
+discovery and action safely fails instead of losing data. Since removing a leaf
+can make its parent empty, deepest-first discovery followed by another pass is
+intentional.
+
+`-D` and `-y` are rejected. Mount points, inaccessible directories, and folders
+containing hidden files are not empty and will not be removed.
+
 <!-- BEGIN GENERATED COMMAND REFERENCE -->
 ## Command reference
 
