@@ -8,6 +8,22 @@ notes column records `tags=dropped`. Re-tag with an APEv2 tagger if needed.
 
 Part of **[audio-utils](../../)**.
 
+## Presets and round-trip
+
+Takc presets `p0` through `p5`, with supported `e`/`m` modifiers, trade encode
+time for compression; `p2` is default. Set `AUDIO_UTILS_TAKC` when Takc is not
+discoverable, and use Wine for its Windows executable.
+
+```bash
+./flac-to-tak.sh -n -Q p2 /path/to/album
+./flac-to-tak.sh -Q p4m /path/to/album
+```
+
+The source is tested, encoded by Takc, decoded again, and compared by PCM MD5
+before installation. Existing TAK siblings must decode to matching audio before
+skip or cleanup. Because tags and artwork are dropped, preserve FLAC or arrange
+separate APEv2 tagging before `-d`/`-D`. See [TAK setup](../../docs/tak.md).
+
 <!-- BEGIN GENERATED COMMAND REFERENCE -->
 ## Command reference
 

@@ -2,6 +2,34 @@
 
 Verified FLAC → WavPack (`.wv`). Hybrid (`.wvc` companion) is rejected.
 
+## Scope
+
+This creates pure lossless WavPack files beside FLAC sources. It intentionally
+does not create or accept hybrid lossy-plus-correction pairs: a `.wvc`
+companion makes the candidate unsuitable for this workflow.
+
+```bash
+./flac-to-wv.sh -n /path/to/album
+./flac-to-wv.sh /path/to/album
+```
+
+## Verification and deletion safety
+
+Each source FLAC is tested, encoded through FFmpeg's `wavpack` encoder, decoded
+again, and compared to the source by PCM MD5. The output must also probe as a
+pure WavPack stream before atomic installation. Existing siblings are skipped
+only after the same codec and audio-identity checks.
+
+`-d` deletes a FLAC only after successful verified conversion. `-D` deletes
+sources only when an already-existing pure `.wv` sibling matches. Always use
+`-n` to inspect a cleanup run first.
+
+## Requirements
+
+Requires `ffmpeg` with the `wavpack` encoder, `ffprobe`, `flac`, and `flock`.
+See [format verification](../../docs/formats.md) and
+[dependencies](../../docs/requirements.md).
+
 <!-- BEGIN GENERATED COMMAND REFERENCE -->
 ## Command reference
 

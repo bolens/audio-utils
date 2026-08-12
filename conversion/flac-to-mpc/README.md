@@ -10,6 +10,32 @@ Embedded artwork is not carried over.
 
 Part of **[audio-utils](../../)**.
 
+## Quality and preparation
+
+Named profiles map to `mpcenc --quality`: `telephone` (2), `radio` (4),
+`standard` (5), `extreme` (6), and `insane` (7). Numeric values from 0 through
+10, including decimals such as `5.5`, are also accepted.
+
+```bash
+./flac-to-mpc.sh -n -Q standard /path/to/album
+./flac-to-mpc.sh -Q extreme /path/to/album
+```
+
+Input outside Musepack's supported rate/channel shape may be prepared through
+the shared resample/downmix path; `-N` rejects instead. Core tags are passed to
+APEv2 through `mpcenc`, but embedded artwork is not transferred.
+
+## Verification and deletion
+
+`mpcdec` and `ffprobe` must read the result, and duration must remain within
+approximately 50 ms. As with every lossy encoder, this cannot prove PCM
+identity, and an existing sibling is accepted at probe strength only. Keep the
+FLAC archive or explicitly accept that limitation before using `-d`/`-D`.
+
+Requires both `mpcenc` and `mpcdec` from `musepack-tools`, plus the core FLAC
+and FFmpeg tools. See [lossy behavior](../../docs/lossy.md) and
+[dependencies](../../docs/requirements.md).
+
 <!-- BEGIN GENERATED COMMAND REFERENCE -->
 ## Command reference
 

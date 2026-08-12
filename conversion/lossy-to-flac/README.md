@@ -7,6 +7,34 @@ Skips ALAC-in-`.m4a` (use [`alac-to-flac`](../alac-to-flac/)).
 
 Part of **[audio-utils](../../)**.
 
+## What normalization means
+
+The source codec is decoded once and the resulting PCM is stored losslessly in
+FLAC. Future processing no longer incurs another lossy generation, but the
+information discarded by the original codec remains absent. Outputs are often
+larger than their sources without sounding better.
+
+```bash
+./lossy-to-flac.sh -n /path/to/mixed-lossy-library
+./lossy-to-flac.sh /path/to/mixed-lossy-library
+```
+
+Acceptance is based on the probed codec, not just extension. Supported inputs
+include MP3, AAC, Opus, Vorbis, Speex, WMA, and Musepack. ALAC in `.m4a` is
+rejected so it can follow the genuinely lossless `alac-to-flac` path.
+
+## Verification and provenance
+
+The decoded source PCM and final FLAC are compared by audio MD5, and the FLAC
+must pass integrity testing before atomic installation. That proves the FLAC
+preserves this decode, not that the original recording was lossless. Tags and
+artwork are copied where available.
+
+`-d` and `-D` use strong equality against the decoded lossy source, but deleting
+the compact original also discards its original bitstream and codec provenance.
+Retain it unless normalization policy explicitly permits removal. See
+[lossy behavior](../../docs/lossy.md).
+
 <!-- BEGIN GENERATED COMMAND REFERENCE -->
 ## Command reference
 

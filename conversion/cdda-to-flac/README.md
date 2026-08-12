@@ -11,6 +11,22 @@ Rip audio CD tracks via **cdparanoia** → verified FLAC.
 
 Part of **[audio-utils](../../)**.
 
+## Device, output, and limits
+
+The device defaults to `/dev/sr0` and can be selected with `-d DEVICE` or
+`AUDIO_UTILS_CD_DEVICE`. Here `-d` names the device; it does not mean deletion.
+Tracks are ripped serially with cdparanoia into the selected output directory.
+
+```bash
+./cdda-to-flac.sh -d /dev/sr0 -o /path/to/rip
+```
+
+Each track is encoded and tested as FLAC. This validates produced files but
+does not perform AccurateRip consensus or MusicBrainz lookup; those workflows
+remain external. Keep ripping logs and investigate reported read problems
+before treating output as archival. Requires `cdparanoia`; see
+[disc workflows](../../docs/discs.md).
+
 <!-- BEGIN GENERATED COMMAND REFERENCE -->
 ## Command reference
 

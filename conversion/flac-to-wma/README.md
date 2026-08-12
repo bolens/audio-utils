@@ -6,6 +6,27 @@ FLAC → WMA (wmav2) with duration check. Default quality: **192**.
 
 Part of **[audio-utils](../../)**.
 
+## Compatibility use
+
+WMA v2 is mainly for older Windows, automotive, or hardware ecosystems.
+Available CBR profiles are `128`, `160`, `192`, and `256` kbps, with `192` as
+the default. Prefer a modern codec when WMA compatibility is not required.
+
+```bash
+./flac-to-wma.sh -n -Q 192 /path/to/album
+./flac-to-wma.sh -Q 256 /path/to/album
+```
+
+Unsupported channel layouts or rates are prepared by resampling/downmixing and
+noted in the success log; `-N` refuses those changes. WMA/ASF metadata does not
+map perfectly from FLAC, so review custom tags and artwork.
+
+Verification requires a readable WMA stream and duration within roughly 50 ms,
+not decoded PCM equality. Existing outputs receive only that lossy check.
+Retain FLAC as the master and be conservative with `-d`/`-D`; use `-n` first.
+Requires FFmpeg's `wmav2` encoder. See
+[lossy behavior](../../docs/lossy.md).
+
 <!-- BEGIN GENERATED COMMAND REFERENCE -->
 ## Command reference
 

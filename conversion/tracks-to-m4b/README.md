@@ -15,6 +15,23 @@ See [audiobooks](../../docs/audiobooks.md). Part of **[audio-utils](../../)**.
 make help
 ```
 
+## Ordering, chapters, and metadata
+
+Files are sorted by bytewise filename order, so numeric prefixes should be
+zero-padded for predictable chapter sequence. Chapter titles prefer `TITLE`
+and otherwise derive from filenames; chapter boundaries use measured file
+durations.
+
+The first track supplies book-level title/album, author, narrator, series, and
+genre defaults. Folder or embedded cover art is added best-effort. AAC provides
+widest playback support, Opus is efficient but less universal in MP4, and ALAC
+keeps decoded audio lossless.
+
+The finished M4B must probe and its duration must match summed tracks within
+about 50 ms before atomic installation. Existing readable output is retained
+unless replacement is requested. Source chapters are always kept and deletion
+flags are rejected. See [audiobook workflows](../../docs/audiobooks.md).
+
 <!-- BEGIN GENERATED COMMAND REFERENCE -->
 ## Command reference
 

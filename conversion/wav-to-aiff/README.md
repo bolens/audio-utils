@@ -4,6 +4,27 @@ WAV → AIFF PCM remux with MD5 verify + tag copy.
 
 Part of **[audio-utils](../../)**.
 
+## Use and verification
+
+This creates big-endian AIFF PCM siblings from WAV sources without an
+intentional sample-rate or bit-depth conversion.
+
+```bash
+./wav-to-aiff.sh -n /path/to/session
+./wav-to-aiff.sh /path/to/session
+```
+
+The shared PCM-remux pipeline probes both containers and compares decoded PCM
+MD5 before the temporary output is moved into place. File hashes differ because
+the container and byte order differ; decoded audio identity is the relevant
+verification.
+
+An existing AIFF is accepted only when its decoded audio matches the WAV.
+`-d` and cleanup-only `-D` use that guard before removal. Preview with `-n`.
+Not every WAV metadata chunk has an AIFF equivalent; preserve specialized BWF
+or application-specific chunks separately. See
+[format verification](../../docs/formats.md).
+
 <!-- BEGIN GENERATED COMMAND REFERENCE -->
 ## Command reference
 
