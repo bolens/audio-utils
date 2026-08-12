@@ -38,6 +38,12 @@ bluray-to-flac.sh --title all --minlength 300 /path/to/disc
 
 # Preview exact outputs for standalone media
 bluray-to-flac.sh -n /path/to/decrypted-media
+
+# Keep reusable MakeMKV title MKVs and split chapter tracks
+bluray-to-flac.sh --stage-dir /archive/staging --split-chapters /path/to/disc
+
+# Verify an existing archive without reading the source again
+bluray-to-flac.sh --verify-archive /archive/disc/flac
 ```
 
 Options:
@@ -47,6 +53,10 @@ Options:
 | `-D DEVICE` | Read a Blu-ray device; also works through `AUDIO_UTILS_BD_DEVICE`. |
 | `--title N\|all` | Extract one MakeMKV title number or all titles (default: `all`). |
 | `--minlength SEC` | Ignore shorter authored titles (default: `0`, which keeps all). |
+| `--stage-dir DIR` | Keep and safely reuse readable MakeMKV title MKVs under `DIR`. |
+| `--split-chapters` | Also create verified per-chapter FLAC tracks. |
+| `--allow-float-reduction` | Explicitly permit verified float PCM to 24-bit conversion. |
+| `--verify-archive DIR` | Validate `DIR/SHA256SUMS` and exit. |
 | `-f FILE` | Read newline-delimited input paths from a file. |
 | `--dirs0` | Read NUL-delimited input paths from stdin. |
 | `-L FILE` / `-S FILE` | Override failure and success log paths. |
@@ -61,6 +71,10 @@ defaults. `AUDIO_UTILS_MAKEMKV` may point to a MakeMKV executable. For device
 input, `AUDIO_UTILS_BD_DISC_ID` may provide a stable output identifier; it must
 start with an alphanumeric character and contain only alphanumerics, `.`, `_`,
 or `-`.
+
+`AUDIO_UTILS_BD_STAGE_DIR`, `AUDIO_UTILS_BD_SPLIT_CHAPTERS`, and
+`AUDIO_UTILS_BD_ALLOW_FLOAT` provide environment equivalents for the archival
+options.
 
 `find-bdmv-dirs.sh` discovers BDMV directories below explicit roots (or the
 configured roots), and `convert-all.sh` discovers and converts them. Both
@@ -92,6 +106,29 @@ layout when available. `SOURCE_AUDIO_MD5` records the decoded stream audio and
 only when it is valid, its decoded MD5 matches that source-audio MD5, and its
 stream tag matches; otherwise the command fails until `-y` is supplied. This
 audio-based identity remains stable when only container metadata changes.
+
+Every output also records source class, channels, sample rate, input precision,
+and output precision. Lossy sources and object-audio loss are explicit. Integer
+32-bit PCM remains 32-bit when the installed FLAC encoder supports it. Float
+PCM fails closed unless `--allow-float-reduction` authorizes the shared,
+verified 24-bit preparation path; affected outputs carry `PRECISION_REDUCED=1`.
+
+For titles with chapters, the converter writes `.ffmetadata`, `.chapters.json`,
+and CUE sidecars. CUE is omitted only when the FLAC filename contains a newline,
+which CUE cannot represent safely. `--split-chapters` additionally creates a
+verified `<name>.chapters/` directory of per-chapter FLAC tracks.
+
+Each archive contains:
+
+- `provenance/archive-manifest.jsonl` with input/title/stream identities,
+  decoded MD5, file SHA-256, sample count, rate, channels, and precision;
+- `provenance/tool-versions.txt`;
+- persisted MakeMKV inventory, log, and classified warning files when used;
+- `SHA256SUMS`, generated and immediately verified only after a successful run.
+
+Use `--verify-archive DIR` for later integrity audits. `--stage-dir DIR` retains
+readable MakeMKV title MKVs under a source/disc-specific directory and reuses
+them on retry, avoiding another disc extraction after a downstream failure.
 
 Lossy codecs are marked `LOSSY_SOURCE=1` and reported. Dolby Atmos and DTS:X
 object data cannot be represented in FLAC. Extraction uses strict decoder error
