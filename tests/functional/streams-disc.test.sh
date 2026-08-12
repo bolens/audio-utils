@@ -114,6 +114,11 @@ test_bluray_preserves_16_bit_depth_and_stream_provenance() {
   run_tool conversion/bluray-to-flac/bluray-to-flac.sh \
     --verify-archive "$T/media/flac"
   assert_eq "$(tool_rc)" 0 "archive checksum verification"
+
+  printf damage >>"$out"
+  run_tool conversion/bluray-to-flac/bluray-to-flac.sh \
+    --verify-archive "$T/media/flac"
+  assert_eq "$(tool_rc)" 1 "archive verification must detect later damage"
 }
 
 test_bluray_marks_lossy_sources() {
