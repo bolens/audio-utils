@@ -99,8 +99,17 @@ test_flac_audit_flags_missing_tags_cover_and_pcm() {
   run_tool util/flac/flac-audit/flac-audit.sh -j 1 -L "$T/fails.log" "$T/album"
   assert_eq "$(tool_rc)" 1 "issues must fail"
   assert_grep "missing-tags:ARTIST" "$T/fails.log"
-  assert_grep "no-cover" "$T/fails.log"
+  assert_grep "missing-or-invalid-cover\|no-cover" "$T/fails.log"
   assert_grep "leftover-pcm" "$T/fails.log"
+}
+
+test_flac_audit_rejects_invalid_folder_cover() {
+  require_cmd flac metaflac ffmpeg flock
+  _setup_album
+  printf invalid >"$T/album/cover.jpg"
+  run_tool util/flac/flac-audit/flac-audit.sh -j 1 "$T/album"
+  assert_eq "$(tool_rc)" 1
+  assert_grep 'missing-or-invalid-cover' "$T/out"
 }
 
 test_flac_audit_flags_corrupt_flac() {
@@ -146,6 +155,24 @@ test_cue_audit_flags_missing_image_and_no_tracks() {
   assert_grep "no-tracks" "$T/fails2.log"
 }
 
+test_cue_audit_rejects_unreadable_and_out_of_range_images() {
+  require_cmd flac metaflac ffmpeg ffprobe flock
+  mkdir -p "$T/unreadable" "$T/range"
+  printf 'FILE "bad.flac" WAVE\n  TRACK 01 AUDIO\n    INDEX 01 00:00:00\n' \
+    >"$T/unreadable/bad.cue"
+  printf invalid >"$T/unreadable/bad.flac"
+  run_tool util/audit/cue-audit/cue-audit.sh "$T/unreadable"
+  assert_eq "$(tool_rc)" 1
+  assert_grep 'unreadable-image' "$T/out"
+
+  ffmpeg -nostdin -v error -y -f lavfi -i 'sine=duration=1' "$T/range/audio.flac"
+  printf 'FILE "audio.flac" WAVE\n  TRACK 01 AUDIO\n    INDEX 01 00:02:00\n' \
+    >"$T/range/range.cue"
+  run_tool util/audit/cue-audit/cue-audit.sh "$T/range"
+  assert_eq "$(tool_rc)" 1
+  assert_grep 'index-outside-image' "$T/out"
+}
+
 # --- dynamics-report --------------------------------------------------------------
 
 test_dynamics_report_measures_and_writes_summary() {
@@ -153,9 +180,10 @@ test_dynamics_report_measures_and_writes_summary() {
   _setup_album
   export XDG_STATE_HOME="$T/state"
 
-  run_tool util/audit/dynamics-report/dynamics-report.sh -j 1 "$T/album"
+  run_tool util/audit/dynamics-report/dynamics-report.sh -j 1 \
+    --report "$T/custom-dynamics.txt" "$T/album"
   assert_eq "$(tool_rc)" 0 "rc ($(tool_out | tail -3))"
-  local report="$T/state/audio-utils/dynamics-report/dynamics-report.txt"
+  local report="$T/custom-dynamics.txt"
   assert_file "$report" "summary report"
   assert_grep "EBU R128" "$report"
   assert_grep "01 - Track One" "$report"

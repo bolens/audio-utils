@@ -3,6 +3,8 @@
 Read-only QC for single-file `.m4b` books and multi-file chapter directories:
 missing cover / author / narrator / title, chapterless `.m4b`, unexpected
 codecs (AAC/Opus/ALAC OK), series consistency, track gaps / mixed rates.
+Audio is fully decoded during the audit; multi-file books also reject duplicate
+and non-contiguous track numbers and invalid artwork.
 
 See [audiobooks](../../../docs/audiobooks.md). Part of **[audio-utils](../../../)**.
 

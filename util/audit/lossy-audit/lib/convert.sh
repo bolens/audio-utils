@@ -3,9 +3,6 @@
 
 convert_one() {
   local src="$1" issues=() missing=() tag val kbps
-  local dir
-
-  dir=$(dirname -- "$src")
 
   if [[ "${DRY_RUN:-0}" -eq 1 ]]; then
     log_progress "would audit-lossy: $src"; return 0
@@ -13,6 +10,10 @@ convert_one() {
 
   if ! ffprobe -v error -select_streams a:0 -show_entries stream=codec_name -of csv=p=0 -- "$src" >/dev/null 2>&1; then
     log_fail "$src" "unreadable / no audio stream"
+    return 1
+  fi
+  if ! audio_decode_ok "$src"; then
+    log_fail "$src" "audio decode failed"
     return 1
   fi
 
@@ -28,13 +29,8 @@ convert_one() {
     issues+=("missing-tags:${missing[*]}")
   fi
 
-  if ! audio_has_cover "$src"; then
-    # folder cover ok
-    if ! LC_ALL=C find -P "$dir" -maxdepth 1 -type f \
-      \( -iname 'cover.jpg' -o -iname 'folder.jpg' -o -iname 'front.jpg' \) \
-      | head -n1 | grep -q .; then
-      issues+=("missing-cover")
-    fi
+  if ! audio_valid_cover "$src"; then
+    issues+=("missing-or-invalid-cover")
   fi
 
   if kbps=$(audio_bitrate_kbps "$src"); then

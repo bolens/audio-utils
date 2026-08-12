@@ -44,6 +44,37 @@ audio_has_cover() {
   [[ -n "$n" ]]
 }
 
+# Fully decode the first audio stream. This is intentionally slower than a
+# probe and is for integrity/audit paths where truncated payloads must fail.
+audio_decode_ok() {
+  ffmpeg -nostdin -v error -xerror -i "$1" -map 0:a:0 -f null - \
+    >/dev/null 2>&1
+}
+
+# Decode one image/video frame to validate artwork bytes, not just presence.
+audio_image_ok() {
+  ffmpeg -nostdin -v error -xerror -i "$1" -map 0:v:0 -frames:v 1 -f null - \
+    >/dev/null 2>&1
+}
+
+# Validate embedded artwork, or a conventional folder cover beside FILE.
+audio_valid_cover() {
+  local file=$1 dir candidate
+  if audio_has_cover "$file" && ffmpeg -nostdin -v error -xerror -i "$file" \
+    -map 0:v:0 -frames:v 1 -f null - >/dev/null 2>&1; then
+    return 0
+  fi
+  dir=$(dirname -- "$file")
+  while IFS= read -r -d '' candidate; do
+    audio_image_ok "$candidate" && return 0
+  done < <(find -P "$dir" -maxdepth 1 -type f \
+    \( -iname 'cover.jpg' -o -iname 'cover.jpeg' -o -iname 'cover.png' \
+      -o -iname 'folder.jpg' -o -iname 'folder.jpeg' -o -iname 'folder.png' \
+      -o -iname 'front.jpg' -o -iname 'front.jpeg' -o -iname 'front.png' \) \
+    -print0)
+  return 1
+}
+
 # Rewrite core tags onto DEST from SRC via ffmpeg stream copy.
 # Extra args: -metadata KEY=VAL ...
 audio_meta_remux_tags() {

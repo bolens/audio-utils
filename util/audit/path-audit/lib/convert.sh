@@ -39,9 +39,35 @@ _pa_component_issues() {
   fi
 }
 
+_pa_collision_issues() {
+  local parent=$1 name=$2
+  local folded normalized key stored lock record
+  folded=${name,,}
+  normalized=$name
+  if command -v uconv >/dev/null 2>&1; then
+    normalized=$(printf '%s' "$name" | uconv -x any-nfc 2>/dev/null || printf '%s' "$name")
+  fi
+  for key in "case:$folded" "nfc:$normalized"; do
+    record="${AU_PATHAUDIT_STATE:?}/collision-$(au_sha256_str "$parent/$key")"
+    lock="${record}.lock"
+    (
+      flock 9
+      if [[ -f "$record" ]]; then
+        stored=$(<"$record")
+        if [[ "$stored" != "$name" ]]; then
+          [[ "$key" == case:* ]] && printf 'casefold-collision\n' \
+            || printf 'unicode-normalization-collision\n'
+        fi
+      else
+        printf '%s' "$name" >"$record"
+      fi
+    ) 9>"$lock"
+  done
+}
+
 convert_one() {
-  local src="$1" base dir dbase key abs bytes
-  local -a issues=()
+  local src="$1" base dir dbase key abs bytes parent current
+  local -a issues=() collision_issues=()
 
   if [[ "${DRY_RUN:-0}" -eq 1 ]]; then
     log_progress "would path-audit: $src"; return 0
@@ -54,15 +80,22 @@ convert_one() {
     log_fail "$src" "cannot resolve directory"
     return 1
   }
+  mapfile -t collision_issues < <(_pa_collision_issues "$dir" "$base")
+  issues+=("${collision_issues[@]+"${collision_issues[@]}"}")
 
-  # Parent directory name: audited once per directory (first file claims it).
-  key=$(au_sha256_str "$dir")
-  if mkdir -- "${AU_PATHAUDIT_STATE:?}/${key}" 2>/dev/null; then
-    if [[ "$dir" != / ]]; then
-      dbase=$(basename -- "$dir")
+  # Audit every ancestor component once, not just the immediate parent.
+  current=$dir
+  while [[ "$current" != / ]]; do
+    parent=$(dirname -- "$current")
+    dbase=$(basename -- "$current")
+    key=$(au_sha256_str "component:$current")
+    if mkdir -- "${AU_PATHAUDIT_STATE:?}/${key}" 2>/dev/null; then
       _pa_component_issues "$dbase" issues "dir-"
+      mapfile -t collision_issues < <(_pa_collision_issues "$parent" "$dbase")
+      issues+=("${collision_issues[@]+"${collision_issues[@]}"}")
     fi
-  fi
+    current=$parent
+  done
 
   if [[ "${PATH_AUDIT_MAX_PATH:-0}" -gt 0 ]]; then
     abs="${dir}/${base}"

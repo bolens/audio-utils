@@ -8,10 +8,16 @@ convert_one() {
     log_progress "would silence-check: $src"; return 0
   fi
 
-  dur=$(audio_duration_sec "$src") || dur=0
-  report=$(ffmpeg -hide_banner -i "$src" -af \
+  dur=$(audio_duration_sec "$src") || {
+    log_fail "$src" "duration probe failed"
+    return 1
+  }
+  if ! report=$(ffmpeg -nostdin -hide_banner -xerror -i "$src" -af \
     "silencedetect=noise=${SILENCE_DB}dB:d=${SILENCE_SEC},astats=metadata=1:reset=1" \
-    -f null - 2>&1) || true
+    -f null - 2>&1); then
+    log_fail "$src" "audio decode failed"
+    return 1
+  fi
 
   # Leading silence: silence_start near 0
   if printf '%s\n' "$report" | awk -v lim="$SILENCE_SEC" '
