@@ -206,6 +206,10 @@ test_mcp_audit_schemas_expose_custom_controls() {
   assert_grep '"detect_clipping"' "$(mcp_audit_schema_json silence-detect)"
   assert_grep '"max_path"' "$(mcp_audit_schema_json path-audit)"
   assert_grep '"report"' "$(mcp_audit_schema_json dynamics-report)"
+  assert_grep '"duration_ratio"' "$(mcp_audit_schema_json album-incomplete)"
+  assert_grep '"no_duration"' "$(mcp_audit_schema_json album-incomplete)"
+  assert_grep '"strict"' "$(mcp_audit_schema_json lossy-authenticity)"
+  assert_grep '"strict"' "$(mcp_audit_schema_json rip-log-audit)"
 }
 
 test_mcp_builds_typed_audit_arguments() {
@@ -229,6 +233,20 @@ test_mcp_builds_typed_audit_arguments() {
   assert_grep -- '--no-clip' "$joined"
   assert_exit 1 mcp_parse_audit_args_from_json lossy-audit \
     '{"paths":["/audio"],"min_kbps":0}'
+
+  mcp_parse_audit_args_from_json album-incomplete \
+    '{"paths":["/audio"],"duration_ratio":0.4,"no_duration":true}'
+  mcp_build_cli_argv album-incomplete
+  printf -v joined '%q ' "${MCP_CLI_ARGV[@]}"
+  assert_grep -- '--duration-ratio 0.4' "$joined"
+  assert_grep -- '--no-duration' "$joined"
+  mcp_parse_audit_args_from_json rip-log-audit \
+    '{"paths":["/logs"],"strict":true}'
+  mcp_build_cli_argv rip-log-audit
+  printf -v joined '%q ' "${MCP_CLI_ARGV[@]}"
+  assert_grep -- '--strict' "$joined"
+  assert_exit 1 mcp_parse_audit_args_from_json album-incomplete \
+    '{"paths":["/audio"],"duration_ratio":1}'
 }
 
 test_mcp_bluray_builds_full_conversion_argv() {
@@ -278,6 +296,15 @@ test_mcp_server_runs_pathless_bluray_archive_action() {
   assert_grep 'exit_code=1' "$T/msg.2"
   assert_grep 'archive is incomplete' "$T/msg.2"
   assert_not_grep 'paths required' "$T/msg.2"
+}
+
+test_mcp_run_tool_accepts_typed_audit_fields() {
+  mkdir -p "$T/audio"
+  _rpc "$T/out" \
+    '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2024-11-05","capabilities":{},"clientInfo":{"name":"test","version":"0"}}}' \
+    "{\"jsonrpc\":\"2.0\",\"id\":8,\"method\":\"tools/call\",\"params\":{\"name\":\"run_tool\",\"arguments\":{\"name\":\"album-incomplete\",\"paths\":[\"$T/audio\"],\"duration_ratio\":1}}}"
+  _read_all_messages "$T/out"
+  assert_grep 'invalid run_tool arguments' "$T/msg.2"
 }
 
 test_mcp_dispatch_uses_private_error_file() {
