@@ -658,6 +658,21 @@ mcp_bluray_schema_json() {
   printf '%s' '},"anyOf":[{"required":["paths"]},{"required":["device"]},{"required":["archive_action","archive_path"]}]}'
 }
 
+mcp_audit_schema_json() {
+  local tool=$1 extra=''
+  case "$tool" in
+    archive-audit)
+      extra=',"quick":{"type":"boolean","default":false},"public_key":{"type":"string"},"snapshot_dir":{"type":"string"},"baseline_dir":{"type":"string"}' ;;
+    lossy-audit) extra=',"min_kbps":{"type":"integer","minimum":1}' ;;
+    silence-detect) extra=',"silence_seconds":{"type":"number","exclusiveMinimum":0},"silence_db":{"type":"number","maximum":0},"detect_clipping":{"type":"boolean","default":true}' ;;
+    path-audit) extra=',"max_path":{"type":"integer","minimum":0}' ;;
+    dynamics-report) extra=',"min_lra":{"type":"number","minimum":0},"report":{"type":"string"}' ;;
+    disc-inventory) extra=',"report":{"type":"string"}' ;;
+  esac
+  printf '{"type":"object","properties":{%s%s},"required":["paths"]}' \
+    "$(mcp_shared_props_json 0)" "$extra"
+}
+
 # --- build tools/list ---------------------------------------------------------
 
 mcp_tools_list_json() {
@@ -681,6 +696,8 @@ mcp_tools_list_json() {
     local schema
     if [[ "${MCP_TOOL_NAMES[i]}" == bluray-to-flac ]]; then
       schema=$(mcp_bluray_schema_json)
+    elif [[ "${MCP_TOOL_CATEGORY[i]}" == audit ]]; then
+      schema=$(mcp_audit_schema_json "${MCP_TOOL_NAMES[i]}")
     else
       schema=$(mcp_tool_schema_json 0)
     fi
@@ -820,6 +837,72 @@ mcp_parse_bluray_args_from_json() {
       || MCP_ARG_ARGS+=(--audit-archive "$archive")
     MCP_ARG_BLURAY_PATHLESS=true
   fi
+}
+
+mcp_parse_audit_args_from_json() {
+  local tool=$1 json=$2 value
+  mcp_parse_run_args_from_json "$json" || return 1
+  case "$tool" in
+    archive-audit)
+      mcp_bluray_add_bool_flag "$json" quick --quick || return 1
+      for value in public_key snapshot_dir baseline_dir; do
+        if mcp_json_after_key "$json" "$value" >/dev/null 2>&1; then
+          local parsed flag
+          parsed=$(mcp_json_get_string "$json" "$value") || return 1
+          [[ -n "$parsed" ]] || return 1
+          flag="--${value//_/-}"
+          MCP_ARG_ARGS+=("$flag" "$parsed")
+        fi
+      done
+      ;;
+    lossy-audit)
+      if mcp_json_after_key "$json" min_kbps >/dev/null 2>&1; then
+        value=$(mcp_json_get_number "$json" min_kbps) || return 1
+        [[ "$value" =~ ^[1-9][0-9]*$ ]] || return 1
+        MCP_ARG_ARGS+=(--min-kbps "$value")
+      fi
+      ;;
+    silence-detect)
+      if mcp_json_after_key "$json" silence_seconds >/dev/null 2>&1; then
+        value=$(mcp_json_get_number "$json" silence_seconds) || return 1
+        awk -v v="$value" 'BEGIN { exit !(v > 0) }' || return 1
+        MCP_ARG_ARGS+=(--silence-sec "$value")
+      fi
+      if mcp_json_after_key "$json" silence_db >/dev/null 2>&1; then
+        value=$(mcp_json_get_number "$json" silence_db) || return 1
+        awk -v v="$value" 'BEGIN { exit !(v <= 0) }' || return 1
+        MCP_ARG_ARGS+=(--silence-db "$value")
+      fi
+      if mcp_json_after_key "$json" detect_clipping >/dev/null 2>&1; then
+        value=$(mcp_json_get_bool "$json" detect_clipping) || return 1
+        [[ "$value" == true ]] || MCP_ARG_ARGS+=(--no-clip)
+      fi
+      ;;
+    path-audit)
+      if mcp_json_after_key "$json" max_path >/dev/null 2>&1; then
+        value=$(mcp_json_get_number "$json" max_path) || return 1
+        [[ "$value" =~ ^[0-9]+$ ]] || return 1
+        MCP_ARG_ARGS+=(--max-path "$value")
+      fi
+      ;;
+    dynamics-report)
+      if mcp_json_after_key "$json" min_lra >/dev/null 2>&1; then
+        value=$(mcp_json_get_number "$json" min_lra) || return 1
+        awk -v v="$value" 'BEGIN { exit !(v >= 0) }' || return 1
+        MCP_ARG_ARGS+=(--min-lra "$value")
+      fi
+      if mcp_json_after_key "$json" report >/dev/null 2>&1; then
+        value=$(mcp_json_get_string "$json" report) || return 1
+        MCP_ARG_ARGS+=(--report "$value")
+      fi
+      ;;
+    disc-inventory)
+      if mcp_json_after_key "$json" report >/dev/null 2>&1; then
+        value=$(mcp_json_get_string "$json" report) || return 1
+        MCP_ARG_ARGS+=(--report "$value")
+      fi
+      ;;
+  esac
 }
 
 mcp_build_cli_argv() {
@@ -962,6 +1045,13 @@ mcp_handle_tools_call() {
       if [[ "$tool_mcp" == bluray_to_flac ]]; then
         mcp_parse_bluray_args_from_json "$args_json" || {
           echo "invalid bluray_to_flac arguments" >&2
+          return 1
+        }
+      elif [[ "$tool_mcp" == archive_audit || "$tool_mcp" == lossy_audit || \
+        "$tool_mcp" == silence_detect || "$tool_mcp" == path_audit || \
+        "$tool_mcp" == dynamics_report || "$tool_mcp" == disc_inventory ]]; then
+        mcp_parse_audit_args_from_json "$(mcp_mcp_to_cli_name "$tool_mcp")" "$args_json" || {
+          echo "invalid $tool_mcp arguments" >&2
           return 1
         }
       else
