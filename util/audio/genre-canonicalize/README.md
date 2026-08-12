@@ -11,6 +11,25 @@ Companion to [`util/audio/audio-tags`](../audio-tags/).
 
 Part of **[audio-utils](../../../)**.
 
+## Mapping behavior
+
+Only the first semicolon- or slash-separated genre is considered. Matching is
+case-insensitive and whitespace-trimmed. A custom map is checked before the
+built-in vocabulary, making local policy deterministic and reviewable.
+
+```bash
+./genre-canonicalize.sh /path/to/library
+./genre-canonicalize.sh --map-file genres.tsv /path/to/library
+```
+
+Default mode reports `from` and proposed `to` values and exits with findings.
+`--apply` updates FLAC through `metaflac`; other formats are stream-copied
+through a temporary remux, so audio is not re-encoded. Missing genres are
+skipped, while unknown nonempty genres fail for explicit policy decisions.
+
+Use report mode with the final map before applying. `-y`, `-d`, and `-D` are
+rejected; mutation requires `--apply`.
+
 <!-- BEGIN GENERATED COMMAND REFERENCE -->
 ## Command reference
 

@@ -16,6 +16,22 @@ Part of **[audio-utils](../../../)**.
 make help
 ```
 
+## Editing workflow
+
+List mode is safest for inspection. Extract mode writes FFmetadata chapter
+syntax to the requested file; edit timestamps and titles there, keeping ranges
+ordered and valid for the media duration.
+
+Embed mode requires `--apply` (or its supported `-y` alias), remuxes into a
+temporary container with the replacement chapter table, and only then replaces
+the source. Audio streams are copied rather than re-encoded. A missing or
+invalid chapter file fails before a successful replacement is reported.
+
+Keep a backup when editing irreplaceable M4B metadata: container-specific fields
+outside the chapter table may not survive every remux. The tool does not infer
+chapters from silence and rejects source deletion. See
+[audiobook workflows](../../../docs/audiobooks.md).
+
 <!-- BEGIN GENERATED COMMAND REFERENCE -->
 ## Command reference
 

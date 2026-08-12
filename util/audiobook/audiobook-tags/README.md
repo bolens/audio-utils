@@ -15,6 +15,23 @@ See [audiobooks](../../../docs/audiobooks.md). Part of **[audio-utils](../../../
 make help
 ```
 
+## Normalization policy
+
+Author is represented by `ALBUMARTIST` and can fill a missing `ARTIST`;
+narrator and series use `NARRATOR`, `SERIES`, and `SERIES-PART`. Empty or
+spoken-word-junk genre values become `Audiobook`, while ASIN/ISBN identifiers
+are preserved when present.
+
+Default scope avoids retagging unrelated music merely because it shares a
+supported extension. `--all-genres` deliberately removes that filter and
+should be previewed carefully.
+
+Report mode describes drift without writing. `--apply` edits FLAC through
+`metaflac` and remuxes other supported containers without audio re-encoding.
+Custom container metadata may not round-trip through the core tag model. The
+tool rejects generic overwrite/deletion flags; mutation is available only
+through `--apply`. See [audiobook tags](../../../docs/audiobooks.md).
+
 <!-- BEGIN GENERATED COMMAND REFERENCE -->
 ## Command reference
 
