@@ -33,6 +33,10 @@ plugin_consume_arg() {
       [[ -n "${2:-}" ]] || { echo "Error: --min-lra needs N" >&2; return 1; }
       DYN_MIN_LRA=$2; AU_CONSUMED=2
       export AU_CONSUMED DYN_MIN_LRA; return 0 ;;
+    --report)
+      [[ -n "${2:-}" ]] || { echo "Error: --report needs FILE" >&2; return 1; }
+      AU_DYN_REPORT=$2; AU_CONSUMED=2
+      export AU_CONSUMED AU_DYN_REPORT; return 0 ;;
   esac
   return 1
 }
@@ -72,7 +76,7 @@ plugin_export_env() {
 
 plugin_finalize() {
   local rows="${AU_DYN_STATE:-}/rows.tsv"
-  local report="${AU_DYN_REPORT:-}"
+  local report="${AU_DYN_REPORT:-}" tmp
   local n
   [[ -f "$rows" ]] || {
     log_always "Dynamics: no rows collected"
@@ -80,6 +84,7 @@ plugin_finalize() {
   }
   n=$(wc -l <"$rows" | tr -d ' ')
   mkdir -p -- "$(dirname -- "$report")" 2>/dev/null || true
+  tmp=$(mktemp --tmpdir="$(dirname -- "$report")" .dynamics-report.XXXXXX) || return 1
   {
     echo "dynamics-report (EBU R128)"
     echo "files: $n"
@@ -109,7 +114,8 @@ plugin_finalize() {
     echo
     echo "=== true peak over 0 dBFS ==="
     awk -F'\t' '$4 != "?" && $4 + 0 > 0 { printf "  peak=%s  %s\n", $4, $1 }' "$rows"
-  } >"$report"
+  } >"$tmp"
+  mv -f -- "$tmp" "$report" || { rm -f -- "$tmp"; return 1; }
   chmod 600 -- "$report" 2>/dev/null || true
   log_always "Dynamics report: $report"
   cat -- "$report"

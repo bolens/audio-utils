@@ -2,11 +2,12 @@
 # Render one waveform PNG via ffmpeg showwavespic.
 
 convert_one() {
-  local src="$1" out err
+  local src="$1" out tmp err
 
   # Full source name kept (song.mp3 → song.mp3.waveform.png) so files
   # differing only by extension cannot collide.
   out="${src}.waveform.png"
+  tmp="${out}.tmp.$$.png"
 
   if [[ "${DRY_RUN:-0}" -eq 1 ]]; then
     log_progress "would waveform: $src -> $(basename -- "$out")"
@@ -26,18 +27,19 @@ convert_one() {
 
   if ! ffmpeg -v error -y -i "$src" \
     -lavfi "showwavespic=s=${WAVEFORM_SIZE}:colors=${WAVEFORM_COLORS}" \
-    -frames:v 1 "$out" 2>"$err"; then
+    -frames:v 1 "$tmp" 2>"$err"; then
     set_last_err_file "$err"
-    rm -f -- "$err" "$out"
+    rm -f -- "$err" "$tmp"
     log_fail "$src" "waveform render failed"
     return 1
   fi
 
-  if [[ ! -s "$out" ]]; then
-    rm -f -- "$err" "$out"
+  if [[ ! -s "$tmp" ]] || ! audio_image_ok "$tmp"; then
+    rm -f -- "$err" "$tmp"
     log_fail "$src" "waveform render produced empty file"
     return 1
   fi
+  mv -f -- "$tmp" "$out" || { rm -f -- "$tmp"; return 1; }
   rm -f -- "$err"
 
   log_progress "rendered: $out"

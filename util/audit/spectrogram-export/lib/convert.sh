@@ -14,11 +14,12 @@ _spec_ffmpeg() {
 }
 
 convert_one() {
-  local src="$1" out err rc=1
+  local src="$1" out tmp err rc=1
 
   # Full source name kept (song.mp3 → song.mp3.spectrogram.png) so files
   # differing only by extension cannot collide.
   out="${src}.spectrogram.png"
+  tmp="${out}.tmp.$$.png"
 
   if [[ "${DRY_RUN:-0}" -eq 1 ]]; then
     log_progress "would spectrogram: $src -> $(basename -- "$out")"
@@ -39,23 +40,24 @@ convert_one() {
   case "${src,,}" in
     *.flac | *.wav | *.aiff | *.aif | *.caf)
       if command -v sox >/dev/null 2>&1; then
-        _spec_sox "$src" "$out" "$err" && rc=0
+        _spec_sox "$src" "$tmp" "$err" && rc=0
       fi
       if ((rc != 0)); then
-        _spec_ffmpeg "$src" "$out" "$err" && rc=0
+        _spec_ffmpeg "$src" "$tmp" "$err" && rc=0
       fi
       ;;
     *)
-      _spec_ffmpeg "$src" "$out" "$err" && rc=0
+      _spec_ffmpeg "$src" "$tmp" "$err" && rc=0
       ;;
   esac
 
-  if ((rc != 0)) || [[ ! -s "$out" ]]; then
+  if ((rc != 0)) || [[ ! -s "$tmp" ]] || ! audio_image_ok "$tmp"; then
     set_last_err_file "$err"
-    rm -f -- "$err" "$out"
+    rm -f -- "$err" "$tmp"
     log_fail "$src" "spectrogram render failed"
     return 1
   fi
+  mv -f -- "$tmp" "$out" || { rm -f -- "$tmp"; return 1; }
   rm -f -- "$err"
 
   log_progress "rendered: $out"

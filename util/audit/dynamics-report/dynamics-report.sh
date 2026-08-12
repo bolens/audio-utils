@@ -7,13 +7,14 @@
 # Options:
 #   -f FILE  -L FILE  -S FILE  -n  -j N  -q  -v  -h  --version
 #   --min-lra=N     Flag files with LRA below N LU in the report (default: 3)
+#   --report FILE   Write the report to FILE instead of XDG state
 #
 # Read-only: -d / -D / -y rejected. Summary report written to the state dir.
 # Exit codes: 0 ok, 1 unreadable files, 2 usage/deps
 
 set -euo pipefail
 AU_USAGE_START=2
-AU_USAGE_END=12
+AU_USAGE_END=13
 AU_ROOT=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
 while [[ ! -f "$AU_ROOT/lib/plugin_init.sh" ]]; do
   [[ "$AU_ROOT" != / ]] || { echo "audio-utils: shared lib/ not found" >&2; exit 2; }
