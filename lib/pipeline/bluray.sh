@@ -174,6 +174,23 @@ bluray_extract_warnings() {
   grep -iE 'read error|corrupt|failed|fatal|hash check failed' "$1" 2>/dev/null
 }
 
+bluray_stage_write_checksums() {
+  local outdir="$1" tmp
+  tmp="$outdir/.STAGE_SHA256SUMS.tmp"
+  (
+    cd -- "$outdir"
+    find -P . -type f -iname '*.mkv' -print0 | LC_ALL=C sort -z \
+      | xargs -0 -r sha256sum --
+  ) >"$tmp" || { rm -f -- "$tmp"; return 1; }
+  mv -f -- "$tmp" "$outdir/STAGE_SHA256SUMS"
+}
+
+bluray_stage_verify() {
+  local outdir="$1"
+  [[ -s "$outdir/STAGE_SHA256SUMS" ]] || return 1
+  (cd -- "$outdir" && sha256sum -c --quiet STAGE_SHA256SUMS)
+}
+
 # Extract authored titles from DEVICE_OR_DISC to OUTDIR (mkv files).
 # Args: SOURCE OUTDIR
 bluray_makemkv_backup() {
@@ -236,20 +253,26 @@ bluray_decrypt_or_copy() {
   kind=$(bluray_resolve_input "$src" 2>/dev/null) || kind=unknown
 
   if [[ "${AUDIO_UTILS_BD_RESUME:-0}" -eq 1 ]]; then
-    while IFS= read -r -d '' f; do
-      if bluray_media_readable "$f"; then
-        printf '%s\0' "$f"
-        readable=1
-      else
-        unreadable=1
-      fi
-    done < <(bluray_list_plain_media --print0 "$outdir")
-    if ((readable && !unreadable)); then
-      log_info "resume: reusing staged MakeMKV titles under $outdir"
-      return 0
+    if [[ -e "$outdir/STAGE_SHA256SUMS" ]] && ! bluray_stage_verify "$outdir"; then
+      log_err "Error: staged MakeMKV checksum verification failed: $outdir"
+      return 1
     fi
-    readable=0
-    unreadable=0
+    if [[ -s "$outdir/STAGE_SHA256SUMS" ]]; then
+      while IFS= read -r -d '' f; do
+        if bluray_media_readable "$f"; then
+          printf '%s\0' "$f"
+          readable=1
+        else
+          unreadable=1
+        fi
+      done < <(bluray_list_plain_media --print0 "$outdir")
+      if ((readable && !unreadable)); then
+        log_info "resume: reusing checksummed MakeMKV titles under $outdir"
+        return 0
+      fi
+      readable=0
+      unreadable=0
+    fi
   fi
 
   case "$kind" in
@@ -296,7 +319,10 @@ bluray_decrypt_or_copy() {
               unreadable=1
             fi
           done < <(bluray_list_plain_media --print0 "$outdir")
-          ((readable && !unreadable)) && return 0
+          if ((readable && !unreadable)); then
+            [[ "${AUDIO_UTILS_BD_RESUME:-0}" -eq 0 ]] || bluray_stage_write_checksums "$outdir" || return 1
+            return 0
+          fi
           return 1
         fi
       fi
@@ -317,7 +343,10 @@ bluray_decrypt_or_copy() {
               unreadable=1
             fi
           done < <(bluray_list_plain_media --print0 "$outdir")
-          ((readable && !unreadable)) && return 0
+          if ((readable && !unreadable)); then
+            [[ "${AUDIO_UTILS_BD_RESUME:-0}" -eq 0 ]] || bluray_stage_write_checksums "$outdir" || return 1
+            return 0
+          fi
           return 1
         fi
         return 1

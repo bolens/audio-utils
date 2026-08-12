@@ -109,16 +109,53 @@ test_bluray_preserves_16_bit_depth_and_stream_provenance() {
   assert_file "$T/media/flac/provenance/archive-manifest.jsonl"
   assert_file "$T/media/flac/provenance/tool-versions.txt"
   assert_file "$T/media/flac/SHA256SUMS"
+  assert_file "$T/media/flac/ARCHIVE_COMPLETE.json"
   assert_grep 'program.mkv.a0.flac' "$T/media/flac/SHA256SUMS"
 
   run_tool conversion/bluray-to-flac/bluray-to-flac.sh \
     --verify-archive "$T/media/flac"
   assert_eq "$(tool_rc)" 0 "archive checksum verification"
+  run_tool conversion/bluray-to-flac/bluray-to-flac.sh \
+    --audit-archive "$T/media/flac"
+  assert_eq "$(tool_rc)" 0 "archive decoded-audio audit"
 
   printf damage >>"$out"
   run_tool conversion/bluray-to-flac/bluray-to-flac.sh \
     --verify-archive "$T/media/flac"
   assert_eq "$(tool_rc)" 1 "archive verification must detect later damage"
+}
+
+test_bluray_preserves_original_stream_bit_for_bit() {
+  require_cmd flac metaflac ffmpeg ffprobe flock
+  require_ffmpeg_encoder ac3
+  mkdir -p "$T/media"
+  ffmpeg -nostdin -v error -y -f lavfi -i 'sine=duration=1' \
+    -c:a ac3 "$T/media/program.mkv"
+  run_tool conversion/bluray-to-flac/bluray-to-flac.sh \
+    --preserve-streams "$T/media/program.mkv"
+  assert_eq "$(tool_rc)" 0 "preserve source rc ($(tool_out | tail -8))"
+  local preserved="$T/media/program.mkv.a0.flac.source.mka" source_hash preserved_hash
+  assert_file "$preserved"
+  assert_eq "$(ffprobe -v error -select_streams a:0 -show_entries stream=codec_name \
+    -of default=nw=1:nk=1 -- "$preserved")" ac3
+  source_hash=$(ffmpeg -v error -i "$T/media/program.mkv" -map 0:a:0 \
+    -c copy -f hash -hash sha256 -)
+  preserved_hash=$(ffmpeg -v error -i "$preserved" -map 0:a:0 \
+    -c copy -f hash -hash sha256 -)
+  assert_eq "$preserved_hash" "$source_hash" "preserved packet payload"
+  assert_grep 'program.mkv.a0.flac.source.mka' "$T/media/SHA256SUMS"
+}
+
+test_bluray_archive_verification_requires_completion_marker() {
+  require_cmd flac metaflac ffmpeg ffprobe flock
+  mkdir -p "$T/media"
+  _mk_mkv "$T/media/program.mkv" 1
+  run_tool conversion/bluray-to-flac/bluray-to-flac.sh "$T/media/program.mkv"
+  assert_eq "$(tool_rc)" 0
+  mv -- "$T/media/ARCHIVE_COMPLETE.json" "$T/completion.json"
+  run_tool conversion/bluray-to-flac/bluray-to-flac.sh \
+    --verify-archive "$T/media"
+  assert_eq "$(tool_rc)" 1 "incomplete archive must fail verification"
 }
 
 test_bluray_marks_lossy_sources() {
@@ -202,6 +239,10 @@ test_bluray_rejects_invalid_title_controls() {
   AUDIO_UTILS_BD_MIN_LENGTH=bad run_tool conversion/bluray-to-flac/bluray-to-flac.sh "$T"
   assert_eq "$(tool_rc)" 2
   AUDIO_UTILS_BD_DISC_ID='../bad' run_tool conversion/bluray-to-flac/bluray-to-flac.sh "$T"
+  assert_eq "$(tool_rc)" 2
+  run_tool conversion/bluray-to-flac/bluray-to-flac.sh --par2-percent 101 "$T"
+  assert_eq "$(tool_rc)" 2
+  AUDIO_UTILS_BD_SEAL=maybe run_tool conversion/bluray-to-flac/bluray-to-flac.sh "$T"
   assert_eq "$(tool_rc)" 2
 }
 
