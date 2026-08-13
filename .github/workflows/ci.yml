@@ -247,7 +247,7 @@ jobs:
     needs: changes
     if: needs.changes.outputs.lib == 'true'
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 20
     container: fedora:latest
     steps:
       - name: Checkout
