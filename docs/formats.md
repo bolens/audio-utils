@@ -18,7 +18,8 @@ Exceptions: `cue-to-flac` rejects `-d`/`-D` (sheet kept); `streams-to-flac` supp
 
 ## Workdirs
 
-Temps live beside media as `.${AUDIO_UTILS_WORKDIR_PREFIX}.*` and under XDG runtime for status dirs.
+Temps live beside media as `.${AUDIO_UTILS_WORKDIR_PREFIX}.XXXXXX` (six random
+ASCII alphanumeric characters) and under XDG runtime for status dirs.
 
 ## Extension presets
 

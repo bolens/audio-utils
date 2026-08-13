@@ -10,6 +10,7 @@ if [[ $# -ne 1 || ! "$1" =~ ^\.[A-Za-z0-9][A-Za-z0-9._-]*\.\*$ ]]; then
   echo "usage: clean-tool-tmp.sh WORKDIR_NAME_GLOB" >&2
   exit 2
 fi
+prefix=${1%.\*}
 
 declare -a roots=()
 if [[ -n "${AUDIO_UTILS_CLEAN_ROOTS+x}" ]]; then
@@ -35,7 +36,12 @@ done
 matches=$(mktemp "${TMPDIR:-/tmp}/audio-utils-clean.XXXXXX") || exit 1
 trap 'rm -f -- "$matches"' EXIT
 for root in "${roots[@]}"; do
-  find -P -- "$root" -mindepth 1 -type d -name "$1" -print0 >>"$matches"
+  while IFS= read -r -d '' match; do
+    suffix=${match##*/}
+    suffix=${suffix#"${prefix}."}
+    [[ "$suffix" =~ ^[A-Za-z0-9]{6}$ ]] || continue
+    printf '%s\0' "$match" >>"$matches"
+  done < <(find -P -- "$root" -mindepth 1 -type d -name "${prefix}.*" -print0)
 done
 
 while IFS= read -r -d '' match; do
