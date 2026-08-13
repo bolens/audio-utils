@@ -12,7 +12,7 @@ fi
 }
 fail=0
 
-while IFS= read -r file; do
+while IFS= read -r -d '' file; do
   while IFS= read -r entry; do
     ref=${entry#*uses:}
     ref=${ref#"${ref%%[![:space:]]*}"}
@@ -32,8 +32,7 @@ while IFS= read -r file; do
   done < <(grep -E '^[[:space:]]*(-[[:space:]]+)?uses:[[:space:]]+' "$file" || true)
 done < <(
   find "$ROOT/.github" -type f \( -name '*.yml' -o -name '*.yaml' \) -print0 |
-    sort -z |
-    while IFS= read -r -d '' file; do printf '%s\n' "$file"; done
+    sort -z
 )
 
 exit "$fail"

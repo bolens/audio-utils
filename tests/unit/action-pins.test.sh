@@ -47,4 +47,15 @@ test_missing_github_directory_is_usage_error() {
   assert_eq "$rc" 2
 }
 
+test_workflow_filename_with_newline_is_checked() {
+  mkdir -p "$T/repo/.github/workflows"
+  printf '%s\n' 'steps:' \
+    '  - uses: actions/checkout@v7' \
+    >"$T/repo/.github/workflows/line"$'\n'"break.yml"
+  local out rc=0
+  out=$(_check_pins 2>&1) || rc=$?
+  assert_eq "$rc" 1
+  assert_grep 'not pinned to a full commit SHA' "$out"
+}
+
 run_tests

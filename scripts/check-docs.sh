@@ -25,14 +25,19 @@ anchor_exists() {
 }
 
 check_target() {
-  local source=$1 raw=$2 dir target path fragment=""
+  local source=$1 raw=$2 dir target path fragment="" angle=0
   dir=$(dirname "$source")
   target=$raw
   target=${target#']('}
   target=${target%')'}
-  target=${target#'<'}
-  target=${target%'>'}
-  target=${target%%[[:space:]]\"*}
+  if [[ "$target" == '<'* ]]; then
+    angle=1
+    target=${target#'<'}
+    target=${target%%>*}
+  fi
+  if [[ "$angle" -eq 0 ]]; then
+    target=${target%%[[:space:]]\"*}
+  fi
   target=${target//%20/ }
   [[ -n "$target" ]] || return 0
   case "$target" in
