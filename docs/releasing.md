@@ -39,8 +39,16 @@ published separately.
 Watch required checks with `gh pr checks --watch`. Do not merge with failing or
 pending checks. If CI needs a fix, commit it to the same branch and wait for the
 replacement run. Rebase-merge the PR so the focused commits remain in history;
-the repository intentionally disables merge commits. Then update local `main`
-from `origin/main`.
+the repository intentionally disables merge commits. A rebase merge gives the
+commits new IDs, so a local `main` containing their pre-merge IDs cannot be
+fast-forwarded. With a clean worktree, realign it to the merged branch:
+
+```bash
+git fetch origin
+git switch --detach origin/main
+git branch -f main origin/main
+git switch main
+```
 
 ## Publish
 
