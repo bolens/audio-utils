@@ -27,16 +27,36 @@ unregister_tmpdir() {
   rm -f -- "${AUDIO_UTILS_TMP_REGISTRY}/${id}"
 }
 
+_audio_utils_registered_tmpdir_safe() {
+  local dir=$1 abs runtime base
+  [[ -n "$dir" && -d "$dir" && ! -L "$dir" ]] || return 1
+  abs=$(au_abspath "$dir") || return 1
+  [[ -n "$abs" && "$abs" != / ]] || return 1
+  runtime=$(audio_utils_runtime_dir) || return 1
+  runtime=$(au_abspath "$runtime") || return 1
+  case "$abs" in
+    "$runtime"/*) return 0 ;;
+  esac
+  base=$(basename -- "$abs")
+  [[ "$base" =~ ^\.[A-Za-z0-9][A-Za-z0-9._-]*\.[A-Za-z0-9]{6}$ ]]
+}
+
 cleanup_registered_tmpdirs() {
-  local f d
+  local f d fail=0
   [[ -n "${AUDIO_UTILS_TMP_REGISTRY:-}" && -d "${AUDIO_UTILS_TMP_REGISTRY}" ]] || return 0
   for f in "${AUDIO_UTILS_TMP_REGISTRY}"/*; do
     [[ -f "$f" ]] || continue
     d=$(<"$f")
-    [[ -n "$d" ]] && rm -rf -- "$d"
+    if [[ -e "$d" ]] && ! _audio_utils_registered_tmpdir_safe "$d"; then
+      log_err "refusing unsafe registered temporary directory: $d"
+      fail=1
+    elif [[ -n "$d" ]]; then
+      rm -rf -- "$d"
+    fi
     rm -f -- "$f"
   done
   rmdir -- "${AUDIO_UTILS_TMP_REGISTRY}" 2>/dev/null || rm -rf -- "${AUDIO_UTILS_TMP_REGISTRY}"
+  return "$fail"
 }
 
 install_cleanup_trap() {
@@ -50,6 +70,13 @@ audio_utils_workdir_prefix() {
     return 2
   fi
   printf '%s\n' "$prefix"
+}
+
+_audio_utils_workdir_name_safe() {
+  local name=$1 prefix=$2 suffix
+  [[ "$name" == ".${prefix}."* ]] || return 1
+  suffix=${name#".${prefix}."}
+  [[ "$suffix" =~ ^[A-Za-z0-9]{6}$ ]]
 }
 
 # Prefer temp dir on same filesystem as dest for atomic mv.
@@ -69,35 +96,39 @@ make_workdir() {
   printf '%s\n' "$tmp"
 }
 
-# Remove leftover .${prefix}.* workdirs under DIR (maxdepth 1).
+# Remove leftover .${prefix}.XXXXXX workdirs under DIR (maxdepth 1).
 sweep_orphan_workdirs() {
   local dir="$1"
   local prefix d count=0
   prefix=$(audio_utils_workdir_prefix) || return
   [[ -d "$dir" ]] || return 0
   while IFS= read -r -d '' d; do
+    _audio_utils_workdir_name_safe "$(basename -- "$d")" "$prefix" || continue
     rm -rf -- "$d" 2>/dev/null || chmod -R u+w -- "$d" 2>/dev/null
     rm -rf -- "$d" 2>/dev/null || true
     ((count++)) || true
-  done < <(find "$dir" -maxdepth 1 -type d -name ".${prefix}.*" -print0 2>/dev/null)
+  done < <(find "$dir" -mindepth 1 -maxdepth 1 -type d \
+    -name ".${prefix}.*" -print0 2>/dev/null)
   if ((count > 0)); then
     log_info "swept $count orphan workdir(s) under $dir"
   fi
 }
 
-# Recursively remove orphan .${prefix}.* under roots.
+# Recursively remove orphan .${prefix}.XXXXXX workdirs under roots.
 sweep_orphans_in_roots() {
   local prefix root d count=0
   prefix=$(audio_utils_workdir_prefix) || return
   for root in "$@"; do
     [[ -d "$root" ]] || continue
     while IFS= read -r -d '' d; do
+      _audio_utils_workdir_name_safe "$(basename -- "$d")" "$prefix" || continue
       rm -rf -- "$d" 2>/dev/null || chmod -R u+w -- "$d" 2>/dev/null
       rm -rf -- "$d" 2>/dev/null || true
       ((count++)) || true
-    done < <(find "$root" -type d -name ".${prefix}.*" -print0 2>/dev/null)
+    done < <(find "$root" -mindepth 1 -type d \
+      -name ".${prefix}.*" -print0 2>/dev/null)
   done
   if ((count > 0)); then
-    log_info "swept $count orphan .${prefix}.* workdir(s)"
+    log_info "swept $count orphan .${prefix}.XXXXXX workdir(s)"
   fi
 }

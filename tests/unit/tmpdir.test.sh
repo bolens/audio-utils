@@ -76,6 +76,24 @@ test_cleanup_removes_registered_dirs_only() {
     || fail "unregistered dir must survive"
 }
 
+test_cleanup_rejects_unsafe_registered_directory() {
+  _load
+  init_tmpdir_registry
+  mkdir -p "$T/library"
+  printf '%s\n' "$T/library" >"$AUDIO_UTILS_TMP_REGISTRY/unsafe"
+  assert_exit 1 cleanup_registered_tmpdirs
+  [[ -d "$T/library" ]] || fail "unsafe registered directory was removed"
+}
+
+test_cleanup_rejects_workdir_like_name_with_wrong_suffix() {
+  _load
+  init_tmpdir_registry
+  mkdir -p "$T/.audio-utils.library"
+  printf '%s\n' "$T/.audio-utils.library" >"$AUDIO_UTILS_TMP_REGISTRY/unsafe"
+  assert_exit 1 cleanup_registered_tmpdirs
+  [[ -d "$T/.audio-utils.library" ]] || fail "non-workdir dot directory was removed"
+}
+
 test_unregister_protects_dir_from_cleanup() {
   _load
   init_tmpdir_registry
@@ -89,19 +107,40 @@ test_unregister_protects_dir_from_cleanup() {
 
 test_sweep_orphan_workdirs_matches_prefix_only() {
   _load
-  mkdir -p "$T/album/.audio-utils.AbC123" "$T/album/.other.XYZ" "$T/album/normal"
+  mkdir -p "$T/album/.audio-utils.AbC123" "$T/album/.audio-utils.archive" \
+    "$T/album/.audio-utils.!!!!!!" \
+    "$T/album/.other.XYZ123" "$T/album/normal"
   sweep_orphan_workdirs "$T/album" 2>/dev/null
   [[ ! -d "$T/album/.audio-utils.AbC123" ]] || fail "orphan not swept"
-  [[ -d "$T/album/.other.XYZ" ]] || fail "foreign dotdir must survive"
+  [[ -d "$T/album/.audio-utils.archive" ]] || fail "non-workdir dotdir must survive"
+  [[ -d "$T/album/.audio-utils.!!!!!!" ]] || fail "invalid suffix must survive"
+  [[ -d "$T/album/.other.XYZ123" ]] || fail "foreign dotdir must survive"
   [[ -d "$T/album/normal" ]] || fail "normal dir must survive"
+}
+
+test_sweep_orphan_workdirs_never_removes_scan_root() {
+  _load
+  mkdir -p "$T/.audio-utils.root/.audio-utils.AbC123"
+  sweep_orphan_workdirs "$T/.audio-utils.root" 2>/dev/null
+  [[ -d "$T/.audio-utils.root" ]] || fail "scan root was removed"
+  [[ ! -d "$T/.audio-utils.root/.audio-utils.AbC123" ]] || fail "child orphan not swept"
 }
 
 test_sweep_orphans_in_roots_recursive() {
   _load
-  mkdir -p "$T/lib/a/.audio-utils.one" "$T/lib/b/deep/.audio-utils.two"
+  mkdir -p "$T/lib/a/.audio-utils.AbC123" "$T/lib/b/deep/.audio-utils.XyZ789"
   sweep_orphans_in_roots "$T/lib" 2>/dev/null
-  [[ ! -d "$T/lib/a/.audio-utils.one" ]] || fail "root-level orphan not swept"
-  [[ ! -d "$T/lib/b/deep/.audio-utils.two" ]] || fail "nested orphan not swept"
+  [[ ! -d "$T/lib/a/.audio-utils.AbC123" ]] || fail "root-level orphan not swept"
+  [[ ! -d "$T/lib/b/deep/.audio-utils.XyZ789" ]] || fail "nested orphan not swept"
+}
+
+test_sweep_orphans_in_roots_never_removes_library_root() {
+  _load
+  mkdir -p "$T/.audio-utils.library/a/.audio-utils.AbC123"
+  sweep_orphans_in_roots "$T/.audio-utils.library" 2>/dev/null
+  [[ -d "$T/.audio-utils.library" ]] || fail "library root was removed"
+  [[ ! -d "$T/.audio-utils.library/a/.audio-utils.AbC123" ]] || \
+    fail "nested orphan not swept"
 }
 
 run_tests
