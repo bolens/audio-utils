@@ -161,6 +161,46 @@ test_clean_tmp_preserves_glob_characters_in_roots() {
   assert_no_file "$T/Music [live]/album/.wav2flac.stale"
 }
 
+test_clean_tmp_preserves_apostrophes_in_make_roots() {
+  require_cmd make find
+  mkdir -p "$T/O'Brien Music/album/.wav2flac.stale"
+  ROOTS="$T/O'Brien Music" \
+    make -s -C "$AU_REPO_ROOT/conversion/wav-to-flac" clean-tmp >"$T/out"
+  assert_no_file "$T/O'Brien Music/album/.wav2flac.stale"
+}
+
+test_clean_tmp_make_roots_override_environment() {
+  require_cmd make find
+  mkdir -p "$T/env/album/.wav2flac.stale" "$T/explicit/album/.wav2flac.stale"
+  AUDIO_UTILS_ROOTS="$T/env" \
+    make -s -C "$AU_REPO_ROOT/conversion/wav-to-flac" \
+      ROOTS="$T/explicit" clean-tmp >"$T/out"
+  [[ -d "$T/env/album/.wav2flac.stale" ]] || \
+    fail "environment root was cleaned instead of explicit ROOTS"
+  assert_no_file "$T/explicit/album/.wav2flac.stale"
+}
+
+test_clean_tmp_reports_missing_spaced_make_root_literally() {
+  require_cmd make find
+  local missing="$T/Missing Music"
+  local rc=0
+  make -s -C "$AU_REPO_ROOT/conversion/wav-to-flac" \
+    ROOTS="$missing" clean-tmp >"$T/out" 2>&1 || rc=$?
+  assert_eq "$rc" 2 "make propagates failed cleanup recipe"
+  assert_grep "not a directory: $missing" "$T/out"
+}
+
+test_clean_tmp_rejects_broad_patterns() {
+  require_cmd find
+  mkdir -p "$T/library/album/.wav2flac.stale"
+  local rc=0
+  AUDIO_UTILS_ROOTS="$T/library" \
+    "$AU_REPO_ROOT/scripts/clean-tool-tmp.sh" '*' >"$T/out" 2>&1 || rc=$?
+  assert_eq "$rc" 2
+  [[ -d "$T/library/album/.wav2flac.stale" ]] || \
+    fail "broad pattern touched library"
+}
+
 test_clean_tmp_validates_all_roots_before_deleting() {
   require_cmd make find xargs
   mkdir -p "$T/good/album/.wav2flac.stale"
