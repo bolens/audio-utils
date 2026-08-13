@@ -112,6 +112,8 @@ clean:
 	$(CLEAN_EXTRA) \
 	echo "cleaned $$state"
 
+ifneq ($(filter command line environment override,$(origin ROOTS)),)
+clean-tmp: export AUDIO_UTILS_CLEAN_ROOTS := $(ROOTS)
+endif
 clean-tmp:
-	@AUDIO_UTILS_ROOTS='$(ROOTS)' \
-		bash '$(AU_ROOT)/scripts/clean-tool-tmp.sh' '$(WORKDIR_GLOB)'
+	@bash '$(AU_ROOT)/scripts/clean-tool-tmp.sh' '$(WORKDIR_GLOB)'
