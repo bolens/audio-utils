@@ -31,4 +31,18 @@ test_docs_check_handles_parentheses_in_link_destination() {
   _check_docs
 }
 
+test_docs_check_handles_angle_destination_with_literal_spaces() {
+  mkdir -p "$T/repo/docs"
+  printf '# Target\n' >"$T/repo/docs/My Guide.md"
+  printf '[target](<docs/My Guide.md>)\n' >"$T/repo/README.md"
+  _check_docs
+}
+
+test_docs_check_handles_angle_destination_with_title() {
+  mkdir -p "$T/repo/docs"
+  printf '# Target\n' >"$T/repo/docs/My Guide.md"
+  printf '[target](<docs/My Guide.md> "Guide title")\n' >"$T/repo/README.md"
+  _check_docs
+}
+
 run_tests
