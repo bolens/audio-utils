@@ -257,7 +257,7 @@ jobs:
         run: dnf install -y ShellCheck make findutils diffutils
 
       - name: shellcheck lib + all tools
-        run: make check
+        run: make JOBS=16 check
 
   # Unit + smoke tests: cheap, run on any code change.
   test-unit-smoke:
