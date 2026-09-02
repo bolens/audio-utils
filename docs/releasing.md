@@ -38,16 +38,14 @@ published separately.
 
 Watch required checks with `gh pr checks --watch`. Do not merge with failing or
 pending checks. If CI needs a fix, commit it to the same branch and wait for the
-replacement run. Rebase-merge the PR so the focused commits remain in history;
-the repository intentionally disables merge commits. A rebase merge gives the
-commits new IDs, so a local `main` containing their pre-merge IDs cannot be
-fast-forwarded. With a clean worktree, realign it to the merged branch:
+replacement run. Squash-merge the PR and delete its branch. Direct pushes to
+`main`, rebase merges, merge commits, and protection bypasses are disabled.
+With a clean worktree, update the local branch from the merged result:
 
 ```bash
 git fetch origin
-git switch --detach origin/main
-git branch -f main origin/main
 git switch main
+git merge --ff-only origin/main
 ```
 
 ## Publish
