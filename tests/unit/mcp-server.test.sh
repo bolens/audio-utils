@@ -348,6 +348,8 @@ test_mcp_run_tool_accepts_typed_audit_fields() {
 
 test_mcp_dispatch_uses_private_error_file() {
   _load_mcp
+  local TMPDIR="$T/private-errors"
+  mkdir -p -- "$TMPDIR"
   local predictable="$TMPDIR/mcp-err.$$" victim="$T/victim" response
   printf 'keep me' >"$victim"
   ln -s -- "$victim" "$predictable"
