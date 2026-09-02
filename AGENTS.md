@@ -25,3 +25,12 @@ Read `.specify/memory/constitution.md` and the nearest contract document:
 - Update user-facing help and indexed docs when behavior, flags, dependencies,
   or formats change. Never edit `VERSION` or publish/install artifacts unless
   explicitly requested.
+
+## Spec-driven changes
+
+Use Spec Kit for new capabilities, architecture, security-sensitive behavior,
+migrations, and coordinated multi-file changes. Keep narrow fixes, dependency
+updates, prose edits, and release housekeeping in the normal repository
+workflow unless their risk warrants a written specification. Keep completed
+feature directories under `specs/` as decision history; do not backfill them for
+finished work.
