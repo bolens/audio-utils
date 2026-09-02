@@ -166,7 +166,7 @@ jobs:
           persist-credentials: false
 
       - name: Install shellcheck
-        uses: ./.github/actions/install-shellcheck
+        uses: ./.github/actions/install-shellcheck # zizmor: ignore[self-repository] actionlint 1.7.12 requires the current local-action syntax.
 
       - name: shellcheck lib
         run: make check-lib
@@ -190,7 +190,7 @@ jobs:
           persist-credentials: false
 
       - name: Install shellcheck
-        uses: ./.github/actions/install-shellcheck
+        uses: ./.github/actions/install-shellcheck # zizmor: ignore[self-repository] actionlint 1.7.12 requires the current local-action syntax.
 
       - name: shellcheck conversion tools
         env:
@@ -229,7 +229,7 @@ jobs:
           persist-credentials: false
 
       - name: Install shellcheck
-        uses: ./.github/actions/install-shellcheck
+        uses: ./.github/actions/install-shellcheck # zizmor: ignore[self-repository] actionlint 1.7.12 requires the current local-action syntax.
 
       - name: shellcheck util tools
         env:
@@ -286,7 +286,7 @@ jobs:
         run: sudo apt-get update && sudo apt-get install -y ffmpeg flac
 
       - name: Install shellcheck
-        uses: ./.github/actions/install-shellcheck
+        uses: ./.github/actions/install-shellcheck # zizmor: ignore[self-repository] actionlint 1.7.12 requires the current local-action syntax.
 
       - name: shellcheck test suite
         run: make check-tests
