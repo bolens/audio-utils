@@ -20,7 +20,7 @@ fi
 
 mapfile -t staged < <(
   git diff --cached --name-only --diff-filter=ACM \
-    | grep -E '\.sh$' || true
+    | grep -E '\.sh$' | grep -vE '^\.specify/' || true
 )
 
 if ((${#staged[@]} == 0)); then
