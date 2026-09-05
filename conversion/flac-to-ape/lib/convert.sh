@@ -77,7 +77,11 @@ convert_one() {
     return 1
   fi
 
-  mv -f -- "$out" "$ape"
+  if ! mv -f -- "$out" "$ape"; then
+    log_fail "$flac" "output publication failed" "destination=$ape"
+    cleanup
+    return 1
+  fi
   sha=$(file_sha256 "$ape")
   notes="converted;level=$level"
   ((force_reconvert)) && notes="reconverted;level=$level"

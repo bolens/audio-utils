@@ -59,7 +59,11 @@ convert_one() {
     cp -f -- "${enc_out[0]}" "${tmpdir}/tagged.flac"
   fi
 
-  mv -f -- "${tmpdir}/tagged.flac" "$flac_out"
+  if ! mv -f -- "${tmpdir}/tagged.flac" "$flac_out"; then
+    log_fail "$syn" "output publication failed" "destination=$flac_out"
+    cleanup
+    return 1
+  fi
   notes="ripped;track=$tracknum"
   log_info "verified: $flac_out  audio_md5=$md5_flac"
   log_success "$syn" "$flac_out" "$md5_flac" "$(file_sha256 "$flac_out")" "$notes"

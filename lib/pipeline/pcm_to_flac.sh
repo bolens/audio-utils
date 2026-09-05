@@ -43,7 +43,11 @@ pcm_to_flac_retag_one() {
     return 1
   fi
 
-  mv -f -- "$tagged" "$flac"
+  if ! mv -f -- "$tagged" "$flac"; then
+    log_fail "$src" "output publication failed" "destination=$flac"
+    cleanup
+    return 1
+  fi
   md5=$(audio_md5 "$flac")
   sha=$(file_sha256 "$flac")
   log_info "retagged: $flac"
@@ -188,7 +192,11 @@ pcm_to_flac_convert_one() {
     return 1
   fi
 
-  mv -f -- "$flac_tagged" "$flac"
+  if ! mv -f -- "$flac_tagged" "$flac"; then
+    log_fail "$src" "output publication failed" "destination=$flac"
+    cleanup
+    return 1
+  fi
 
   log_info "verified: $flac"
   log_info "  flac_sha256=$hash1  audio_md5=$md5_flac"

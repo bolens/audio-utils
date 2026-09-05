@@ -430,7 +430,11 @@ lossy_convert_one() {
     return 1
   fi
 
-  mv -f -- "$enc_out" "$out"
+  if ! mv -f -- "$enc_out" "$out"; then
+    log_fail "$flac" "output publication failed" "destination=$out"
+    cleanup
+    return 1
+  fi
   md5=$(audio_md5 "$flac")
   sha=$(file_sha256 "$out")
   notes="converted"

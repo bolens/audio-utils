@@ -11,3 +11,8 @@ Acceptance: build the image, run help and invalid-command handling, perform a
 real conversion, verify its output and retained source, and test unusual names,
 read-only input mounts, output ownership and failed/colliding operations.
 Document optional dependencies and device/network operations honestly.
+
+Container validation exposed unchecked audio output moves. Guard confirmed
+converter publication failures before logging success or deleting source files,
+including shared and specialized pipelines. Preserve per-track batch failure
+accounting and caller-owned temporary-directory cleanup.

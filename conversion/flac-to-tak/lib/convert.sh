@@ -72,7 +72,11 @@ convert_one() {
     return 1
   fi
 
-  mv -f -- "$out" "$tak"
+  if ! mv -f -- "$out" "$tak"; then
+    log_fail "$flac" "output publication failed" "destination=$tak"
+    cleanup
+    return 1
+  fi
   sha=$(file_sha256 "$tak")
   notes="converted;preset=$preset"
   ((force_reconvert)) && notes="reconverted;preset=$preset"

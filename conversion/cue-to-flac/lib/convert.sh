@@ -96,7 +96,11 @@ convert_one() {
       continue
     fi
 
-    mv -f -- "${tmpdir}/tagged.flac" "$flac_out"
+    if ! mv -f -- "${tmpdir}/tagged.flac" "$flac_out"; then
+      log_fail "$cue" "output publication failed" "destination=$flac_out"
+      fail=1
+      continue
+    fi
     notes="converted;track=$idx"
     log_info "verified: $flac_out  audio_md5=${enc_out[2]}"
     log_success "$cue" "$flac_out" "${enc_out[2]}" "$(file_sha256 "$flac_out")" "$notes"

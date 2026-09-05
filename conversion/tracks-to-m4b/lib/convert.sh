@@ -165,7 +165,11 @@ _t2m_build() {
     fi
   fi
 
-  mv -f -- "${tmpdir}/out.m4b" "$out"
+  if ! mv -f -- "${tmpdir}/out.m4b" "$out"; then
+    unregister_tmpdir "$tmpdir"; rm -rf -- "$tmpdir"
+    printf 'fail-publish\n'
+    return 1
+  fi
   sha=$(file_sha256 "$out")
   notes="converted;chapters=$idx;codec=$codec"
   unregister_tmpdir "$tmpdir"; rm -rf -- "$tmpdir"

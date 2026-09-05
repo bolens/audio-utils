@@ -106,7 +106,11 @@ convert_one() {
       fi
     fi
 
-    mv -f -- "${tmpdir}/part.${ext}" "$out"
+    if ! mv -f -- "${tmpdir}/part.${ext}" "$out"; then
+      log_fail "$src" "output publication failed" "destination=$out"
+      fail=1
+      continue
+    fi
     log_info "wrote: $out"
     log_success "$src" "$out" "" "$(file_sha256 "$out")" "track=$idx;codec=${codec:-}"
     ((++copied)) || true

@@ -69,7 +69,11 @@ pcm_remux_convert_one() {
     return 1
   fi
 
-  mv -f -- "$tagged" "$dest"
+  if ! mv -f -- "$tagged" "$dest"; then
+    log_fail "$src" "output publication failed" "destination=$dest"
+    cleanup
+    return 1
+  fi
   md5=$(audio_md5 "$dest")
   sha=$(file_sha256 "$dest")
   notes="converted"

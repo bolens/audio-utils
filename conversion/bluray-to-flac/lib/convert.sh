@@ -670,7 +670,11 @@ _extract_media_streams() {
       fail=1
       continue
     fi
-    mv -f -- "${enc_out[0]}" "$flac_out"
+    if ! mv -f -- "${enc_out[0]}" "$flac_out"; then
+      log_fail "$src" "output publication failed" "destination=$flac_out"
+      fail=1
+      continue
+    fi
     log_info "verified: $flac_out"
     log_success "$audit_src" "$flac_out" "${enc_out[2]}" "$(file_sha256 "$flac_out")" \
       "converted;title=$title_note;stream=$i"
