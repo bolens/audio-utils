@@ -1,6 +1,6 @@
 {
   "name": "audio-utils-mcp",
-  "version": "0.8.0",
+  "version": "0.8.1",
   "private": true,
   "description": "Optional Node launcher / HTTP+SSE gateway for the dep-free audio-utils Bash MCP server",
   "type": "module",
