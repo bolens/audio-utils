@@ -52,5 +52,6 @@ Options:
 
 Default mode reports files with neither tag nor sidecar. -d / -D rejected.
 Exit codes: 0 ok/clean, 1 missing/failures, 2 usage/deps
+Shared file tools: --exclude GLOB (repeatable, case-sensitive source basename glob)
 ```
 <!-- END GENERATED COMMAND REFERENCE -->

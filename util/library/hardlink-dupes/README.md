@@ -41,5 +41,6 @@ Options:
 Report-only by default (exit 1 when candidates exist). Does not support -d/-D/-y.
 Prefer flac-dupes for discovery-only; this tool optionally reclaims inodes.
 Exit codes: 0 ok, 1 candidates/failures, 2 usage/deps
+Shared file tools: --exclude GLOB (repeatable, case-sensitive source basename glob)
 ```
 <!-- END GENERATED COMMAND REFERENCE -->

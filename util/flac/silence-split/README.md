@@ -44,5 +44,6 @@ Options:
   -f FILE  -L FILE  -S FILE  -n  -j N  -q  -v  -h  --version
 
 Requires at least 2 keep segments. Inverse of flac-cue-export / peer of cue-to-flac.
+Shared file tools: --exclude GLOB (repeatable, case-sensitive source basename glob)
 ```
 <!-- END GENERATED COMMAND REFERENCE -->

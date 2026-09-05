@@ -54,5 +54,6 @@ Normalizes: uppercase keys, trim values, TRACKNUMBER zero-pad, DATE,
 strip iTunes/encoder junk. -y rewrites even when already clean.
 -d / -D rejected.
 Exit codes: 0 ok, 1 failures, 2 usage/deps
+Shared file tools: --exclude GLOB (repeatable, case-sensitive source basename glob)
 ```
 <!-- END GENERATED COMMAND REFERENCE -->

@@ -49,5 +49,6 @@ Options:
 Read-only (-d/-D/-y rejected). Checks cover, author, narrator, chapters,
 series consistency, and unexpected .m4b codecs.
 Exit codes: 0 ok, 1 issues found, 2 usage/deps
+Shared file tools: --exclude GLOB (repeatable, case-sensitive source basename glob)
 ```
 <!-- END GENERATED COMMAND REFERENCE -->

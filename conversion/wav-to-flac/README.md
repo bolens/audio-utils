@@ -246,5 +246,6 @@ Options:
   --version   Print version and exit
 
 Exit codes: 0 all ok, 1 some conversions failed, 2 usage/config/deps error
+Shared file tools: --exclude GLOB (repeatable, case-sensitive source basename glob)
 ```
 <!-- END GENERATED COMMAND REFERENCE -->

@@ -51,5 +51,6 @@ Options:
 
 Default is report-only (exit 1 when leftovers found). -D rejected.
 Exit codes: 0 clean, 1 leftovers/failures, 2 usage/deps
+Shared file tools: --exclude GLOB (repeatable, case-sensitive source basename glob)
 ```
 <!-- END GENERATED COMMAND REFERENCE -->

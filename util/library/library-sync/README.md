@@ -49,5 +49,6 @@ Options:
 Requires AUDIO_UTILS_ROOTS (or scanned dirs under it) to resolve relative paths.
 Read-only: -d / -D / -y rejected.
 Exit codes: 0 ok, 1 missing siblings, 2 usage/deps
+Shared file tools: --exclude GLOB (repeatable, case-sensitive source basename glob)
 ```
 <!-- END GENERATED COMMAND REFERENCE -->

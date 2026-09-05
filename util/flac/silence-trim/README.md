@@ -53,5 +53,6 @@ Options:
 Report-only by default (exit 1 when candidates exist). -d/-D/-y rejected.
 Peer of silence-detect (QC) and silence-split (multi-track).
 Exit codes: 0 ok, 1 candidates/failures, 2 usage/deps
+Shared file tools: --exclude GLOB (repeatable, case-sensitive source basename glob)
 ```
 <!-- END GENERATED COMMAND REFERENCE -->

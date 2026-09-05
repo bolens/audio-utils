@@ -60,5 +60,6 @@ Reports (fails the file) when:
 
 Read-only: -d / -D / -y rejected.
 Exit codes: 0 all clean, 1 issues found, 2 usage/deps
+Shared file tools: --exclude GLOB (repeatable, case-sensitive source basename glob)
 ```
 <!-- END GENERATED COMMAND REFERENCE -->

@@ -39,5 +39,6 @@ Options:
 Read-only: -d / -D / -y rejected.
 Heuristic (not proof). Complements lossy-audit and flac-authenticity.
 Exit codes: 0 ok, 1 suspects, 2 usage/deps
+Shared file tools: --exclude GLOB (repeatable, case-sensitive source basename glob)
 ```
 <!-- END GENERATED COMMAND REFERENCE -->

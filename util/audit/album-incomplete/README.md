@@ -55,5 +55,6 @@ Options:
 Read-only: -d / -D / -y rejected. One result per directory.
 Complements album-audit (consistency) with completeness signals.
 Exit codes: 0 complete, 1 incomplete, 2 usage/deps
+Shared file tools: --exclude GLOB (repeatable, case-sensitive source basename glob)
 ```
 <!-- END GENERATED COMMAND REFERENCE -->

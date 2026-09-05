@@ -51,5 +51,6 @@ Options:
 Unmapped genres always fail. Missing GENRE is skipped (success).
 -d / -D rejected.
 Exit codes: 0 ok, 1 drift/unmapped, 2 usage/deps
+Shared file tools: --exclude GLOB (repeatable, case-sensitive source basename glob)
 ```
 <!-- END GENERATED COMMAND REFERENCE -->

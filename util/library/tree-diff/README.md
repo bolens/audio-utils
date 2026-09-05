@@ -56,5 +56,6 @@ Options:
 Relative paths resolved via AUDIO_UTILS_ROOTS.
 Read-only: -d / -D / -y rejected.
 Exit codes: 0 match, 1 diffs, 2 usage/deps
+Shared file tools: --exclude GLOB (repeatable, case-sensitive source basename glob)
 ```
 <!-- END GENERATED COMMAND REFERENCE -->

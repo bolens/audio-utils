@@ -55,5 +55,6 @@ Options:
   --version   Print version
 
 Exit codes: 0 all ok, 1 some failures, 2 usage/config/deps
+Shared file tools: --exclude GLOB (repeatable, case-sensitive source basename glob)
 ```
 <!-- END GENERATED COMMAND REFERENCE -->

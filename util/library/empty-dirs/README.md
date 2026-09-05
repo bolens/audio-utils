@@ -52,5 +52,6 @@ Re-run after -d if parents become empty.
 
 -D / -y rejected.
 Exit codes: 0 ok, 1 empty dirs found (report) or remove failures, 2 usage/deps
+Shared file tools: --exclude GLOB (repeatable, case-sensitive source basename glob)
 ```
 <!-- END GENERATED COMMAND REFERENCE -->
