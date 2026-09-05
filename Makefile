@@ -22,7 +22,7 @@ TEST_SCRIPTS := tests/run.sh tests/harness.sh tests/fixtures.sh \
 	$(sort $(wildcard .githooks/*)) \
 	$(MCP_SCRIPTS)
 
-.PHONY: help check check-lib check-mcp check-docs check-tool-readmes check-actions check-conversion check-util check-tools \
+.PHONY: help check check-shared check-lib check-mcp check-docs check-tool-readmes check-actions check-conversion check-util check-tools \
 	check-tests test test-functional test-all test-ci clean-tests coverage new-util \
 	new-converter ape-install ape-update ape-status ape-uninstall \
 	keyfinder-install keyfinder-status install-hooks \
@@ -159,7 +159,9 @@ check-util:
 	@JOBS=$(JOBS) $(RUN_PARALLEL) -j $(JOBS) $(UTIL)
 
 # Lib + mcp + tests first (fast), then one parallel pool across every tool.
-check: check-lib check-mcp check-docs check-tool-readmes check-actions check-tests check-tools
+check-shared: check-lib check-mcp check-docs check-tool-readmes check-actions check-tests
+
+check: check-shared check-tools
 
 # Forward make -C PATH TARGET via e.g. `make conversion/cue-to-flac-check`
 define TOOL_FORWARD
