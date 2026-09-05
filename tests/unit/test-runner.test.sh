@@ -45,4 +45,41 @@ test_filename_filter_keeps_all_functions_in_matching_file() {
   assert_grep 'pass=2 fail=0 skip=0' "$T/out"
 }
 
+
+_write_xdg_fixture() {
+  cat >"$1" <<'EOF'
+#!/usr/bin/env bash
+set -euo pipefail
+source "$AU_REPO_ROOT/tests/harness.sh"
+test_xdg_data() {
+  [[ "$XDG_DATA_HOME" == "$AU_TEST_SANDBOX/data" ]] || return 1
+  [[ -d "$XDG_DATA_HOME" ]] || return 1
+  printf 'fixture\n' >"$XDG_DATA_HOME/probe"
+}
+run_tests
+EOF
+}
+
+test_runner_isolates_inherited_xdg_data_home() {
+  _write_xdg_fixture "$T/xdg.test.sh"
+  mkdir "$T/caller-data"
+  local rc=0
+  env -u AU_TEST_FILTER XDG_DATA_HOME="$T/caller-data" "$AU_REPO_ROOT/tests/run.sh" -j 1 "$T/xdg.test.sh" \
+    >"$T/out" 2>&1 || rc=$?
+  assert_eq "$rc" 0 || return
+  assert_grep 'pass=1 fail=0 skip=0' "$T/out" || return
+  [[ ! -e "$T/caller-data/probe" ]]
+}
+
+test_direct_harness_isolates_inherited_xdg_data_home() {
+  _write_xdg_fixture "$T/xdg.test.sh"
+  mkdir "$T/caller-data"
+  local rc=0
+  env -u AU_TEST_SANDBOX -u AU_TEST_FILTER XDG_DATA_HOME="$T/caller-data" bash "$T/xdg.test.sh" \
+    >"$T/out" 2>&1 || rc=$?
+  assert_eq "$rc" 0 || return
+  assert_grep 'pass=1 fail=0 skip=0' "$T/out" || return
+  [[ ! -e "$T/caller-data/probe" ]]
+}
+
 run_tests
