@@ -47,7 +47,7 @@ Fleet policy: <https://github.com/bolens/.github/blob/main/RELEASING.md>.
 
 ## Source lint
 
-The Source lint workflow checks maintained javascript files selected by
+The Source lint workflow checks maintained JavaScript and Python files selected by
 [`.github/source-lint.json`](.github/source-lint.json) on every pull request
 and push to `main`. Existing native checks remain part of the merge gate.
 Use the [shared local reproduction instructions](https://github.com/bolens/.github/blob/7603518f305fb76f7bb1b9979f2692521f633b82/docs/source-lint.md)
