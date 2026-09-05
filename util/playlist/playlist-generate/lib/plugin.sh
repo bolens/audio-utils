@@ -1,4 +1,8 @@
 #!/usr/bin/env bash
+# This plugin processes a whole album after shared source discovery.
+# Read by the shared CLI driver after plugin loading.
+# shellcheck disable=SC2034
+AU_EXCLUDE_UNSUPPORTED=1
 # playlist-generate — build .m3u playlists from audio directories.
 
 AU_TOOL_NAME="${AU_TOOL_NAME:-playlist-generate}"
