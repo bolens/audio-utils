@@ -216,3 +216,7 @@ Output is **plain text**: no ANSI colors, spinners, or emoji status. Failures us
 [MIT](LICENSE). Third-party software notices (Monkey's Audio SDK, Shorten, Takc, external tools): [docs/third-party.md](docs/third-party.md).
 
 Shared batch file tools support [source exclusions](docs/exclusions.md) with repeatable `--exclude` globs.
+
+## Docker
+
+Build and run the CLI image with the [Docker guide](docs/docker.md).
