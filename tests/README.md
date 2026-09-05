@@ -35,3 +35,14 @@ Fedora runs the same `make check` coverage as before: one matrix job runs `make 
 Both the runner and direct harness invocation isolate HOME, XDG config/state/cache/data/runtime paths, and TMPDIR in disposable directories.
 
 Mixed valid/corrupt WAV batches run with one and two workers in `converter-edge-cases.test.sh`. Checks cover failure reporting, decoded output equivalence, byte-for-byte source retention, and absence of output for the corrupt input.
+
+`make test-docker` builds the runtime image and tests disposable bind-mounted
+fixtures, non-root ownership, read-only root operation and CLI failure behavior.
+It requires Docker and host Python 3.11+. `CONTAINER_ENGINE=podman` uses rootless
+Podman locally. Docker CI runs this target on every PR and main push.
+
+Publication regressions force the final move to fail after real codec verification.
+They cover PCM, lossless and lossy pipelines with one and two workers, deletion
+requested, and retagging an existing FLAC. Failures must retain sources, preserve
+existing output, return nonzero and omit success rows. Docker also checks an
+actual read-only input mount.

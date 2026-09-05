@@ -113,7 +113,11 @@ convert_one() {
     return 1
   fi
 
-  mv -f -- "$out" "$mpc"
+  if ! mv -f -- "$out" "$mpc"; then
+    log_fail "$flac" "output publication failed" "destination=$mpc"
+    cleanup
+    return 1
+  fi
   md5=$(audio_md5 "$flac")
   sha=$(file_sha256 "$mpc")
   notes="converted"

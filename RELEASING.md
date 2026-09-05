@@ -47,7 +47,7 @@ Fleet policy: <https://github.com/bolens/.github/blob/main/RELEASING.md>.
 
 ## Source lint
 
-The Source lint workflow checks maintained javascript files selected by
+The Source lint workflow checks maintained JavaScript and Python files selected by
 [`.github/source-lint.json`](.github/source-lint.json) on every pull request
 and push to `main`. Existing native checks remain part of the merge gate.
 Use the [shared local reproduction instructions](https://github.com/bolens/.github/blob/7603518f305fb76f7bb1b9979f2692521f633b82/docs/source-lint.md)
@@ -55,3 +55,12 @@ with the same tooling revision pinned in
 [the workflow](.github/workflows/source-lint.yml). Review exclusions when adding
 source files; generated and imported files retain their native validation.
 Require the new check to pass on the current PR head before merging.
+
+## Container delivery
+
+Docker PR checks build the runtime image and run `make test-docker`. Require
+`Docker runtime` alongside existing checks. Main pushes publish the tested image
+to GHCR with `latest` and full-commit tags. Verify the Publish GHCR job and pull
+and smoke-test the published digest after merge. Roll back by digest as described
+in [Docker](docs/docker.md). Container delivery does not bump VERSION or create a
+source release tag. PR and scheduled jobs never publish packages.

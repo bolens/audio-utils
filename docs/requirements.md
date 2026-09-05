@@ -209,3 +209,7 @@ Streaming DRM (Widevine, etc.) is **not** supported — see [streaming.md](strea
 ## See also
 
 [docs index](README.md) · [playlists.md](playlists.md) · [discs.md](discs.md) · [tak.md](tak.md) · [lossy.md](lossy.md) · [dsd.md](dsd.md) · [formats.md](formats.md) · [adding-a-converter.md](adding-a-converter.md) · [adding-a-util.md](adding-a-util.md) · [root README](../README.md)
+
+## Docker
+
+The [Docker guide](docker.md) describes the packaged runtime and its limits.

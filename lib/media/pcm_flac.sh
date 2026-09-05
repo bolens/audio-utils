@@ -475,7 +475,11 @@ remux_pcm_container() {
     return 1
   fi
 
-  mv -f -- "$out1" "$dest"
+  if ! mv -f -- "$out1" "$dest"; then
+    log_fail "$src" "output publication failed" "destination=$dest"
+    rm -rf -- "$tmpdir"
+    return 1
+  fi
   rm -rf -- "$tmpdir"
   log_verbose "verified remux_pcm: $target_codec audio_md5=$md5_1 -> $dest"
 }

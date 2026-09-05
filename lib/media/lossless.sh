@@ -97,7 +97,11 @@ to_flac_convert_one() {
     cp -f -- "${enc_out[0]}" "$flac_tagged"
   fi
 
-  mv -f -- "$flac_tagged" "$flac"
+  if ! mv -f -- "$flac_tagged" "$flac"; then
+    log_fail "$src" "output publication failed" "destination=$flac"
+    cleanup
+    return 1
+  fi
   notes="converted"
   if ((force_reconvert)); then
     notes="reconverted"
@@ -163,7 +167,11 @@ from_flac_lossless_convert_one() {
     fi
   fi
 
-  mv -f -- "$out" "$dest"
+  if ! mv -f -- "$out" "$dest"; then
+    log_fail "$flac" "output publication failed" "destination=$dest"
+    cleanup
+    return 1
+  fi
   md5=$(audio_md5 "$dest")
   sha=$(file_sha256 "$dest")
   notes="converted"
@@ -246,7 +254,11 @@ flac_to_pcm_convert_one() {
     return 1
   fi
 
-  mv -f -- "$tagged" "$dest"
+  if ! mv -f -- "$tagged" "$dest"; then
+    log_fail "$flac" "output publication failed" "destination=$dest"
+    cleanup
+    return 1
+  fi
   md5=$(audio_md5 "$dest")
   sha=$(file_sha256 "$dest")
   notes="converted;$target"
@@ -303,9 +315,15 @@ extract_audio_stream_to_flac() {
       "${tmpdir}/tagged.flac" 2>"${tmpdir}/tag.err"; then
       cp -f -- "${enc_out[0]}" "${tmpdir}/tagged.flac"
     fi
-    mv -f -- "${tmpdir}/tagged.flac" "$dest"
+    if ! mv -f -- "${tmpdir}/tagged.flac" "$dest"; then
+      log_fail "$src" "output publication failed" "destination=$dest"
+      return 1
+    fi
   else
-    mv -f -- "${enc_out[0]}" "$dest"
+    if ! mv -f -- "${enc_out[0]}" "$dest"; then
+      log_fail "$src" "output publication failed" "destination=$dest"
+      return 1
+    fi
   fi
 
   log_info "verified: $dest  audio_md5=$md5_flac"
