@@ -114,10 +114,11 @@ trap "rm -rf -- '$RUN_TMP'" EXIT
 
 run_one() { # file → writes <sandbox>/.result and .output
   local file=$1 sb=$2 rc=0
-  mkdir -p "$sb"/{home,state,cache,config,runtime,tmp}
+  mkdir -p "$sb"/{home,state,cache,config,data,runtime,tmp}
   chmod 700 "$sb/runtime"
   env -u AUDIO_UTILS_ROOTS -u AUDIO_UTILS_ROOTS_FILE -u WAV2FLAC_ROOTS \
     HOME="$sb/home" \
+    XDG_DATA_HOME="$sb/data" \
     XDG_STATE_HOME="$sb/state" \
     XDG_CACHE_HOME="$sb/cache" \
     XDG_CONFIG_HOME="$sb/config" \

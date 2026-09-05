@@ -25,9 +25,10 @@ if [[ -z "${AU_TEST_SANDBOX:-}" ]]; then
   export AU_TEST_SANDBOX
   # shellcheck disable=SC2064  # expand now: sandbox path is fixed
   trap "rm -rf -- '$AU_TEST_SANDBOX'" EXIT
-  mkdir -p "$AU_TEST_SANDBOX"/{home,state,cache,config,runtime,tmp}
+  mkdir -p "$AU_TEST_SANDBOX"/{home,state,cache,config,data,runtime,tmp}
   chmod 700 "$AU_TEST_SANDBOX/runtime"
   export HOME="$AU_TEST_SANDBOX/home"
+  export XDG_DATA_HOME="$AU_TEST_SANDBOX/data"
   export XDG_STATE_HOME="$AU_TEST_SANDBOX/state"
   export XDG_CACHE_HOME="$AU_TEST_SANDBOX/cache"
   export XDG_CONFIG_HOME="$AU_TEST_SANDBOX/config"

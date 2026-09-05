@@ -31,3 +31,5 @@ The installer tests remain isolated and run normally. The existing generated-fix
 ## Fedora lint scheduling
 
 Fedora runs the same `make check` coverage as before: one matrix job runs `make check-shared` for the shared library, MCP scripts, tests, action pins, documentation links, and generated references. Eight other matrix jobs partition the complete conversion and utility lists by index. Each tool appears in exactly one shard, and each shard uses the runner CPU count for parallel checks. The CI aggregate waits for every shard and fails if any fails. The pinned Fedora container and existing path/scheduled-run triggers are unchanged.
+
+Both the runner and direct harness invocation isolate HOME, XDG config/state/cache/data/runtime paths, and TMPDIR in disposable directories.

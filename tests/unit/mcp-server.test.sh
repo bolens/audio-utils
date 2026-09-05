@@ -360,7 +360,7 @@ test_mcp_dispatch_uses_private_error_file() {
   assert_eq "$(cat -- "$victim")" "keep me" "predictable error path was followed"
   assert_grep '"code":-32000' "$response"
   [[ -L "$predictable" ]] || fail "unrelated predictable path was removed"
-  if compgen -G "$TMPDIR/mcp-err.??????" >/dev/null; then
+  if [[ -n $(find "$TMPDIR" -maxdepth 1 -name 'mcp-err.*' ! -path "$predictable" -print -quit) ]]; then
     fail "private MCP error file leaked"
   fi
 }
