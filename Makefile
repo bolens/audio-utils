@@ -32,6 +32,7 @@ help:
 	@echo "audio-utils"
 	@echo ""
 	@echo "  make check                 shellcheck shared lib + tests + all tools (parallel)"
+	@echo "  make check-shared          check shared library, scripts, docs, and pins"
 	@echo "  make check-lib             shellcheck shared lib only"
 	@echo "  make check-mcp             shellcheck mcp/*.sh (Bash MCP server)"
 	@echo "  make check-docs            validate local Markdown links"
