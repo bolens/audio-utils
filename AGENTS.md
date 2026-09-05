@@ -1,5 +1,9 @@
 # Agent guidance
 
+Before Spec Kit planning or implementation, read
+`.specify/memory/project-guide.md` with the project constitution. It maps
+requirements to this repository's source, acceptance evidence, and validation.
+
 Read `.specify/memory/constitution.md` and the nearest contract document:
 `lib/README.md`, `tests/README.md`, `docs/adding-a-converter.md`, or
 `docs/adding-a-util.md`.
