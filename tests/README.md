@@ -21,3 +21,9 @@ Layout:
 | `functional/` | Encode/decode and util behavior |
 
 New tools: smoke coverage is automatic when the tool Makefile is discoverable; add a `functional/*.test.sh` when behavior needs a real fixture.
+
+## CI dependency reuse
+
+A preparation job builds the pinned APE and keyfinder dependencies once for all functional shards. Successful installations have separate caches keyed by their installer recipes, architecture, and hosted-runner image version. Cache hits skip compilation and failed optional builds are never cached. Both FFmpeg legs still run the same functional tests, and missing optional tools still count toward the existing skip limit. A declared ready cache that cannot be restored fails explicitly.
+
+The installer tests remain isolated and run normally. The existing generated-fixture and npm caches are unchanged. Current-upstream FFmpeg is still downloaded fresh so the latest-version leg does not become a stale cached release.
