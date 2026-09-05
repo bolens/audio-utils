@@ -40,6 +40,8 @@ def main():
             if default_user:
                 i = opts.index('--user')
                 del opts[i:i + 2]
+                if '--userns=keep-id' in opts:
+                    opts.remove('--userns=keep-id')
             if entry:
                 opts += ['--entrypoint', entry]
             result = subprocess.run([args.engine, 'run', *opts, args.image, *map(str, command)],
@@ -101,8 +103,14 @@ done
         run('wav-to-flac', '-j', '1', '/input', code=1)
         if list(inputs.glob('*.flac')):
             raise AssertionError('Wrote into a read-only input mount')
-        if (outputs / 'failed').exists():
-            raise AssertionError('Failed operation published output')
+        bad = outputs / 'corrupt'
+        bad.mkdir()
+        (bad / 'bad.wav').write_bytes(b'not a WAV')
+        if os.getuid() == 0:
+            os.chown(bad, uid, gid)
+        run('wav-to-flac', '-j', '1', '/output/corrupt', code=1)
+        if (bad / 'bad.flac').exists():
+            raise AssertionError('Failed conversion published audio')
         print(SUITE + ': Docker acceptance passed (no skips)')
 
 
