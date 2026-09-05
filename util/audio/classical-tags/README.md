@@ -41,5 +41,6 @@ Options:
 -d / -D / -y rejected (use --apply). Default scope: classical-ish GENRE
 or existing COMPOSER/WORK tags.
 Exit codes: 0 ok, 1 needs work, 2 usage/deps
+Shared file tools: --exclude GLOB (repeatable, case-sensitive source basename glob)
 ```
 <!-- END GENERATED COMMAND REFERENCE -->

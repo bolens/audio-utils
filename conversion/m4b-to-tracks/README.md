@@ -44,5 +44,6 @@ Options:
 -d / -D rejected (source .m4b kept). Writes <stem>/NN - Title.m4a beside the book.
 Fails when the .m4b has no chapters.
 Exit codes: 0 ok, 1 failures, 2 usage/deps
+Shared file tools: --exclude GLOB (repeatable, case-sensitive source basename glob)
 ```
 <!-- END GENERATED COMMAND REFERENCE -->

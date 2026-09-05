@@ -55,5 +55,6 @@ Options:
 Requires: rsgain (preferred) or loudgain.
 -d / -D rejected. -y forces rewrite (skip-existing off).
 Exit codes: 0 ok, 1 failures, 2 usage/deps
+Shared file tools: --exclude GLOB (repeatable, case-sensitive source basename glob)
 ```
 <!-- END GENERATED COMMAND REFERENCE -->

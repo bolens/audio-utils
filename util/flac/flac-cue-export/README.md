@@ -53,5 +53,6 @@ Once per directory with ≥2 FLACs: writes Album.flac + Album.cue beside tracks.
 Requires matching sample rate/channels. -y overwrites existing image/cue.
 -d / -D rejected.
 Exit codes: 0 ok, 1 failures, 2 usage/deps
+Shared file tools: --exclude GLOB (repeatable, case-sensitive source basename glob)
 ```
 <!-- END GENERATED COMMAND REFERENCE -->

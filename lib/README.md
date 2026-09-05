@@ -37,3 +37,5 @@ add a matching `# shellcheck source=` directive.
   repo root).
 - A failing optional `plugin_finalize` makes the run fail. Finalizers that
   publish requested reports must return nonzero if atomic publication fails.
+
+Plugins that rescan or operate on whole albums must set `AU_EXCLUDE_UNSUPPORTED=1` in `lib/plugin.sh`. The shared driver then rejects `--exclude` before processing. File tools apply exclusions before plugin acceptance and worker dispatch. See [source exclusions](../docs/exclusions.md).

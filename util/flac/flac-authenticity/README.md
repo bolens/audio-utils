@@ -87,5 +87,6 @@ Optional: mediainfo fields in notes when installed; -p writes .sox.png / .ff.png
 High-bitrate lossy (e.g. MP3 v0/320) often passes - open the spectrogram PNG.
 Read-only: -d / -D / -y rejected.
 Exit codes: 0 all clean, 1 suspects found, 2 usage/deps
+Shared file tools: --exclude GLOB (repeatable, case-sensitive source basename glob)
 ```
 <!-- END GENERATED COMMAND REFERENCE -->

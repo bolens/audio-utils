@@ -55,5 +55,6 @@ Options:
 Requires AUDIO_UTILS_ROOTS so relative paths can be mirrored under --against.
 -d / -D rejected.
 Exit codes: 0 ok, 1 mismatches, 2 usage/deps
+Shared file tools: --exclude GLOB (repeatable, case-sensitive source basename glob)
 ```
 <!-- END GENERATED COMMAND REFERENCE -->

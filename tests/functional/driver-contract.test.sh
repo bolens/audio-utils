@@ -216,4 +216,60 @@ test_clean_tmp_validates_all_roots_before_deleting() {
   assert_grep 'not a directory' "$T/out"
 }
 
+test_exclude_repeated_globs_keep_corrupt_inputs_out_of_workers() {
+  require_cmd flac flock ffmpeg metaflac
+  _setup_album
+  printf 'corrupt' >"$T/album/skip damaged.flac"
+  printf 'corrupt' >"$T/album/"$'omit\n[odd].flac'
+  run_tool "$_TOOL" --exclude 'skip*' --exclude='omit*' -j 1 -S "$T/success.csv" "$T/album"
+  assert_eq "$(tool_rc)" 0 "excluded corrupt files must not run"
+  assert_eq "$(wc -l <"$T/success.csv")" 4 "only original three tracks"
+  assert_file "$T/album/skip damaged.flac"
+}
+
+test_exclude_is_case_sensitive() {
+  require_cmd flac flock ffmpeg metaflac
+  _setup_album
+  printf 'corrupt' >"$T/album/KEEP.flac"
+  run_tool "$_TOOL" --exclude 'keep*' -j 1 "$T/album"
+  assert_eq "$(tool_rc)" 1 "lowercase pattern must not hide uppercase corrupt file"
+}
+
+test_exclude_rejects_missing_empty_and_directory_tools() {
+  run_tool "$_TOOL" --exclude
+  assert_eq "$(tool_rc)" 2
+  run_tool "$_TOOL" --exclude=
+  assert_eq "$(tool_rc)" 2
+  run_tool util/library/empty-dirs/empty-dirs.sh --exclude '*.flac' "$T"
+  assert_eq "$(tool_rc)" 2
+  assert_grep 'directory-level' "$T/out"
+}
+
+test_exclude_all_preserves_sources_with_delete_requested() {
+  require_cmd flac flock ffmpeg metaflac ffprobe
+  _setup_album
+  run_tool conversion/flac-to-wav/flac-to-wav.sh --exclude '*' -d -j 1 "$T/album"
+  assert_eq "$(tool_rc)" 0
+  assert_file "$T/album/01 - Track One.flac"
+  assert_eq "$(find "$T/album" -name '*.wav' | wc -l)" 0
+}
+
+test_exclude_rejects_whole_album_plugins_before_processing() {
+  local tool
+  for tool in \
+    util/audio/audio-replaygain/audio-replaygain.sh \
+    util/flac/flac-replaygain/flac-replaygain.sh \
+    conversion/tracks-to-m4b/tracks-to-m4b.sh \
+    util/flac/flac-cue-export/flac-cue-export.sh \
+    util/playlist/playlist-generate/playlist-generate.sh \
+    util/library/multi-disc-layout/multi-disc-layout.sh \
+    util/audit/album-audit/album-audit.sh \
+    util/audit/album-incomplete/album-incomplete.sh \
+    util/audiobook/audiobook-audit/audiobook-audit.sh; do
+    run_tool "$tool" --exclude 'skip*' "$T"
+    assert_eq "$(tool_rc)" 2 "$tool must refuse partial album selection"
+    assert_grep 'whole-album' "$T/out"
+  done
+}
+
 run_tests

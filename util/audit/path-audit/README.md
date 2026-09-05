@@ -48,5 +48,6 @@ Options:
 
 Read-only: -d / -D / -y rejected. Fix names with util/flac-rename.
 Exit codes: 0 clean, 1 issues, 2 usage/deps
+Shared file tools: --exclude GLOB (repeatable, case-sensitive source basename glob)
 ```
 <!-- END GENERATED COMMAND REFERENCE -->

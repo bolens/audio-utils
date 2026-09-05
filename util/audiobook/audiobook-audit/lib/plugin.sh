@@ -1,4 +1,8 @@
 #!/usr/bin/env bash
+# This plugin processes a whole album after shared source discovery.
+# Read by the shared CLI driver after plugin loading.
+# shellcheck disable=SC2034
+AU_EXCLUDE_UNSUPPORTED=1
 # audiobook-audit — QC for .m4b books and multi-file chapter dirs.
 
 AU_TOOL_NAME="${AU_TOOL_NAME:-audiobook-audit}"

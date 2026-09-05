@@ -10,6 +10,7 @@
 #   AU_SUCCESS_COLUMNS    CSV header hint for finalize tip
 #   AU_QUEUE_EMPTY_DIRS   if 1, queue DIR itself when it has no matching files
 #                         (dir-level utils such as empty-dirs)
+#   AU_EXCLUDE_UNSUPPORTED if 1, reject source exclusions (whole-album plugins)
 #   AU_GETOPT_EXTRA       extra getopts chars (e.g. 'Q:cR')
 #
 # Plugin must define:
@@ -51,6 +52,7 @@ Usage: ${AU_TOOL_NAME}.sh DIR [DIR ...]
 Options: -f -d -D -L -S -n -y -j -q -v -h --version
 EOF
   fi
+  echo 'Shared file tools: --exclude GLOB (repeatable, case-sensitive source basename glob)'
   exit 0
 }
 
@@ -96,7 +98,7 @@ audio_utils_finalize_run_logs() {
 audio_utils_run() {
   local DIR_FILE="" DIRS0=0 FAIL_LOG_DEFAULT=1 SUCCESS_LOG_DEFAULT=1
   local opt OPTARG OPTIND
-  local -a DIRS=() ALL_SRCS=() args
+  local -a DIRS=() ALL_SRCS=() args EXCLUDES=()
   local -A DIR_CHECKED=()
   local dir srcs pre_fail=0 idx ok=0 fail=0 kept=0 elapsed local_i sf
   local getopt_spec free sibling
@@ -130,6 +132,28 @@ audio_utils_run() {
   args=()
   while (($# > 0)); do
     case "$1" in
+      --)
+        args+=("$@")
+        break
+        ;;
+      --exclude)
+        if [[ $# -lt 2 || -z "$2" ]]; then
+          echo "Error: --exclude requires a nonempty glob" >&2
+          return 2
+        fi
+        EXCLUDES+=("$2")
+        shift 2
+        continue
+        ;;
+      --exclude=*)
+        if [[ -z "${1#--exclude=}" ]]; then
+          echo "Error: --exclude requires a nonempty glob" >&2
+          return 2
+        fi
+        EXCLUDES+=("${1#--exclude=}")
+        shift
+        continue
+        ;;
       --version)
         audio_utils_print_version "$AU_TOOL_NAME"
         exit 0
@@ -161,6 +185,10 @@ audio_utils_run() {
         ;;
     esac
   done
+  if ((${#EXCLUDES[@]})) && [[ "${AU_QUEUE_EMPTY_DIRS:-0}" -eq 1 || "${AU_EXCLUDE_UNSUPPORTED:-0}" -eq 1 ]]; then
+    echo "Error: --exclude is not supported for directory-level or whole-album tools" >&2
+    return 2
+  fi
   set -- "${args[@]}"
 
   getopt_spec=":f:dDL:S:nj:qvyh${AU_GETOPT_EXTRA:-}"
@@ -321,6 +349,26 @@ audio_utils_run() {
       LC_ALL=C find -P "$dir" -maxdepth 1 -type f \( "${find_expr[@]}" \) -print0 |
         LC_ALL=C sort -z
     )
+
+    if ((${#EXCLUDES[@]})); then
+      local -a _selected=()
+      local _candidate _pattern _omit
+      for _candidate in "${srcs[@]}"; do
+        _omit=0
+        for _pattern in "${EXCLUDES[@]}"; do
+          # Intentional pattern matching; never evaluate the pattern as code.
+          # shellcheck disable=SC2053
+          if [[ "${_candidate##*/}" == $_pattern ]]; then
+            _omit=1
+            break
+          fi
+        done
+        if [[ "$_omit" -eq 0 ]]; then
+          _selected+=("$_candidate")
+        fi
+      done
+      srcs=("${_selected[@]}")
+    fi
 
     if declare -F plugin_accept_source >/dev/null 2>&1; then
       local -a _accepted=()

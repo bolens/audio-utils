@@ -54,5 +54,6 @@ Options:
 
 Read-only: -d / -D / -y rejected. Summary report written to the state dir.
 Exit codes: 0 ok, 1 unreadable files, 2 usage/deps
+Shared file tools: --exclude GLOB (repeatable, case-sensitive source basename glob)
 ```
 <!-- END GENERATED COMMAND REFERENCE -->

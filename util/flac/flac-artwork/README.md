@@ -52,5 +52,6 @@ Options:
 Looks for cover.jpg|png, folder.jpg|png, front.jpg|png, AlbumArt*.jpg (case-insensitive).
 -d / -D rejected. -y overwrites existing embedded art / cover file.
 Exit codes: 0 ok, 1 failures, 2 usage/deps
+Shared file tools: --exclude GLOB (repeatable, case-sensitive source basename glob)
 ```
 <!-- END GENERATED COMMAND REFERENCE -->

@@ -53,5 +53,6 @@ Options:
 
 Read-only report: -d / -D / -y rejected. Never writes tags.
 Exit codes: 0 all matched, 1 mismatches/missing/no-match, 2 usage/deps
+Shared file tools: --exclude GLOB (repeatable, case-sensitive source basename glob)
 ```
 <!-- END GENERATED COMMAND REFERENCE -->

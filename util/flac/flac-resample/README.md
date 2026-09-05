@@ -61,5 +61,6 @@ Options:
 Pairs with flac-authenticity “fake hi-res” findings. Preserves tags + art.
 -d / -D rejected.
 Exit codes: 0 ok, 1 candidates (report) or apply failures, 2 usage/deps
+Shared file tools: --exclude GLOB (repeatable, case-sensitive source basename glob)
 ```
 <!-- END GENERATED COMMAND REFERENCE -->
