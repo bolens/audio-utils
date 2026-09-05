@@ -13,17 +13,29 @@ test_wav_to_flac_garbage_bytes_fail_but_good_file_converts() {
   require_cmd flac metaflac ffmpeg ffprobe flock
   local src
   src=$(fixture wav_sine)
-  mkdir -p "$T/album"
-  cp "$src/sine.wav" "$T/album/good.wav"
-  # Not a RIFF file at all.
-  head -c 4096 /dev/urandom >"$T/album/garbage.wav"
+  local jobs dir original_bad
+  for jobs in 1 2; do
+    dir="$T/batch-$jobs"
+    mkdir -p "$dir"
+    cp "$src/sine.wav" "$dir/zz-good.wav"
+    printf 'not a RIFF file' >"$dir/00-garbage.wav"
+    original_bad=$(sha256sum -- "$dir/00-garbage.wav")
 
-  run_tool conversion/wav-to-flac/wav-to-flac.sh \
-    -j 1 -L "$T/fails.log" "$T/album"
-  assert_eq "$(tool_rc)" 1 "run with a bad file must report failure"
-  assert_grep "garbage.wav" "$T/fails.log"
-  assert_not_grep "good.wav" "$T/fails.log"
-  assert_file "$T/album/good.flac" "good sibling must still convert"
+    run_tool conversion/wav-to-flac/wav-to-flac.sh \
+      -j "$jobs" -L "$T/fails-$jobs.log" "$dir"
+    assert_eq "$(tool_rc)" 1 "mixed batch must report failure" || return
+    assert_grep "00-garbage.wav" "$T/fails-$jobs.log" || return
+    assert_not_grep "zz-good.wav" "$T/fails-$jobs.log" || return
+    assert_file "$dir/zz-good.flac" "good sibling must still convert" || return
+    assert_file "$dir/zz-good.wav" "source must remain" || return
+    assert_audio_md5_eq "$src/sine.wav" "$dir/zz-good.flac" || return
+    cmp -- "$src/sine.wav" "$dir/zz-good.wav" || return
+    assert_eq "$(sha256sum -- "$dir/00-garbage.wav")" "$original_bad" || return
+    [[ ! -e "$dir/00-garbage.flac" && ! -L "$dir/00-garbage.flac" ]] || {
+      fail "failed input produced output"
+      return 1
+    }
+  done
 }
 
 test_unicode_and_metachar_filenames_survive_conversion() {
