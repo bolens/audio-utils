@@ -25,3 +25,6 @@ tests/.cache/
 mcp/npm/node_modules/
 .cursor/mcp.json
 .cursor/mcp.json.bak
+
+# Isolated optional codec installations restored by CI
+.ci-cache/

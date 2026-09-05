@@ -345,6 +345,76 @@ jobs:
       - name: Check local Markdown links
         run: make check-docs
 
+  # Build optional source codecs once, then restore them into every functional shard.
+  prepare-codecs:
+    name: prepare optional codecs
+    needs: changes
+    if: needs.changes.outputs.code == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    outputs:
+      ape-key: ${{ steps.keys.outputs.ape }}
+      keyfinder-key: ${{ steps.keys.outputs.keyfinder }}
+      ape-ready: ${{ steps.ape-cache.outputs.cache-hit == 'true' || steps.ape-build.outcome == 'success' }}
+      keyfinder-ready: ${{ steps.keyfinder-cache.outputs.cache-hit == 'true' || steps.keyfinder-build.outcome == 'success' }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+      - name: Identify pinned codec builds
+        id: keys
+        env:
+          PLATFORM: ${{ runner.os }}-${{ runner.arch }}
+          APE_RECIPE: ${{ hashFiles('scripts/ape-codec.sh') }}
+          KEYFINDER_RECIPE: ${{ hashFiles('scripts/keyfinder-cli.sh') }}
+        run: |
+          printf 'ape=ape-v1-%s-%s-%s\n' "$PLATFORM" "${ImageVersion:?}" "$APE_RECIPE" >> "$GITHUB_OUTPUT"
+          printf 'keyfinder=keyfinder-v1-%s-%s-%s\n' "$PLATFORM" "${ImageVersion:?}" "$KEYFINDER_RECIPE" >> "$GITHUB_OUTPUT"
+      - name: Restore pinned APE build
+        id: ape-cache
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
+        with:
+          path: .ci-cache/ape
+          key: ${{ steps.keys.outputs.ape }}
+      - name: Restore pinned keyfinder build
+        id: keyfinder-cache
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
+        with:
+          path: .ci-cache/keyfinder
+          key: ${{ steps.keys.outputs.keyfinder }}
+      - name: Install build dependencies on cache miss
+        if: steps.ape-cache.outputs.cache-hit != 'true' || steps.keyfinder-cache.outputs.cache-hit != 'true'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y cmake g++ unzip pkg-config git curl \
+            libfftw3-dev libavcodec-dev libavformat-dev libavutil-dev libswresample-dev
+      - name: Build APE once (best effort)
+        id: ape-build
+        if: steps.ape-cache.outputs.cache-hit != 'true'
+        continue-on-error: true
+        env:
+          XDG_DATA_HOME: ${{ github.workspace }}/.ci-cache/ape/share
+          XDG_CACHE_HOME: ${{ runner.temp }}/ape-downloads
+        run: bash scripts/ape-codec.sh install --prefix "$GITHUB_WORKSPACE/.ci-cache/ape"
+      - name: Cache only a completed APE installation
+        if: steps.ape-build.outcome == 'success' && steps.ape-cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
+        with:
+          path: .ci-cache/ape
+          key: ${{ steps.keys.outputs.ape }}
+      - name: Build keyfinder once (best effort)
+        id: keyfinder-build
+        if: steps.keyfinder-cache.outputs.cache-hit != 'true'
+        continue-on-error: true
+        run: bash scripts/keyfinder-cli.sh install --prefix "$GITHUB_WORKSPACE/.ci-cache/keyfinder"
+      - name: Cache only a completed keyfinder installation
+        if: steps.keyfinder-build.outcome == 'success' && steps.keyfinder-cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
+        with:
+          path: .ci-cache/keyfinder
+          key: ${{ steps.keys.outputs.keyfinder }}
+
   # Functional tests: heavier fixtures/codecs, sharded across runners and
   # run against both ffmpeg ends we support: the distro's (oldest we care
   # about) and the current upstream release (matches dev machines). Version
@@ -353,7 +423,7 @@ jobs:
   # Encoders missing from the runner's ffmpeg exercise the SKIP path.
   test-functional:
     name: tests (functional ${{ matrix.shard }}/2, ffmpeg ${{ matrix.ffmpeg }})
-    needs: changes
+    needs: [changes, prepare-codecs]
     if: needs.changes.outputs.code == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 20
@@ -387,30 +457,31 @@ jobs:
           sudo install -m 0755 /tmp/ffmpeg-master-latest-linux64-gpl/bin/{ffmpeg,ffprobe} /usr/local/bin/
           ffmpeg -version | head -1
 
-      # Best effort: enables the gated flac-to-ape tests (they skip without
-      # mac). The installer itself is tested offline in ape-codec.test.sh, so
-      # an unreachable monkeysaudio.com must not fail CI.
-      - name: Install APE codec (best effort)
-        continue-on-error: true
-        run: bash scripts/ape-codec.sh install --prefix "$HOME/.local"
+      - name: Restore shared APE installation
+        if: needs.prepare-codecs.outputs.ape-ready == 'true'
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
+        with:
+          path: .ci-cache/ape
+          key: ${{ needs.prepare-codecs.outputs.ape-key }}
+          fail-on-cache-miss: true
 
-      # Best effort: keyfinder-cli is not in Ubuntu apt. Build from source so
-      # audio-key tests can run; on failure they SKIP (MAX_SKIPS still applies).
-      - name: Install keyfinder-cli (best effort)
-        continue-on-error: true
-        run: bash scripts/keyfinder-cli.sh install --prefix "$HOME/.local"
+      - name: Restore shared keyfinder installation
+        if: needs.prepare-codecs.outputs.keyfinder-ready == 'true'
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
+        with:
+          path: .ci-cache/keyfinder
+          key: ${{ needs.prepare-codecs.outputs.keyfinder-key }}
+          fail-on-cache-miss: true
 
-      # Always expose ~/.local for mac / keyfinder even if a best-effort step failed.
-      - name: Export ~/.local for optional tools
+      - name: Expose shared optional tools
         run: |
-          echo "$HOME/.local/bin" >>"$GITHUB_PATH"
-          echo "LD_LIBRARY_PATH=$HOME/.local/lib:$HOME/.local/lib/x86_64-linux-gnu:${LD_LIBRARY_PATH:-}" >>"$GITHUB_ENV"
+          echo "$GITHUB_WORKSPACE/.ci-cache/ape/bin" >> "$GITHUB_PATH"
+          echo "$GITHUB_WORKSPACE/.ci-cache/keyfinder/bin" >> "$GITHUB_PATH"
+          printf 'LD_LIBRARY_PATH=%s\n' "$GITHUB_WORKSPACE/.ci-cache/keyfinder/lib:$GITHUB_WORKSPACE/.ci-cache/keyfinder/lib/x86_64-linux-gnu${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}" >> "$GITHUB_ENV"
 
       - name: Warn if optional codecs missing
         run: |
           set -euo pipefail
-          export PATH="$HOME/.local/bin:$PATH"
-          export LD_LIBRARY_PATH="$HOME/.local/lib:$HOME/.local/lib/x86_64-linux-gnu:${LD_LIBRARY_PATH:-}"
           missing=()
           command -v mac >/dev/null 2>&1 || missing+=(mac)
           command -v keyfinder-cli >/dev/null 2>&1 || missing+=(keyfinder-cli)
@@ -512,6 +583,7 @@ jobs:
       - test-unit-smoke
       - test-mcp-node
       - check-docs
+      - prepare-codecs
       - test-functional
     if: always()
     runs-on: ubuntu-latest
@@ -528,6 +600,7 @@ jobs:
             "${{ needs.test-unit-smoke.result }}"
             "${{ needs.test-mcp-node.result }}"
             "${{ needs.check-docs.result }}"
+            "${{ needs.prepare-codecs.result }}"
             "${{ needs.test-functional.result }}"
           )
           for r in "${results[@]}"; do
