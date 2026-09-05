@@ -216,7 +216,6 @@ app.post('/mcp', asyncRoute(async (req, res) => {
       await server.connect(transport);
     } catch (error) {
       pendingSessions -= 1;
-      pending = false;
       transport.close().catch(() => {});
       server.close().catch(() => {});
       throw error;
