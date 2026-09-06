@@ -72,3 +72,5 @@ Index of topic docs. **Tool lists** (every converter/util path) live only in the
 [adding-a-converter.md](adding-a-converter.md) · [adding-a-util.md](adding-a-util.md)
 
 - [Docker runtime](docker.md): build, mount media, and run tools.
+
+- [Editor setup](../.vscode/README.md)
