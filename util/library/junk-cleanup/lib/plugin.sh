@@ -9,6 +9,7 @@ AU_WORKDIR_PREFIX=junkclean
 AU_SUCCESS_COLUMNS='timestamp,file,status,audio_md5,file_sha256,codec,bytes,samples,notes'
 AU_GETOPT_EXTRA=""
 AU_CLEANUP_SKIP=1
+AU_SCAN_JUNK=1
 
 _AU_ROOT=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
 while [[ ! -f "$_AU_ROOT/lib/plugin_init.sh" ]]; do
@@ -60,5 +61,5 @@ plugin_banner_extra() {
 }
 
 plugin_export_env() {
-  export JUNK_DELETE AU_CLEANUP_SKIP AU_SOURCE_EXTS
+  export JUNK_DELETE AU_CLEANUP_SKIP AU_SOURCE_EXTS AU_SCAN_JUNK
 }

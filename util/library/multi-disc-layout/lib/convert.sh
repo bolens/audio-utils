@@ -43,6 +43,10 @@ _multidisc_process_album() {
   fi
 
   for f in "${files[@]}"; do
+    if ! flac_ok "$f"; then
+      log_fail "$f" "flac -t failed"
+      return 1
+    fi
     disc=$(_multidisc_disc_num "$f")
     ((disc > max_disc)) && max_disc=$disc
     tot=$(flac_tag_get "$f" TOTALDISCS)
@@ -112,11 +116,6 @@ convert_one() {
     return 0
   fi
 
-  if ! flac_ok "$flac"; then
-    log_fail "$flac" "flac -t failed"
-    return 1
-  fi
-
   dir=$(cd -- "$(dirname -- "$flac")" && pwd) || {
     log_fail "$flac" "cannot resolve directory"
     return 1
@@ -137,5 +136,5 @@ convert_one() {
   fi
 
   log_progress "ok: $album"
-  log_success "$flac" "album-ok" "" "$(file_sha256 "$flac")" "album=$album"
+  log_success "$flac" "album-ok" "" "" "album=$album"
 }

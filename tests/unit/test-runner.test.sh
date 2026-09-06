@@ -82,4 +82,23 @@ test_direct_harness_isolates_inherited_xdg_data_home() {
   [[ ! -e "$T/caller-data/probe" ]]
 }
 
+test_harness_stops_after_an_early_assertion_failure() {
+  cat >"$T/failing.test.sh" <<'EOF'
+#!/usr/bin/env bash
+set -euo pipefail
+source "$AU_REPO_ROOT/tests/harness.sh"
+test_early_failure() {
+  assert_eq actual expected
+  touch "$AU_TEST_SANDBOX/incorrectly-continued"
+  :
+}
+run_tests
+EOF
+  local rc=0
+  env -u AU_TEST_FILTER bash "$T/failing.test.sh" >"$T/out" 2>&1 || rc=$?
+  assert_eq "$rc" 1 "early assertion must fail the file" || return
+  assert_grep 'not ok test_early_failure' "$T/out" || return
+  assert_no_file "$AU_TEST_SANDBOX/incorrectly-continued"
+}
+
 run_tests

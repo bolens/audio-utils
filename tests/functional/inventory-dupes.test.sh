@@ -58,4 +58,29 @@ test_dupes_passes_distinct_files() {
   assert_eq "$(tool_rc)" 0 "distinct files rc ($(tool_out | tail -3))"
 }
 
+test_duplicate_indexes_preserve_newlines_and_tabs() {
+  require_cmd flock base64
+  local folder register state first result
+  for folder in util/audio/audio-dupes util/flac/flac-dupes util/library/hardlink-dupes; do
+    (
+      # Source-only index functions, isolated per tool to avoid name collisions.
+      # shellcheck source=/dev/null
+      source "$AU_REPO_ROOT/$folder/lib/convert.sh"
+      state="$T/${folder##*/}"
+      mkdir -p "$state"
+      export AU_DUPES_STATE="$state" AU_HL_STATE="$state"
+      register=_dupes_register
+      [[ "$folder" != */hardlink-dupes ]] || register=_hl_register
+      mkdir "$state/index.tsv"
+      assert_exit 2 "$register" content /first.flac
+      rmdir "$state/index.tsv"
+      first=$'/album\nline\twith whitespace/a.flac'
+      assert_exit 1 "$register" content "$first"
+      result=$("$register" content '/another/b.flac')
+      assert_eq "$result" "$first" "complete keeper path"
+      assert_eq "$(wc -l <"$state/index.tsv")" 2 "one record per path"
+    )
+  done
+}
+
 run_tests

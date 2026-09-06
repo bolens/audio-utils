@@ -124,7 +124,7 @@ test_default_logs_land_in_state_dir() {
   export XDG_STATE_HOME="$T/state"
   run_tool "$_TOOL" -j 1 "$T/album"
   assert_eq "$(tool_rc)" 0
-  assert_file "$T/state/audio-utils/flac-verify/failures.log" "default fail log"
+  assert_no_file "$T/state/audio-utils/flac-verify/failures.log" "empty default fail log is removed"
   assert_file "$T/state/audio-utils/flac-verify/success.csv" "default success log"
 }
 
@@ -212,7 +212,7 @@ test_clean_tmp_validates_all_roots_before_deleting() {
   AUDIO_UTILS_ROOTS_FILE="$T/roots" \
     make -s -C "$AU_REPO_ROOT/conversion/wav-to-flac" clean-tmp >"$T/out" 2>&1 || rc=$?
   assert_eq "$rc" 2 "make propagates failed cleanup recipe"
-  assert_file "$T/good/album/.wav2flac.AbC123" "validation must precede deletion"
+  [[ -d "$T/good/album/.wav2flac.AbC123" ]] || fail "validation must precede deletion"
   assert_grep 'not a directory' "$T/out"
 }
 

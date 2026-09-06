@@ -12,6 +12,9 @@ claim that the original work followed Spec Kit. New behavior requires a separate
 change contract. Existing feature specifications remain authoritative within their
 own scope.
 
+The [legacy capability contracts](legacy-contracts.md) and
+[complete tool mapping](legacy-coverage.md) extend this shared baseline.
+
 ## User scenarios and testing
 
 ### User story 1: Use the documented entry points (P1)
@@ -40,6 +43,32 @@ A maintainer changes the implementation or adds a supported capability.
 - **FR-004**: Dry-run MUST avoid media/tag/deletion writes, and exclusions MUST apply before file processing or fail for tools that cannot honor them.
 - **FR-005**: Parallel execution and finalizers MUST preserve successful results, report partial failure, and fail when requested reports cannot be published.
 - **FR-006**: MCP entry points MUST retain declared tool schemas and explicit write policy, with optional HTTP transport security tested separately.
+
+## Corrective requirements from the legacy audit
+
+The 2026-09-06 audit at `17a0a2bdd5b4` initially reproduced harness and filename-index gaps.
+These requirements describe corrections, not behavior already verified at that revision.
+
+- **FR-007**: A failing assertion inside a harness test MUST fail that test even
+  when followed by a successful command. Execution MUST stop before subsequent
+  mutations. Test-file aggregation MUST still distinguish failure from skip.
+- **FR-008**: Duplicate indexes MUST preserve complete filenames containing tabs
+  and newlines. `hardlink-dupes --apply` MUST link to the registered keeper,
+  preserve file bytes, and count each completed link once with one or multiple
+  workers. `audio-dupes` and `flac-dupes` MUST report the same complete keeper
+  without changing media. Filename text MUST NOT create extra index records.
+  Index read/write/lock failures MUST fail the scan rather than report uniqueness.
+
+- **FR-009**: Revalidation of legacy acceptance checks MUST preserve the
+  documented contracts: LC-005 chapter parsing must retain every record when
+  a decoder polls standard input, LC-004 stream verification workspaces must not collide,
+  LC-009 junk discovery must include unknown-extension/extensionless empty files,
+  LC-009 album moves must not fail on paths already moved by that album's work,
+  LC-010 incomplete pre-existing image/CUE pairs must block unforced export and
+  output publication failures must fail the run,
+  LC-011 XSPF titles must escape all XML delimiters, and LC-014 converter names
+  must contain exactly one `-to-` separator. Correct stale test assumptions only
+  where source and interface evidence establish the existing intended behavior.
 
 ## Success criteria
 

@@ -58,4 +58,19 @@ test_export_refuses_to_clobber_foreign_cue() {
   assert_file "$T/album/Test Album.flac"
 }
 
+test_export_reports_publication_failure() {
+  require_cmd flac metaflac ffmpeg ffprobe flock
+  local src target
+  src=$(fixture album)
+  for target in flac cue; do
+    mkdir -p "$T/$target"
+    cp "$src/album/"*.flac "$T/$target/"
+    mkdir "$T/$target/Test Album.$target"
+    run_tool util/flac/flac-cue-export/flac-cue-export.sh -j 2 "$T/$target"
+    assert_eq "$(tool_rc)" 1 "publication into directory must fail"
+    assert_file "$T/$target/01 - Track One.flac" "source retained"
+    assert_eq "$(find "$T/$target/Test Album.$target" -type f | wc -l)" 0 "no output nested in directory"
+  done
+}
+
 run_tests

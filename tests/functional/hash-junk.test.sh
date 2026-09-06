@@ -54,4 +54,23 @@ test_junk_cleanup_report_then_delete() {
   assert_eq "$(tool_rc)" 0 "clean after delete"
 }
 
+test_junk_batch_discovers_unknown_extensions_without_touching_other_files() {
+  require_cmd flock find
+  mkdir -p "$T/root/odd"
+  : >"$T/root/odd/empty"
+  : >"$T/root/odd/empty.bin"
+  printf 'sidecar' >"$T/root/odd/._arbitrary"
+  printf 'keep' >"$T/root/odd/normal.bin"
+  export AUDIO_UTILS_ROOTS="$T/root"
+  run_tool util/library/junk-cleanup/convert-all.sh -j 1 -n -d
+  assert_eq "$(tool_rc)" 0
+  assert_file "$T/root/odd/empty" "preview retains extensionless file"
+  run_tool util/library/junk-cleanup/convert-all.sh -j 1 -d
+  assert_eq "$(tool_rc)" 0
+  assert_no_file "$T/root/odd/empty"
+  assert_no_file "$T/root/odd/empty.bin"
+  assert_no_file "$T/root/odd/._arbitrary"
+  assert_eq "$(cat "$T/root/odd/normal.bin")" keep
+}
+
 run_tests

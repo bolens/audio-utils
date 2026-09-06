@@ -24,22 +24,25 @@ _dupes_content_key() {
 _dupes_register() {
   local key=$1 path=$2
   local index="${AU_DUPES_STATE:?}/index.tsv" lock="${AU_DUPES_STATE}/index.lock"
-  local first="" k p
+  local first="" k p encoded
+  # Keep one TSV record per file even when a path contains tabs or newlines.
+  encoded=$(printf '%s' "$path" | base64 -w0) || return 2
   (
-    flock 9
+    exec 9>"$lock" || exit 2
+    flock 9 || exit 2
     if [[ -f "$index" ]]; then
       while IFS=$'\t' read -r k p || [[ -n "$k" ]]; do
         if [[ "$k" == "$key" ]]; then first=$p; break; fi
-      done <"$index"
+      done <"$index" || exit 2
     fi
-    printf '%s\t%s\n' "$key" "$path" >>"$index"
-    if [[ -n "$first" ]]; then printf '%s\n' "$first"; exit 0; fi
+    printf '%s\t%s\n' "$key" "$encoded" >>"$index" || exit 2
+    if [[ -n "$first" ]]; then printf '%s' "$first" | base64 --decode || exit 2; exit 0; fi
     exit 1
-  ) 9>"$lock"
+  )
 }
 
 convert_one() {
-  local src="$1" key first mode abs
+  local src="$1" key first mode abs rc=0
   if [[ "${DRY_RUN:-0}" -eq 1 ]]; then
     log_progress "would check-dupe: $src"; return 0
   fi
@@ -49,8 +52,13 @@ convert_one() {
   fi
   mode="fingerprint"
   [[ "${DUPES_DECODE_MD5:-0}" -eq 1 ]] && mode="decode-md5"
-  if first=$(_dupes_register "$key" "$abs"); then
+  first=$(_dupes_register "$key" "$abs") || rc=$?
+  if ((rc == 0)); then
     log_fail "$src" "duplicate of $first" "key=${key:0:48}"
+    return 1
+  fi
+  if ((rc > 1)); then
+    log_fail "$src" "duplicate index failed"
     return 1
   fi
   log_progress "unique: $src"

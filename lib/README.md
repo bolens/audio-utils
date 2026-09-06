@@ -39,3 +39,10 @@ add a matching `# shellcheck source=` directive.
   publish requested reports must return nonzero if atomic publication fails.
 
 Plugins that rescan or operate on whole albums must set `AU_EXCLUDE_UNSUPPORTED=1` in `lib/plugin.sh`. The shared driver then rejects `--exclude` before processing. File tools apply exclusions before plugin acceptance and worker dispatch. See [source exclusions](../docs/exclusions.md).
+
+### Classified junk discovery
+
+`AU_SCAN_JUNK=1` lets the junk-cleanup plugin and its directory finder include
+zero-byte files of any extension and AppleDouble sidecars. Extension selection
+still applies to other files; exclusions run before the plugin classifies or
+deletes a candidate. Other plugins should not set this marker.

@@ -97,7 +97,7 @@ EOF
   local n
   n=$(playlist_parse "$T/list.m3u" | wc -l)
   assert_eq "$n" "2"
-  playlist_parse "$T/list.m3u" | head -1 | cut -d$'\x1f' -f1 >"$T/first"
+  playlist_parse "$T/list.m3u" | sed -n '1p' | cut -d$'\x1f' -f1 >"$T/first"
   assert_grep "music/a.flac" "$T/first"
 }
 

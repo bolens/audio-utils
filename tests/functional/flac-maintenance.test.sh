@@ -10,6 +10,11 @@ test_replaygain_tags_album() {
   require_cmd flac metaflac ffmpeg ffprobe flock
   command -v rsgain >/dev/null 2>&1 || command -v loudgain >/dev/null 2>&1 \
     || skip "missing dependency: rsgain or loudgain"
+  if command -v rsgain >/dev/null 2>&1; then
+    rsgain --version >/dev/null 2>&1 || skip "rsgain is not runnable"
+  else
+    loudgain --version >/dev/null 2>&1 || skip "loudgain is not runnable"
+  fi
   local src md5_before
   src=$(fixture album)
   mkdir -p "$T/album"

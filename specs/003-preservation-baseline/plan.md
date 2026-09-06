@@ -35,3 +35,26 @@ Run checks in an isolated checkout. Commands are instructions, not evidence of
 a pass. Record results in `coverage.md`, keep incomplete work in `tasks.md`, and
 follow `RELEASING.md` for reviewed delivery. No live operation is required solely
 to create this retrospective baseline.
+
+## Legacy audit implementation, 2026-09-06
+
+Adopt the detailed tool documents through `legacy-contracts.md` and map all
+94 commands plus supporting interfaces in `legacy-coverage.md`. Keep upstream
+Spec Kit files and the separate development-environment PR outside this change.
+
+Correct the harness's conditional subshell before using old acceptance fixtures
+as evidence. Reconcile newly visible failures by distinguishing product defects,
+incorrect assertion syntax, report-file semantics, metadata container differences,
+and unavailable binaries. Preserve failed-run evidence in the delivery review.
+
+Keep duplicate paths encoded in their private TSV indexes and link counts free
+of path delimiters. Preserve locking and the registered keeper's identity.
+Use separate stream verification directories owned by the existing parent
+workspace. Validate album members before moves, then accept subsequent queued
+members of an already claimed album. Add junk-only discovery selectors before
+existing exclusions and acceptance filtering. Escape XML without Bash replacement
+ampersand expansion. Validate converter separators before creating directories.
+
+Run the corrected entire harness, native lint/documentation checks, optional MCP
+fixtures where available, and the container gate. Review the full candidate
+separately and verify the actual merge revision before closing delivery tasks.

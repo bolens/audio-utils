@@ -79,7 +79,7 @@ test_caf_to_flac_retag_and_clean() {
 
   run_tool conversion/caf-to-flac/caf-to-flac.sh -j 1 -R "$T/album"
   assert_eq "$(tool_rc)" 0 "retag apply rc ($(tool_out | tail -3))"
-  title=$(metaflac --show-tag=TITLE -- "$T/album/track.flac" | sed 's/^TITLE=//')
+  title=$(metaflac --show-tag=TITLE -- "$T/album/track.flac" | sed 's/^[^=]*=//')
   assert_eq "$title" "FromCAF" "CAF metadata retagged onto FLAC"
 
   run_tool conversion/caf-to-flac/caf-to-flac.sh -j 1 -c -n "$T/album"

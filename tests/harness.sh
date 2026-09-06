@@ -117,8 +117,16 @@ require_ffmpeg_encoder() {
 
 # Container-level tag via ffprobe (case-insensitive tag name).
 ffprobe_tag() { # file tag
-  ffprobe -v error -show_entries "format_tags=$2" \
-    -of default=noprint_wrappers=1:nokey=1 "$1" 2>/dev/null
+  local value
+  value=$(ffprobe -v error -show_entries "format_tags=$2" \
+    -of default=noprint_wrappers=1:nokey=1 "$1" 2>/dev/null) || return
+  if [[ -n "$value" ]]; then
+    printf '%s\n' "$value"
+  else
+    # Ogg/Opus store metadata on the audio stream, not the container.
+    ffprobe -v error -select_streams a:0 -show_entries "stream_tags=$2" \
+      -of default=noprint_wrappers=1:nokey=1 "$1" 2>/dev/null
+  fi
 }
 
 # Decoded-PCM MD5 of an audio file (container/tag independent).
@@ -155,7 +163,7 @@ tool_out() { cat "$T/out"; }
 # --- runner ------------------------------------------------------------------
 
 run_tests() {
-  local fn rc t_dir
+  local fn rc t_dir test_pid
   local -a fns=()
   mapfile -t fns < <(declare -F | awk '$3 ~ /^test_/ { print $3 }')
 
@@ -176,7 +184,11 @@ run_tests() {
       T="$t_dir"
       export T
       "$fn"
-    ) >"$t_dir/.test-output" 2>&1 || rc=$?
+    ) >"$t_dir/.test-output" 2>&1 &
+    # Do not put the subshell in an OR-list: that disables errexit inside
+    # every test function and can turn an early assertion failure into a pass.
+    test_pid=$!
+    wait "$test_pid" || rc=$?
     if [[ "$rc" -eq 0 ]]; then
       echo "ok $fn"
       ((++_AU_PASS))

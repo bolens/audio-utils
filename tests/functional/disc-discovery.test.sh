@@ -70,6 +70,12 @@ test_bluray_convert_all_preserves_newline_directory() {
   require_cmd flac ffmpeg ffprobe
   local dir=$'Concert\nLive/BDMV'
   mkdir -p "$T/root/$dir"
+  # This checks newline-safe discovery, not local MakeMKV installation. The
+  # dry-run preflight needs command presence but must not invoke the decoder.
+  mkdir -p "$T/bin"
+  printf '#!/bin/sh\nexit 97\n' >"$T/bin/makemkvcon"
+  chmod +x "$T/bin/makemkvcon"
+  export PATH="$T/bin:$PATH"
   AUDIO_UTILS_ROOTS="$T/root" run_tool \
     conversion/bluray-to-flac/convert-all.sh -n
   assert_eq "$(tool_rc)" "0" "rc ($(tool_out))"
