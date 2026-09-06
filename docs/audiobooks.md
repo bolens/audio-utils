@@ -1,5 +1,7 @@
 # Audiobooks
 
+[Documentation](README.md)
+
 Multi-file chapter libraries and single-file `.m4b` books. Shared chapter I/O
 lives in [`lib/media/chapters.sh`](../lib/media/chapters.sh) (ffprobe list +
 ffmetadata extract/embed).

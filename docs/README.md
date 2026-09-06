@@ -1,6 +1,50 @@
-# audio-utils documentation
+# Documentation
 
-Index of topic docs. **Tool lists** (every converter/util path) live only in the root [README](../README.md) — keep that table current when adding tools; link here for depth.
+Audio conversion, library maintenance, and preservation contracts.
+
+## Start here
+
+| Need | Owning document |
+| --- | --- |
+| Use the project | [README.md](../README.md) |
+| Change the repository | [AGENTS.md](../AGENTS.md) |
+| Deliver or recover | [RELEASING.md](../RELEASING.md) |
+| Plan substantial changes | [.specify/memory/project-guide.md](../.specify/memory/project-guide.md) |
+| Non-negotiable constraints | [.specify/memory/constitution.md](../.specify/memory/constitution.md) |
+
+## Architecture
+
+Thin tool directories load shared modules through [plugin initialization](../lib/plugin_init.sh) and
+[the loader](../lib/load.sh). The [library contract](../lib/README.md) owns shared behavior.
+Verification depends on the operation: lossless conversion, lossy encoding, metadata updates, and
+library cleanup have different evidence and source-deletion rules. Use the relevant format or
+workflow guide below.
+
+## Deployment and recovery
+
+[Requirements](requirements.md) owns runtime and codec support. [Container usage](docker.md) owns
+mounts and execution. [RELEASING.md](../RELEASING.md) owns source and artifact delivery. New tools
+follow the [converter](adding-a-converter.md) or [utility](adding-a-util.md) authoring contract,
+including documentation discovery.
+
+## Database and state
+
+Audio files, sidecars, reports, and local caches belong to the selected workflow, not a central
+database. [Formats](formats.md) owns verification and source deletion. [Enrichment](enrichment.md)
+owns opt-in network behavior. Test writes, renames, and cleanup only against disposable media.
+
+## Documentation maintenance
+
+Keep decisions, invariants, failure modes, and recovery requirements in the owning document. Link to
+commands, defaults, schemas, and generated catalogs instead of copying them. Change the owner and
+affected references together. Update this index when adding or moving a guide, and verify relative
+links and heading anchors. Historical specs and audits describe their recorded revision, not current
+runtime proof. A topic without an implementation stays explicitly unimplemented.
+
+## Topic guides
+
+Index of topic docs. **Tool lists** (every converter/util path) live only in the root
+[README](../README.md) — keep that table current when adding tools; link here for depth.
 
 | Doc | Contents |
 |-----|----------|
@@ -24,6 +68,7 @@ Index of topic docs. **Tool lists** (every converter/util path) live only in the
 
 ## See also
 
-[Root README](../README.md) (tool tables) · [requirements.md](requirements.md) · [adding-a-converter.md](adding-a-converter.md) · [adding-a-util.md](adding-a-util.md)
+[Root README](../README.md) (tool tables) · [requirements.md](requirements.md) ·
+[adding-a-converter.md](adding-a-converter.md) · [adding-a-util.md](adding-a-util.md)
 
 - [Docker runtime](docker.md): build, mount media, and run tools.
