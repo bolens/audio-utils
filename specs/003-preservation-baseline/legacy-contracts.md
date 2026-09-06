@@ -60,7 +60,8 @@ They do not assert that every branch has been executed or that hardware tests ra
   quick verification, full audit, and last-written completion markers follow
   [discs](../../docs/discs.md) and the Blu-ray command reference. Stale audio,
   incomplete extraction, inventory failure, or failed verification must not be
-  labeled complete. No bundled keys or streaming DRM support is implied.
+  labeled complete. Chapter parsing must use an input descriptor that decoder
+  subprocesses cannot consume as standard input. No bundled keys or streaming DRM support is implied.
 - **LC-006, audiobooks:** Joining tracks MUST use bytewise filename order,
   measured chapter boundaries, documented AAC/Opus/ALAC options, and the
   parent-directory M4B output. Splitting MUST require chapters, create numbered

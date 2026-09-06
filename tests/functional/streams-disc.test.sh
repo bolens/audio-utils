@@ -368,6 +368,13 @@ test_bluray_exports_chapter_sidecars() {
   assert_grep '"title":"Song"' "$out.chapters.json"
   assert_grep 'INDEX 01 00:00:00' "$out.cue"
 
+  # Reproduce FFmpeg versions polling stdin while their caller reads chapters.
+  # The chapter parser must own a separate descriptor from subprocess stdin.
+  mkdir -p "$T/bin"
+  printf '#!/usr/bin/env bash\nIFS= read -r -n 1 -t 0.01 _ || true\nexec %q "$@"\n' \
+    "$(command -v ffmpeg)" >"$T/bin/ffmpeg"
+  chmod +x "$T/bin/ffmpeg"
+  export PATH="$T/bin:$PATH"
   run_tool conversion/bluray-to-flac/bluray-to-flac.sh -y --split-chapters "$src"
   assert_eq "$(tool_rc)" 0 "chapter split rc ($(tool_out | tail -8))"
   assert_file "$T/media/concert.mkv.a0.chapters/01 - Intro.flac"

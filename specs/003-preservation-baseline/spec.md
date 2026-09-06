@@ -60,7 +60,8 @@ These requirements describe corrections, not behavior already verified at that r
   Index read/write/lock failures MUST fail the scan rather than report uniqueness.
 
 - **FR-009**: Revalidation of legacy acceptance checks MUST preserve the
-  documented contracts: LC-004 stream verification workspaces must not collide,
+  documented contracts: LC-005 chapter parsing must retain every record when
+  a decoder polls standard input, LC-004 stream verification workspaces must not collide,
   LC-009 junk discovery must include unknown-extension/extensionless empty files,
   LC-009 album moves must not fail on paths already moved by that album's work,
   LC-010 incomplete pre-existing image/CUE pairs must block unforced export and

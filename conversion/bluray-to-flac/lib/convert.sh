@@ -284,7 +284,8 @@ _bluray_split_chapters() {
   mkdir -p -- "$verify_dir"
   : >"$concat_list"
   metaflac --export-tags-to="$tags" -- "$flac_out" || return 1
-  while IFS= read -r line || [[ -n "$line" ]]; do
+  # Decoders may poll stdin; reserve the chapter list for the parser alone.
+  while IFS= read -r line <&3 || [[ -n "$line" ]]; do
     IFS='|' read -r idx start end title <<<"$line"
     [[ -n "$first_start" ]] || first_start=$start
     last_end=$end
@@ -318,7 +319,7 @@ _bluray_split_chapters() {
       "$(audio_md5 "$dest")" || return 1
     rm -rf -- "$ctmp"
     rm -f -- "${tmpdir}/chapter.enc"
-  done <"$list"
+  done 3<"$list"
   rate=$(audio_sample_rate "$flac_out")
   if [[ "$first_start" =~ ^[0-9]+([.][0-9]+)?$ && \
     "$last_end" =~ ^[0-9]+([.][0-9]+)?$ && "$rate" =~ ^[0-9]+$ ]]; then

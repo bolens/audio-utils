@@ -53,3 +53,19 @@ Separate self-review checked the full candidate, corrected failure dispositions,
 all tool mappings, source retention, filename encoding, worker aggregation, and
 explicit mutation gates. No independent reviewer was used. Candidate CI and
 exact merge-SHA/GHCR digest verification remain delivery gates recorded by the PR.
+
+### Hosted-environment follow-up
+
+The corrected harness exposed a MakeMKV assumption in the newline-directory
+discovery fixture on Ubuntu/Nix. The test now supplies a command-presence stub
+that fails if invoked, keeping dry-run discovery independent of a real decoder.
+Ubuntu's FFmpeg also consumed chapter-list stdin while splitting, truncating the
+next record. A disposable Ubuntu 24.04 container reproduced the failure; a wrapper
+that polls stdin reproduced it on the local newer FFmpeg too. The splitter now
+reads chapter records from a separate descriptor, preserving subprocess stdin.
+The deterministic chapter regression passes after the fix.
+
+Both affected fixture files pass on the local toolchain and in Ubuntu 24.04:
+31 passes, zero failures, two explicit missing-keyfinder skips in each environment.
+Separate follow-up self-review checked the scoped chapter descriptor, decoder
+stdin isolation, source retention, and the MakeMKV stub's non-execution boundary.
