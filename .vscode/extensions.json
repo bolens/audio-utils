@@ -1,0 +1,9 @@
+{
+  "recommendations": [
+    "EditorConfig.EditorConfig",
+    "redhat.vscode-yaml",
+    "GitHub.vscode-github-actions",
+    "timonwong.shellcheck",
+    "mads-hartmann.bash-ide-vscode"
+  ]
+}
