@@ -89,7 +89,7 @@ assert_grep() { # pattern file_or_string_flag...
     grep -q -- "$pattern" "$target" || \
       fail "assert_grep: pattern '$pattern' not found in file $target"
   else
-    printf '%s\n' "$target" | grep -q -- "$pattern" || \
+    grep -q -- "$pattern" <<<"$target" || \
       fail "assert_grep: pattern '$pattern' not found in string"
   fi
 }
@@ -100,7 +100,7 @@ assert_not_grep() { # pattern file_or_string
     ! grep -q -- "$pattern" "$target" || \
       fail "assert_not_grep: pattern '$pattern' found in file $target"
   else
-    ! printf '%s\n' "$target" | grep -q -- "$pattern" || \
+    ! grep -q -- "$pattern" <<<"$target" || \
       fail "assert_not_grep: pattern '$pattern' found in string"
   fi
 }
