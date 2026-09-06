@@ -1,5 +1,7 @@
 # CLI accessibility
 
+[Documentation](README.md)
+
 audio-utils is a text-first bash CLI (no TUI). These conventions keep output usable with screen readers, monochrome terminals, and log grepping.
 
 ## Guarantees
