@@ -16,10 +16,13 @@ in
     ffmpeg flac sox mediainfo chromaprint rsgain minisign par2cmdline
     gnutar gzip unzip zip which cmake stdenv.cc
   ] ++ lib.optionals pkgs.stdenv.hostPlatform.isLinux [ pkgs.util-linux pkgs.bpm-tools ];
-  env.LANG = "C.UTF-8";
-  env.LC_ALL = "C.UTF-8";
-  env.LOCALE_ARCHIVE = lib.mkIf pkgs.stdenv.hostPlatform.isLinux "${pkgs.glibcLocales}/lib/locale/locale-archive";
-  env.SSL_CERT_FILE = "${pkgs.cacert}/etc/ssl/certs/ca-bundle.crt";
+  env = {
+    LANG = if pkgs.stdenv.hostPlatform.isLinux then "C.UTF-8" else "en_US.UTF-8";
+    LC_ALL = config.env.LANG;
+    SSL_CERT_FILE = "${pkgs.cacert}/etc/ssl/certs/ca-bundle.crt";
+  } // lib.optionalAttrs pkgs.stdenv.hostPlatform.isLinux {
+    LOCALE_ARCHIVE = "${pkgs.glibcLocales}/lib/locale/locale-archive";
+  };
   scripts.repo-check.exec = "bash scripts/check-development.sh";
   enterTest = "repo-check";
 
