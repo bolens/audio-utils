@@ -4,6 +4,7 @@ on:
   push:
     branches: [main, master]
   pull_request:
+  workflow_dispatch:
   # Weekly full run: runner-image drift (ffmpeg, shellcheck, codecs) breaks
   # things without any push. Path filters are bypassed on schedule.
   schedule:
@@ -26,13 +27,13 @@ jobs:
       pull-requests: read
     # Scheduled runs treat everything as changed (no diff to filter against).
     outputs:
-      lib: ${{ github.event_name == 'schedule' && 'true' || steps.filter.outputs.lib }}
-      conversion: ${{ github.event_name == 'schedule' && 'true' || steps.filter.outputs.conversion }}
-      util: ${{ github.event_name == 'schedule' && 'true' || steps.filter.outputs.util }}
-      tests: ${{ github.event_name == 'schedule' && 'true' || steps.filter.outputs.tests }}
-      mcp: ${{ github.event_name == 'schedule' && 'true' || steps.filter.outputs.mcp }}
-      docs: ${{ github.event_name == 'schedule' && 'true' || steps.filter.outputs.docs }}
-      code: ${{ github.event_name == 'schedule' && 'true' || steps.filter.outputs.code }}
+      lib: ${{ (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch') && 'true' || steps.filter.outputs.lib }}
+      conversion: ${{ (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch') && 'true' || steps.filter.outputs.conversion }}
+      util: ${{ (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch') && 'true' || steps.filter.outputs.util }}
+      tests: ${{ (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch') && 'true' || steps.filter.outputs.tests }}
+      mcp: ${{ (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch') && 'true' || steps.filter.outputs.mcp }}
+      docs: ${{ (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch') && 'true' || steps.filter.outputs.docs }}
+      code: ${{ (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch') && 'true' || steps.filter.outputs.code }}
       conversion_tools: ${{ steps.plan.outputs.conversion_tools }}
       util_tools: ${{ steps.plan.outputs.util_tools }}
       conversion_matrix: ${{ steps.plan.outputs.conversion_matrix }}
@@ -45,7 +46,7 @@ jobs:
           persist-credentials: false
 
       - name: Path filter
-        if: github.event_name != 'schedule'
+        if: github.event_name != 'schedule' && github.event_name != 'workflow_dispatch'
         uses: dorny/paths-filter@ceb8a2b8f2d89434be7ff52d3de7ec3738c5cc9d # v4
         id: filter
         with:
@@ -87,7 +88,7 @@ jobs:
       - name: Plan shellcheck matrices
         id: plan
         env:
-          LIB_CHANGED: ${{ github.event_name == 'schedule' && 'true' || steps.filter.outputs.lib }}
+          LIB_CHANGED: ${{ (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch') && 'true' || steps.filter.outputs.lib }}
           CONVERSION_CHANGED: ${{ steps.filter.outputs.conversion }}
           UTIL_CHANGED: ${{ steps.filter.outputs.util }}
           CONVERSION_FILES: ${{ steps.filter.outputs.conversion_files }}
@@ -105,15 +106,16 @@ jobs:
             # (conversion/<tool> or util/<category>/<tool>).
             if [[ "$LIB_CHANGED" == "true" ]]; then
               mapfile -t tools < <(
-                find "$group" -mindepth 2 -maxdepth 3 -name Makefile -printf '%h\n' | sort
+                find "$group" -mindepth 2 -name Makefile -printf '%h\n' | sort
               )
             elif [[ "$group_changed" == "true" ]]; then
+              # Process substitution does not propagate jq failures to mapfile.
+              jq -e 'type == "array" and all(.[]; type == "string")' <<<"$files_json" >/dev/null
               mapfile -t tools < <(
                 jq -r '.[]' <<<"$files_json" | while IFS= read -r f; do
                   d=$(dirname "$f")
-                  # Nearest ancestor with a Makefile = the tool dir. Stops at
-                  # the group root, so deleted tools and category-level files
-                  # are skipped.
+                  # Nearest tool owns its inputs. A removed tool or shared
+                  # category input conservatively selects every surviving tool.
                   while [[ "$d" == "$group"/* ]]; do
                     if [[ -f "$d/Makefile" ]]; then
                       printf '%s\n' "$d"
@@ -121,6 +123,9 @@ jobs:
                     fi
                     d=$(dirname "$d")
                   done
+                  if [[ "$d" == "$group" || "$d" == . ]]; then
+                    find "$group" -mindepth 2 -name Makefile -printf '%h\n'
+                  fi
                 done | sort -u
               )
             fi
@@ -327,7 +332,7 @@ jobs:
   test-mcp-node:
     name: tests (MCP Node gateway)
     needs: changes
-    if: needs.changes.outputs.mcp == 'true'
+    if: needs.changes.outputs.mcp == 'true' || needs.changes.outputs.lib == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 10
     defaults:
@@ -614,27 +619,34 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Aggregate results
+        env:
+          NEEDS_JSON: ${{ toJSON(needs) }}
         run: |
-          set -euo pipefail
-          results=(
-            "${{ needs.changes.result }}"
-            "${{ needs.shellcheck-lib.result }}"
-            "${{ needs.shellcheck-conversion.result }}"
-            "${{ needs.shellcheck-util.result }}"
-            "${{ needs.shellcheck-fedora.result }}"
-            "${{ needs.test-unit-smoke.result }}"
-            "${{ needs.test-mcp-node.result }}"
-            "${{ needs.check-docs.result }}"
-            "${{ needs.prepare-codecs.result }}"
-            "${{ needs.test-functional.result }}"
-          )
-          for r in "${results[@]}"; do
-            case "$r" in
-              success|skipped) ;;
-              *)
-                echo "Required job finished with: $r"
-                exit 1
-                ;;
-            esac
-          done
-          echo "All required jobs passed or were skipped by path filters."
+          python3 - <<'PYTHON'
+          import json
+          import os
+          import sys
+
+          jobs = json.loads(os.environ["NEEDS_JSON"])
+          flags = jobs["changes"].get("outputs", {})
+          contracts = {
+              "shellcheck-lib": ("lib",),
+              "shellcheck-conversion": ("lib", "conversion"),
+              "shellcheck-util": ("lib", "util"),
+              "shellcheck-fedora": ("lib",),
+              "test-unit-smoke": ("code",),
+              "test-mcp-node": ("mcp", "lib"),
+              "check-docs": ("docs",),
+              "prepare-codecs": ("code",),
+              "test-functional": ("code",),
+          }
+          invalid = jobs["changes"]["result"] != "success"
+          invalid |= any(flags.get(key) not in ("true", "false")
+                         for keys in contracts.values() for key in keys)
+          for job, keys in contracts.items():
+              expected = "success" if any(flags.get(key) == "true" for key in keys) else "skipped"
+              if jobs[job]["result"] != expected:
+                  print(f"{job}: expected {expected}, got {jobs[job]['result']}")
+                  invalid = True
+          sys.exit(1 if invalid else 0)
+          PYTHON

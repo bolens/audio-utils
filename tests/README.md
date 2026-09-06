@@ -46,3 +46,11 @@ They cover PCM, lossless and lossy pipelines with one and two workers, deletion
 requested, and retagging an existing FLAC. Failures must retain sources, preserve
 existing output, return nonzero and omit success rows. Docker also checks an
 actual read-only input mount.
+
+## Change selection
+
+Manual and scheduled CI runs select every suite. Shared library changes also
+select the MCP tests. Removed tools and category-level inputs select all surviving
+tools in that group; newly nested tool Makefiles remain discoverable. Invalid
+changed-file JSON fails planning. The required CI gate validates filter outputs
+and requires every selected job to succeed; only unselected jobs may skip.
