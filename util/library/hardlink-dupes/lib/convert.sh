@@ -27,25 +27,28 @@ _hl_register() {
   local key=$1 path=$2
   local index="${AU_HL_STATE:?}/index.tsv"
   local lock="${AU_HL_STATE}/index.lock"
-  local first="" k p
+  local first="" k p encoded
+  # Keep one TSV record per file even when a path contains tabs or newlines.
+  encoded=$(printf '%s' "$path" | base64 -w0) || return 2
 
   (
-    flock 9
+    exec 9>"$lock" || exit 2
+    flock 9 || exit 2
     if [[ -f "$index" ]]; then
       while IFS=$'\t' read -r k p || [[ -n "$k" ]]; do
         if [[ "$k" == "$key" ]]; then
           first=$p
           break
         fi
-      done <"$index"
+      done <"$index" || exit 2
     fi
-    printf '%s\t%s\n' "$key" "$path" >>"$index"
+    printf '%s\t%s\n' "$key" "$encoded" >>"$index" || exit 2
     if [[ -n "$first" ]]; then
-      printf '%s\n' "$first"
+      printf '%s' "$first" | base64 --decode || exit 2
       exit 0
     fi
     exit 1
-  ) 9>"$lock"
+  )
 }
 
 _hl_same_inode() {
@@ -77,12 +80,13 @@ _hl_link_to_keeper() {
     rm -f -- "$tmp" 2>/dev/null || true
     return 1
   fi
-  printf '%s\t%s\n' "$dup" "$keeper" >>"${AU_HL_STATE}/linked.tsv"
+  # Only the count is consumed by the finalizer, not path text.
+  printf '1\n' >>"${AU_HL_STATE}/linked.tsv"
   return 0
 }
 
 convert_one() {
-  local flac="$1" key keeper abs mode
+  local flac="$1" key keeper abs mode rc=0
 
   if [[ "${DRY_RUN:-0}" -eq 1 ]]; then
     log_progress "would hardlink-check: $flac"
@@ -106,7 +110,12 @@ convert_one() {
     mode="streaminfo-md5"
   fi
 
-  if ! keeper=$(_hl_register "$key" "$abs"); then
+  keeper=$(_hl_register "$key" "$abs") || rc=$?
+  if ((rc > 1)); then
+    log_fail "$flac" "duplicate index failed"
+    return 1
+  fi
+  if ((rc == 1)); then
     log_progress "keeper: $flac"
     log_success "$flac" "$mode" "${key#*:}" "$(file_sha256 "$flac")" "first"
     return 0

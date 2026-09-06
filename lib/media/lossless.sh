@@ -284,7 +284,7 @@ audio_stream_count() {
 # Optional AU_STREAM_TAG=1 to map stream metadata (best-effort).
 extract_audio_stream_to_flac() {
   local src="$1" idx="$2" dest="$3" tmpdir="$4"
-  local wav="${tmpdir}/a${idx}.wav"
+  local wav
   local -a enc_out
   local md5_flac
 
@@ -295,6 +295,11 @@ extract_audio_stream_to_flac() {
     fi
     return 0
   fi
+
+  # Verification uses fixed intermediate names. Give every stream its own
+  # workspace below the caller-owned directory, including repeated stream IDs.
+  tmpdir=$(mktemp -d "${tmpdir}/stream-${idx}.XXXXXX") || return 1
+  wav="${tmpdir}/audio.wav"
 
   if ! ffmpeg -v error -y -i "$src" -map "0:a:${idx}" -c:a pcm_s24le "$wav" 2>"${tmpdir}/extract.err"; then
     set_last_err_file "${tmpdir}/extract.err"

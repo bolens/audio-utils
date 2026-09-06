@@ -159,6 +159,10 @@ for _e in "${EXTS[@]}"; do
   fi
 done
 
+if [[ "${AU_SCAN_JUNK:-0}" -eq 1 ]]; then
+  find_expr+=( -o -size 0 -o -name '._*' )
+fi
+
 # List unique parent dirs of every matching file, sorted (C locale).
 set +o pipefail
 if ((PRINT0)); then

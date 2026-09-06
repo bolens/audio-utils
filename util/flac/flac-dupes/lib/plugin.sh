@@ -68,13 +68,14 @@ plugin_after_flags() {
 }
 
 plugin_require_deps() {
+  require_cmds base64 || return 1
   if [[ "${DUPES_DECODE_MD5:-0}" -eq 1 ]]; then
-    require_cmds flac ffmpeg ffprobe flock metaflac
+    require_cmds flac ffmpeg ffprobe flock metaflac || return 1
   else
-    require_cmds flac flock metaflac
+    require_cmds flac flock metaflac || return 1
   fi
   if [[ "${DUPES_FINGERPRINT:-0}" -eq 1 ]]; then
-    require_cmds fpcalc
+    require_cmds fpcalc || return 1
   fi
 }
 

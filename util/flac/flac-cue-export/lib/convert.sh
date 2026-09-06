@@ -77,6 +77,10 @@ _cueexp_build_album() {
   fi
 
   if [[ -f "$image" || -f "$cue" ]] && [[ "${OVERWRITE:-0}" -eq 0 ]]; then
+    if [[ ! -f "$image" || ! -f "$cue" ]]; then
+      printf 'fail-incomplete-existing-pair\n' >"$done_f"
+      return 1
+    fi
     printf 'exists\n' >"$done_f"
     return 0
   fi
@@ -147,8 +151,13 @@ _cueexp_build_album() {
     return 1
   fi
 
-  mv -f -- "${tmpdir}/image.flac" "$image"
-  mv -f -- "${tmpdir}/album.cue" "$cue"
+  if ! mv -fT -- "${tmpdir}/image.flac" "$image" ||
+    ! mv -fT -- "${tmpdir}/album.cue" "$cue"; then
+    printf 'fail-publish\n' >"$done_f"
+    unregister_tmpdir "$tmpdir"
+    rm -rf -- "$tmpdir"
+    return 1
+  fi
   unregister_tmpdir "$tmpdir"
   rm -rf -- "$tmpdir"
 

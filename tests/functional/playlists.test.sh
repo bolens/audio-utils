@@ -44,7 +44,7 @@ test_dedupe_requires_yes_then_rewrites() {
 
   run_tool util/playlist/playlist-dedupe/playlist-dedupe.sh -j 1 -y "$T/dupes"
   assert_eq "$(tool_rc)" 0 "dedupe -y rc ($(tool_out | tail -3))"
-  assert_eq "$(grep -c . "$T/dupes/dupes.m3u")" 2 "dupes dropped"
+  assert_eq "$(grep -c '^[^#]' "$T/dupes/dupes.m3u")" 2 "dupes dropped"
   assert_eq "$(grep -c "Track One" "$T/dupes/dupes.m3u")" 1 "first kept once"
 }
 

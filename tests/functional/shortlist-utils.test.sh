@@ -210,6 +210,29 @@ test_hardlink_dupes_report_and_apply() {
   assert_eq "$ino1" "$ino2" "same inode after hardlink"
 }
 
+test_hardlink_dupes_preserves_control_characters() {
+  require_cmd flac metaflac flock ln
+  local src jobs name keeper duplicate before
+  src=$(fixture album)
+  for jobs in 1 2; do
+    for name in $'album\nline' $'album\tline'; do
+      keeper="$T/$jobs/$name/a.flac"
+      duplicate="$T/$jobs/$name/b.flac"
+      mkdir -p -- "$(dirname -- "$keeper")"
+      cp -- "$src/album/01 - Track One.flac" "$keeper"
+      cp -- "$keeper" "$duplicate"
+      before=$(sha256sum <"$keeper")
+      run_tool util/library/hardlink-dupes/hardlink-dupes.sh -j "$jobs" --apply \
+        "$(dirname -- "$keeper")"
+      assert_eq "$(tool_rc)" 0 "control-character apply ($(tool_out | tail -3))"
+      assert_eq "$(stat -c '%d:%i' -- "$keeper")" \
+        "$(stat -c '%d:%i' -- "$duplicate")" "same inode"
+      assert_eq "$(sha256sum <"$duplicate")" "$before" "audio bytes preserved"
+      assert_grep 'Duplicate groups: 1; hardlinked this run: 1' "$T/out"
+    done
+  done
+}
+
 # --- playlist-smart ----------------------------------------------------------
 
 test_playlist_smart_genre_filter() {

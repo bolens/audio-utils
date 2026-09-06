@@ -115,6 +115,24 @@ test_multi_disc_layout_report_and_apply() {
   assert_no_file "$T/album/d1.flac"
 }
 
+test_multi_disc_layout_rejects_corruption_before_any_move() {
+  require_cmd flac metaflac flock
+  local src jobs
+  src=$(fixture album)
+  for jobs in 1 2; do
+    mkdir -p "$T/album-$jobs"
+    cp "$src/album/01 - Track One.flac" "$T/album-$jobs/a.flac"
+    metaflac --set-tag=DISCNUMBER=2 -- "$T/album-$jobs/a.flac"
+    printf 'not FLAC\n' >"$T/album-$jobs/z.flac"
+    run_tool util/library/multi-disc-layout/multi-disc-layout.sh -j "$jobs" \
+      --apply "$T/album-$jobs"
+    assert_eq "$(tool_rc)" 1 "corrupt member fails album"
+    assert_file "$T/album-$jobs/a.flac" "valid member retained in original location"
+    assert_audio_md5_eq "$src/album/01 - Track One.flac" "$T/album-$jobs/a.flac"
+    [[ ! -d "$T/album-$jobs/Disc 2" ]] || fail "album partially moved"
+  done
+}
+
 test_genre_canonicalize_report_and_apply() {
   require_cmd flac metaflac ffmpeg ffprobe flock
   local src genre

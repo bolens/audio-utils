@@ -78,7 +78,10 @@ test_ape_skip_existing_dry_run_and_delete() {
 
   run_tool "$_TOOL" -j 1 -d "$T/album"
   assert_eq "$(tool_rc)" 0 "delete-source rc"
-  assert_no_file "$T/album/track.flac" "-d must remove the source"
+  assert_file "$T/album/track.flac" "-d does not clean up a skipped existing output"
+  run_tool "$_TOOL" -j 1 -D "$T/album"
+  assert_eq "$(tool_rc)" 0 "existing-output cleanup rc"
+  assert_no_file "$T/album/track.flac" "-D removes the verified redundant source"
   assert_file "$T/album/track.ape"
 }
 

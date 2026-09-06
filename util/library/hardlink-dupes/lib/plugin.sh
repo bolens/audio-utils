@@ -63,10 +63,11 @@ plugin_after_flags() {
 }
 
 plugin_require_deps() {
+  require_cmds base64 || return 1
   if [[ "${HL_DECODE_MD5:-0}" -eq 1 ]]; then
-    require_cmds flac ffmpeg ffprobe flock metaflac ln
+    require_cmds flac ffmpeg ffprobe flock metaflac ln || return 1
   else
-    require_cmds flac flock metaflac ln
+    require_cmds flac flock metaflac ln || return 1
   fi
 }
 

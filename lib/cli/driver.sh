@@ -345,6 +345,12 @@ audio_utils_run() {
       fi
     done
 
+    # Junk includes extensionless and unknown-extension zero-byte files and
+    # AppleDouble sidecars. The plugin still classifies each selected source.
+    if [[ "${AU_SCAN_JUNK:-0}" -eq 1 ]]; then
+      find_expr+=( -o -size 0 -o -name '._*' )
+    fi
+
     au_mapfile0 srcs < <(
       LC_ALL=C find -P "$dir" -maxdepth 1 -type f \( "${find_expr[@]}" \) -print0 |
         LC_ALL=C sort -z

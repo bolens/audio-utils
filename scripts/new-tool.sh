@@ -34,7 +34,7 @@ case "$KIND" in
     NAME="${2:-}"
     [[ "$NAME" == *-to-* ]] || die "usage: new-tool.sh converter X-to-Y"
     SRC_EXT="${NAME%%-to-*}"
-    DEST_EXT="${NAME##*-to-}"
+    DEST_EXT="${NAME#*-to-}"
     TOOL_DIR="conversion/$NAME"
     LIB_UP="../.."
     ;;

@@ -477,7 +477,7 @@ test_audio_key_rejects_broken_backend_preflight() {
 
   PATH="$T/bin:$PATH" run_tool util/audio/audio-key/audio-key.sh "$T/empty"
 
-  assert_eq "$(tool_rc)" 1 "broken backend must fail preflight"
+  assert_eq "$(tool_rc)" 2 "broken backend is a dependency failure"
   assert_grep 'runnable keyfinder-cli' "$T/out"
 }
 

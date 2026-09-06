@@ -221,7 +221,7 @@ test_mcp_tool_schemas_expose_supported_common_options() {
     assert_grep "\"$key\"" "$schema"
   done
   assert_grep 'full option parity' "$schema"
-  assert_grep '"required":["input_file"]' "$schema"
+  assert_grep '"required":\["input_file"\]' "$schema"
 
   schema=$(mcp_tool_schema_json 0 flac-verify)
   if grep -Fq '"delete_source"' <<<"$schema"; then
@@ -258,18 +258,18 @@ test_mcp_builds_typed_audit_arguments() {
   mcp_build_cli_argv archive-audit
   local joined
   printf -v joined '%q ' "${MCP_CLI_ARGV[@]}"
-  assert_grep -- '--quick' "$joined"
-  assert_grep -- '--public-key pub' "$joined"
-  assert_grep -- '--snapshot-dir /snap' "$joined"
-  assert_grep -- '--baseline-dir /base' "$joined"
+  assert_grep '--quick' "$joined"
+  assert_grep '--public-key pub' "$joined"
+  assert_grep '--snapshot-dir /snap' "$joined"
+  assert_grep '--baseline-dir /base' "$joined"
 
   mcp_parse_audit_args_from_json silence-detect \
     '{"paths":["/audio"],"silence_seconds":1.5,"silence_db":-45,"detect_clipping":false}'
   mcp_build_cli_argv silence-detect
   printf -v joined '%q ' "${MCP_CLI_ARGV[@]}"
-  assert_grep -- '--silence-sec 1.5' "$joined"
-  assert_grep -- '--silence-db -45' "$joined"
-  assert_grep -- '--no-clip' "$joined"
+  assert_grep '--silence-sec 1.5' "$joined"
+  assert_grep '--silence-db -45' "$joined"
+  assert_grep '--no-clip' "$joined"
   assert_exit 1 mcp_parse_audit_args_from_json lossy-audit \
     '{"paths":["/audio"],"min_kbps":0}'
 
@@ -277,13 +277,13 @@ test_mcp_builds_typed_audit_arguments() {
     '{"paths":["/audio"],"duration_ratio":0.4,"no_duration":true}'
   mcp_build_cli_argv album-incomplete
   printf -v joined '%q ' "${MCP_CLI_ARGV[@]}"
-  assert_grep -- '--duration-ratio 0.4' "$joined"
-  assert_grep -- '--no-duration' "$joined"
+  assert_grep '--duration-ratio 0.4' "$joined"
+  assert_grep '--no-duration' "$joined"
   mcp_parse_audit_args_from_json rip-log-audit \
     '{"paths":["/logs"],"strict":true}'
   mcp_build_cli_argv rip-log-audit
   printf -v joined '%q ' "${MCP_CLI_ARGV[@]}"
-  assert_grep -- '--strict' "$joined"
+  assert_grep '--strict' "$joined"
   assert_exit 1 mcp_parse_audit_args_from_json album-incomplete \
     '{"paths":["/audio"],"duration_ratio":1}'
 }
@@ -295,16 +295,16 @@ test_mcp_bluray_builds_full_conversion_argv() {
   mcp_build_cli_argv bluray-to-flac
   local joined
   printf -v joined '%q ' "${MCP_CLI_ARGV[@]}"
-  assert_grep -- '-D /dev/sr0' "$joined"
-  assert_grep -- '--title 3' "$joined"
-  assert_grep -- '--minlength 30' "$joined"
-  assert_grep -- '--allow-float-reduction' "$joined"
-  assert_grep -- '--split-chapters' "$joined"
-  assert_grep -- '--stage-dir /stage' "$joined"
-  assert_grep -- '--preserve-streams' "$joined"
-  assert_grep -- '--sign-key /key' "$joined"
-  assert_grep -- '--par2-percent 10' "$joined"
-  assert_grep -- '--seal' "$joined"
+  assert_grep '-D /dev/sr0' "$joined"
+  assert_grep '--title 3' "$joined"
+  assert_grep '--minlength 30' "$joined"
+  assert_grep '--allow-float-reduction' "$joined"
+  assert_grep '--split-chapters' "$joined"
+  assert_grep '--stage-dir /stage' "$joined"
+  assert_grep '--preserve-streams' "$joined"
+  assert_grep '--sign-key /key' "$joined"
+  assert_grep '--par2-percent 10' "$joined"
+  assert_grep '--seal' "$joined"
   assert_eq "${MCP_CLI_ENV[0]}" 'AUDIO_UTILS_BD_SIGN_PUBKEY=pub'
 }
 

@@ -62,9 +62,10 @@ plugin_after_flags() {
 }
 
 plugin_require_deps() {
-  require_cmds ffmpeg ffprobe flock
+  require_cmds base64 || return 1
+  require_cmds ffmpeg ffprobe flock || return 1
   if [[ "${DUPES_FINGERPRINT:-0}" -eq 1 ]]; then
-    require_cmds fpcalc
+    require_cmds fpcalc || return 1
   fi
 }
 

@@ -42,31 +42,34 @@ _dupes_register() {
   local key=$1 path=$2
   local index="${AU_DUPES_STATE:?}/index.tsv"
   local lock="${AU_DUPES_STATE}/index.lock"
-  local first="" k p
+  local first="" k p encoded
+  # Keep one TSV record per file even when a path contains tabs or newlines.
+  encoded=$(printf '%s' "$path" | base64 -w0) || return 2
 
   (
-    flock 9
+    exec 9>"$lock" || exit 2
+    flock 9 || exit 2
     if [[ -f "$index" ]]; then
       while IFS=$'\t' read -r k p || [[ -n "$k" ]]; do
         if [[ "$k" == "$key" ]]; then
           first=$p
           break
         fi
-      done <"$index"
+      done <"$index" || exit 2
     fi
     # Always record this path (finalize counts groups with >1 entries)
-    printf '%s\t%s\n' "$key" "$path" >>"$index"
+    printf '%s\t%s\n' "$key" "$encoded" >>"$index" || exit 2
     if [[ -n "$first" ]]; then
-      printf '%s\n' "$first"
+      printf '%s' "$first" | base64 --decode || exit 2
       exit 0
     fi
     exit 1
-  ) 9>"$lock"
+  )
 }
 
 convert_one() {
   local flac="$1"
-  local key first mode sha abs
+  local key first mode sha abs rc=0
 
   if [[ "${DRY_RUN:-0}" -eq 1 ]]; then
     log_progress "would check-dupe: $flac"
@@ -93,8 +96,13 @@ convert_one() {
     mode="streaminfo-md5"
   fi
 
-  if first=$(_dupes_register "$key" "$abs"); then
+  first=$(_dupes_register "$key" "$abs") || rc=$?
+  if ((rc == 0)); then
     log_fail "$flac" "duplicate of $first" "key=${key:0:48}"
+    return 1
+  fi
+  if ((rc > 1)); then
+    log_fail "$flac" "duplicate index failed"
     return 1
   fi
 
