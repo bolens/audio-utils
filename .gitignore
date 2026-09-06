@@ -28,3 +28,8 @@ mcp/npm/node_modules/
 
 # Isolated optional codec installations restored by CI
 .ci-cache/
+
+# Local tooling and runtime artifacts
+__pycache__/
+*.py[cod]
+.ruff_cache/
