@@ -1,0 +1,7 @@
+{
+  "mcpServers": {
+    "audio-utils": {
+      "command": "/absolute/path/to/audio-utils/mcp/server.sh"
+    }
+  }
+}
