@@ -33,3 +33,11 @@ mcp/npm/node_modules/
 __pycache__/
 *.py[cod]
 .ruff_cache/
+
+# Local devenv state and overrides
+.devenv/
+.direnv/
+.devenv.*/
+.devenv.flake.nix
+devenv.local.nix
+devenv.local.yaml

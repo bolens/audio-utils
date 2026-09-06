@@ -220,3 +220,7 @@ Shared batch file tools support [source exclusions](docs/exclusions.md) with rep
 ## Docker
 
 Build and run the CLI image with the [Docker guide](docs/docker.md).
+
+## Development environment
+
+See [the devenv and container guide](docs/development-environments.md) for locked tooling, Docker, Podman, and Apple container adapters.
