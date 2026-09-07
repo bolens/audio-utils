@@ -215,6 +215,11 @@ Build and run the CLI image with the [Docker guide](docs/docker.md).
 
 See [the devenv and container guide](docs/development-environments.md) for locked tooling, Docker, Podman, and Apple container adapters.
 
+## Devcontainer
+
+See [the devcontainer guide](.devcontainer/README.md) for the repository toolchain,
+setup, checks and platform limits.
+
 ## License scope and attribution
 
 See [third-party notices](THIRD_PARTY_NOTICES.md) for the project license scope,
