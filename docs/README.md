@@ -74,3 +74,4 @@ Index of topic docs. **Tool lists** (every converter/util path) live only in the
 - [Docker runtime](docker.md): build, mount media, and run tools.
 
 - [Editor setup](../.vscode/README.md)
+- [License scope and attribution](../THIRD_PARTY_NOTICES.md)
