@@ -8,5 +8,5 @@ for tool in git bash python3 node shellcheck ruff actionlint hadolint zizmor ffm
   command -v "${tool}" >/dev/null || { echo "Missing development tool: ${tool}" >&2; exit 1; }
 done
 shellcheck --version | rg -q 'version: 0.11.0'
-node -e 'if (Number(process.versions.node.split(".")[0]) !== 24) process.exit(1)'
+node -e 'if (Number(process.versions.node.split(".")[0]) !== 26) process.exit(1)'
 printf "%s\n" "Development tools ready. See .devcontainer/README.md for repository checks."
