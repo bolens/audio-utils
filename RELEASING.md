@@ -1,5 +1,7 @@
 # Release playbook
 
+[Documentation](docs/README.md)
+
 Audio Utils publishes Semantic Versioning releases from signed `vX.Y.Z` tags.
 `VERSION` is authoritative. Releases are currently maintainer-driven, so the
 tag, archive contents, checksum, and GitHub release all require explicit review.

@@ -1,5 +1,7 @@
 # Source exclusions
 
+[Documentation](README.md)
+
 Shared-driver file tools accept repeatable `--exclude GLOB` or `--exclude=GLOB`:
 
 ```sh
