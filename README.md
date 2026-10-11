@@ -1,12 +1,14 @@
 # audio-utils
 
+[Documentation](docs/README.md)
+
 [![CI](https://github.com/bolens/audio-utils/actions/workflows/ci.yml/badge.svg)](https://github.com/bolens/audio-utils/actions/workflows/ci.yml)
 
 Verified **audio conversion utilities** for Linux libraries (GNU userland; bash 4.3+). **FLAC** is the archive hub. Not macOS, BSD, BusyBox, or Alpine — see [requirements](docs/requirements.md).
 
 Docs: **[docs/](docs/)** — [requirements](docs/requirements.md) · [formats](docs/formats.md) · [cue](docs/cue.md) · [discs](docs/discs.md) · [streaming](docs/streaming.md) · [tak](docs/tak.md) · [dsd](docs/dsd.md) · [lossy](docs/lossy.md) · [audiobooks](docs/audiobooks.md) · [playlists](docs/playlists.md) · [enrichment](docs/enrichment.md) · [accessibility](docs/accessibility.md) · [mcp](docs/mcp.md) · [adding a converter](docs/adding-a-converter.md) · [adding a util](docs/adding-a-util.md)
 
-### Conversion
+## Conversion
 
 | Tool | Description |
 |------|-------------|
@@ -171,19 +173,7 @@ make ape-install APE_FLAGS="--version 13.19 --force"   # extra flags pass throug
 
 ## Layout
 
-```
-audio-utils/
-  docs/                      # requirements, formats, discs, streaming, tak, lossy, …
-  lib/                       # shared library (see lib/README.md)
-    core/                    #   logging, config, XDG paths, plumbing
-    cli/                     #   CLI/driver stack, workers, discovery
-    media/                   #   probing, tags, cue/playlist, FLAC helpers
-    pipeline/                #   conversion pipelines (PCM→FLAC, lossy, discs)
-  conversion/<tool>/         # format converters (FLAC hub)
-  util/<category>/<tool>/    # library lifecycle, grouped by category:
-                             #   flac/ audio/ playlist/ audit/ library/
-  tests/                     # test harness + unit/smoke/functional suites
-```
+See the [shared-library contract](lib/README.md) for module ownership and loading.
 
 Plugin contract: [docs/adding-a-converter.md](docs/adding-a-converter.md). Util contract: [docs/adding-a-util.md](docs/adding-a-util.md).
 
