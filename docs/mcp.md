@@ -1,5 +1,7 @@
 # MCP server
 
+[Documentation](README.md)
+
 Dep-free **Bash** MCP stdio server for audio-utils, plus an optional Node package for HTTP/SSE and Cursor install helpers.
 
 ## Quick start (Cursor, zero Node)
