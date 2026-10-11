@@ -296,17 +296,48 @@ cue_list_tracks() {
   done
 }
 
+# Select an exact integer PCM extraction format. Never guess a missing width or
+# silently quantize floating-point/lossy inputs. Portable FLAC support is 8/16/24.
+cue_extract_pcm_codec() {
+  local image=$1 codec bits
+  codec=$(audio_codec "$image") || return 1
+  case "$codec" in
+    flac|alac|ape|tta|shorten|pcm_u8|pcm_s8|pcm_s16le|pcm_s16be|pcm_s24le|pcm_s24be) ;;
+    *)
+      log_err "Error: unsupported CUE audio representation: ${codec:-unknown}"
+      return 1
+      ;;
+  esac
+  if ! bits=$(audio_bits_per_sample "$image"); then
+    log_err "Error: unknown CUE image PCM width"
+    return 1
+  fi
+  case "$bits" in
+    8) printf '%s\n' pcm_u8 ;;
+    16) printf '%s\n' pcm_s16le ;;
+    24) printf '%s\n' pcm_s24le ;;
+    *)
+      log_err "Error: unsupported CUE image PCM width: $bits"
+      return 1
+      ;;
+  esac
+}
+
 # Extract [START_SEC, END_SEC) from IMAGE to OUT_WAV via ffmpeg.
 # Empty END_SEC means through end of file.
 cue_extract_segment() {
   local image="$1" start_sec="$2" end_sec="$3" out_wav="$4"
-  local err
+  local err pcm_codec=${5:-}
+  if [[ -z "$pcm_codec" ]]; then
+    pcm_codec=$(cue_extract_pcm_codec "$image") || return 1
+  fi
+  case "$pcm_codec" in pcm_u8|pcm_s16le|pcm_s24le) ;; *) return 1 ;; esac
   err="$(dirname -- "$out_wav")/cue-extract.err"
 
   # Place -ss after -i for frame-accurate cuts (slower, correct for CUE splits).
   if [[ -z "$end_sec" ]]; then
     if ! ffmpeg -v error -y -i "$image" -ss "$start_sec" \
-      -map 0:a:0 -c:a pcm_s16le "$out_wav" 2>"$err"; then
+      -map 0:a:0 -c:a "$pcm_codec" "$out_wav" 2>"$err"; then
       set_last_err_file "$err"
       log_err "FAILED cue extract: $image @${start_sec}s -> $out_wav"
       [[ -s "$err" ]] && { log_err "  ffmpeg stderr:"; sed 's/^/  | /' "$err" >&2; }
@@ -314,7 +345,7 @@ cue_extract_segment() {
     fi
   else
     if ! ffmpeg -v error -y -i "$image" -ss "$start_sec" -to "$end_sec" \
-      -map 0:a:0 -c:a pcm_s16le "$out_wav" 2>"$err"; then
+      -map 0:a:0 -c:a "$pcm_codec" "$out_wav" 2>"$err"; then
       set_last_err_file "$err"
       log_err "FAILED cue extract: $image @${start_sec}-${end_sec}s -> $out_wav"
       [[ -s "$err" ]] && { log_err "  ffmpeg stderr:"; sed 's/^/  | /' "$err" >&2; }
