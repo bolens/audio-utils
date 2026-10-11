@@ -1,5 +1,7 @@
 # audio-utils Spec Kit project guide
 
+[Documentation](../../docs/README.md)
+
 GNU/Linux Bash audio conversion and library utilities with a shared preservation
 pipeline and MCP gateway.
 

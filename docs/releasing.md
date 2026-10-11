@@ -1,5 +1,7 @@
 # Release playbook
 
+[Documentation](README.md)
+
 Releases are GitHub releases backed by an annotated `vMAJOR.MINOR.PATCH` tag.
 The repository `VERSION` and `mcp/npm/package{,-lock}.json` versions must match
 the tag without its `v` prefix. The npm package remains private and is not
