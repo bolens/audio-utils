@@ -4,12 +4,18 @@
 _cue_tag_flac() {
   local flac_in="$1" flac_out="$2" title="$3" artist="$4" track="$5"
   local err md5_before md5_after
+  local album=${6:-} album_artist=${7:-} date=${8:-} genre=${9:-}
+  local -a metadata=()
+  [[ -z "$album" ]] || metadata+=(-metadata "album=$album")
+  [[ -z "$album_artist" ]] || metadata+=(-metadata "album_artist=$album_artist")
+  [[ -z "$date" ]] || metadata+=(-metadata "date=$date")
+  [[ -z "$genre" ]] || metadata+=(-metadata "genre=$genre")
   err="$(dirname -- "$flac_out")/tag.err"
   md5_before=$(audio_md5 "$flac_in")
   if ! ffmpeg -v error -y -i "$flac_in" -c copy \
     -metadata title="$title" \
     -metadata artist="$artist" \
-    -metadata track="$track" \
+    -metadata track="$track" "${metadata[@]}" \
     "$flac_out" 2>"$err"; then
     set_last_err_file "$err"
     log_err "FAILED cue tag: track=$track title=$title"
@@ -24,23 +30,49 @@ _cue_tag_flac() {
 
 convert_one() {
   local cue="$1"
-  local image dest_dir tmpdir line idx title perf start_sec end_sec
+  local image dest_dir tmpdir line idx title perf start_sec end_sec track_records
   local wav flac_out safe name notes="" fail=0
-  local -a enc_out tracks=()
+  local metadata_value pcm_codec
+  local -A planned_names=()
+  local -a enc_out tracks=() album_metadata=()
 
   if ! image=$(cue_resolve_image "$cue"); then
     log_fail "$cue" "image resolve failed"
     return 1
   fi
 
-  mapfile -t tracks < <(cue_list_tracks "$cue") || {
+  if ! track_records=$(cue_list_tracks "$cue"); then
     log_fail "$cue" "cue_list_tracks failed"
     return 1
-  }
-  if ((${#tracks[@]} == 0)); then
+  fi
+  if [[ -z "$track_records" ]]; then
     log_fail "$cue" "no tracks in CUE"
     return 1
   fi
+  mapfile -t tracks <<<"$track_records"
+
+  if ! pcm_codec=$(cue_extract_pcm_codec "$image"); then
+    log_fail "$cue" "unsupported or unreadable image precision"
+    return 1
+  fi
+
+  # Validate every planned destination before splitting any track. An image can
+  # itself have a track-shaped name (or share an inode with an existing output).
+  dest_dir=$(dirname -- "$cue")
+  for line in "${tracks[@]}"; do
+    IFS='|' read -r idx title perf start_sec end_sec <<<"$line"
+    safe=$(cue_sanitize_filename "${title:-track}")
+    name=$(printf '%02d - %s.flac' "$((10#$idx))" "$safe")
+    if [[ -n "${planned_names[$name]:-}" ]]; then
+      log_fail "$cue" "duplicate planned output: $name"
+      return 1
+    fi
+    planned_names[$name]=1
+    if [[ "${dest_dir}/${name}" -ef "$image" ]]; then
+      log_fail "$cue" "output collides with CUE image: $name"
+      return 1
+    fi
+  done
 
   if [[ "${DRY_RUN:-0}" -eq 1 ]]; then
     log_progress "would split: $cue (image=$(basename -- "$image"), ${#tracks[@]} tracks)"
@@ -53,7 +85,10 @@ convert_one() {
     return 0
   fi
 
-  dest_dir=$(dirname -- "$cue")
+  while IFS= read -r -d '' metadata_value; do
+    album_metadata+=("$metadata_value")
+  done < <(cue_album_metadata0 "$cue")
+
   tmpdir=$(make_workdir "$dest_dir")
   cleanup() {
     unregister_tmpdir "$tmpdir"
@@ -77,7 +112,7 @@ convert_one() {
       fi
     fi
 
-    if ! cue_extract_segment "$image" "$start_sec" "$end_sec" "$wav"; then
+    if ! cue_extract_segment "$image" "$start_sec" "$end_sec" "$wav" "$pcm_codec"; then
       log_fail "$cue" "extract failed track=$idx"
       fail=1
       continue
@@ -90,7 +125,8 @@ convert_one() {
     fi
     au_mapfile0 enc_out "${tmpdir}/enc.out"
 
-    if ! _cue_tag_flac "${enc_out[0]}" "${tmpdir}/tagged.flac" "${title:-}" "${perf:-}" "$idx"; then
+    if ! _cue_tag_flac "${enc_out[0]}" "${tmpdir}/tagged.flac" "${title:-}" "${perf:-}" "$idx" \
+      "${album_metadata[0]}" "${album_metadata[1]}" "${album_metadata[2]}" "${album_metadata[3]}"; then
       log_fail "$cue" "tag failed track=$idx"
       fail=1
       continue

@@ -144,4 +144,48 @@ EOF
   assert_eq "$(cue_resolve_image "$T/album/album.cue")" "$T/album/Image.wav"
 }
 
+test_album_metadata_preserves_album_scope_and_delimiters() {
+  _load_lib
+  cat >"$T/album.cue" <<'EOF'
+REM DATE 2009
+REM GENRE "Hard Rock"
+PERFORMER "AC/DC"
+TITLE "Black | Ice"
+FILE "image.flac" WAVE
+  TRACK 01 AUDIO
+    TITLE "Track Title"
+    PERFORMER "Guest"
+    REM DATE 2010
+    REM GENRE "Other"
+    INDEX 01 00:00:00
+EOF
+  local value
+  local -a metadata=()
+  while IFS= read -r -d '' value; do metadata+=("$value"); done < <(
+    cue_album_metadata0 "$T/album.cue")
+  assert_eq "${#metadata[@]}" 4
+  assert_eq "${metadata[0]}" 'Black | Ice'
+  assert_eq "${metadata[1]}" 'AC/DC'
+  assert_eq "${metadata[2]}" 2009
+  assert_eq "${metadata[3]}" 'Hard Rock'
+}
+
+test_cue_precision_mapping_never_guesses() {
+  _load_lib
+  # shellcheck disable=SC2329  # callbacks invoked by sourced helper
+  audio_codec() { printf '%s\n' "${test_codec:-flac}"; }
+  # shellcheck disable=SC2329  # callbacks invoked by sourced helper
+  audio_bits_per_sample() { [[ -n "${test_bits:-}" ]] || return 1; printf '%s\n' "$test_bits"; }
+  local test_bits test_codec=flac
+  test_bits=8; assert_eq "$(cue_extract_pcm_codec image)" pcm_u8
+  test_bits=16; assert_eq "$(cue_extract_pcm_codec image)" pcm_s16le
+  test_bits=24; assert_eq "$(cue_extract_pcm_codec image)" pcm_s24le
+  test_bits=32; assert_exit 1 cue_extract_pcm_codec image
+  test_bits=20; assert_exit 1 cue_extract_pcm_codec image
+  test_bits=''; assert_exit 1 cue_extract_pcm_codec image
+  test_codec=pcm_f32le; test_bits=32; assert_exit 1 cue_extract_pcm_codec image
+  test_codec=wavpack; test_bits=16; assert_exit 1 cue_extract_pcm_codec image
+  test_codec=mp3; test_bits=16; assert_exit 1 cue_extract_pcm_codec image
+}
+
 run_tests

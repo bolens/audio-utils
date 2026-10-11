@@ -133,6 +133,37 @@ cue_resolve_image() {
   return 1
 }
 
+# Emit album-level metadata as NUL-delimited values (title, performer, date, genre).
+# Stop at the first TRACK so per-track directives cannot replace album tags.
+cue_album_metadata0() {
+  local cue_path=$1 line key rest key_u rem_key
+  local title="" performer="" date="" genre=""
+  [[ -f "$cue_path" ]] || return 1
+  while IFS= read -r line || [[ -n "$line" ]]; do
+    line=${line%$'\r'}
+    line="${line#"${line%%[![:space:]]*}"}"
+    [[ -n "$line" ]] || continue
+    key=${line%%[[:space:]]*}
+    rest=${line#"$key"}
+    rest="${rest#"${rest%%[![:space:]]*}"}"
+    key_u=${key^^}
+    case "$key_u" in
+      TRACK) break ;;
+      TITLE) title=$(cue_unquote "$rest") ;;
+      PERFORMER) performer=$(cue_unquote "$rest") ;;
+      REM)
+        rem_key=${rest%%[[:space:]]*}
+        rest=${rest#"$rem_key"}
+        case "${rem_key^^}" in
+          DATE) date=$(cue_unquote "$rest") ;;
+          GENRE) genre=$(cue_unquote "$rest") ;;
+        esac
+        ;;
+    esac
+  done <"$cue_path"
+  printf '%s\0' "$title" "$performer" "$date" "$genre"
+}
+
 # Print tracks: INDEX|TITLE|PERFORMER|START_SEC|END_SEC
 # END_SEC empty for the last track (caller uses full duration).
 # Pipe delimiter avoids bash IFS collapsing empty tab fields.
@@ -140,7 +171,8 @@ cue_list_tracks() {
   local cue_path="$1"
   local line key rest key_u track_num="" album_title="" album_perf=""
   local title="" performer="" index01="" in_track=0
-  local inum itime start_sec i next_start end_sec
+  local inum itime start_sec i next_start end_sec file_count=0 track_id
+  local -A seen_tracks=()
   local -a idx_nums=() titles=() perfs=() starts=()
 
   [[ -f "$cue_path" ]] || {
@@ -160,6 +192,13 @@ cue_list_tracks() {
     key_u=${key^^}
 
     case "$key_u" in
+      FILE)
+        file_count=$((file_count + 1))
+        if ((file_count > 1)); then
+          log_err "Error: single-image CUE required: $cue_path"
+          return 1
+        fi
+        ;;
       TITLE)
         if ((in_track)); then
           title=$(cue_unquote "$rest")
@@ -175,6 +214,16 @@ cue_list_tracks() {
         fi
         ;;
       TRACK)
+        if [[ ! "$rest" =~ ^([0-9]{1,2})[[:space:]]+([Aa][Uu][Dd][Ii][Oo])[[:space:]]*$ ]]; then
+          log_err "Error: invalid or non-AUDIO TRACK in $cue_path"
+          return 1
+        fi
+        track_id=$((10#${BASH_REMATCH[1]}))
+        if ((track_id < 1)) || [[ -n "${seen_tracks[$track_id]:-}" ]]; then
+          log_err "Error: duplicate or invalid TRACK number in $cue_path"
+          return 1
+        fi
+        seen_tracks[$track_id]=1
         if ((in_track)); then
           if [[ -z "$index01" ]]; then
             log_err "Error: TRACK ${track_num:-?} missing INDEX 01 in $cue_path"
@@ -247,17 +296,48 @@ cue_list_tracks() {
   done
 }
 
+# Select an exact integer PCM extraction format. Never guess a missing width or
+# silently quantize floating-point/lossy inputs. Portable FLAC support is 8/16/24.
+cue_extract_pcm_codec() {
+  local image=$1 codec bits
+  codec=$(audio_codec "$image") || return 1
+  case "$codec" in
+    flac|alac|ape|tta|shorten|pcm_u8|pcm_s8|pcm_s16le|pcm_s16be|pcm_s24le|pcm_s24be) ;;
+    *)
+      log_err "Error: unsupported CUE audio representation: ${codec:-unknown}"
+      return 1
+      ;;
+  esac
+  if ! bits=$(audio_bits_per_sample "$image"); then
+    log_err "Error: unknown CUE image PCM width"
+    return 1
+  fi
+  case "$bits" in
+    8) printf '%s\n' pcm_u8 ;;
+    16) printf '%s\n' pcm_s16le ;;
+    24) printf '%s\n' pcm_s24le ;;
+    *)
+      log_err "Error: unsupported CUE image PCM width: $bits"
+      return 1
+      ;;
+  esac
+}
+
 # Extract [START_SEC, END_SEC) from IMAGE to OUT_WAV via ffmpeg.
 # Empty END_SEC means through end of file.
 cue_extract_segment() {
   local image="$1" start_sec="$2" end_sec="$3" out_wav="$4"
-  local err
+  local err pcm_codec=${5:-}
+  if [[ -z "$pcm_codec" ]]; then
+    pcm_codec=$(cue_extract_pcm_codec "$image") || return 1
+  fi
+  case "$pcm_codec" in pcm_u8|pcm_s16le|pcm_s24le) ;; *) return 1 ;; esac
   err="$(dirname -- "$out_wav")/cue-extract.err"
 
   # Place -ss after -i for frame-accurate cuts (slower, correct for CUE splits).
   if [[ -z "$end_sec" ]]; then
     if ! ffmpeg -v error -y -i "$image" -ss "$start_sec" \
-      -map 0:a:0 -c:a pcm_s16le "$out_wav" 2>"$err"; then
+      -map 0:a:0 -c:a "$pcm_codec" "$out_wav" 2>"$err"; then
       set_last_err_file "$err"
       log_err "FAILED cue extract: $image @${start_sec}s -> $out_wav"
       [[ -s "$err" ]] && { log_err "  ffmpeg stderr:"; sed 's/^/  | /' "$err" >&2; }
@@ -265,7 +345,7 @@ cue_extract_segment() {
     fi
   else
     if ! ffmpeg -v error -y -i "$image" -ss "$start_sec" -to "$end_sec" \
-      -map 0:a:0 -c:a pcm_s16le "$out_wav" 2>"$err"; then
+      -map 0:a:0 -c:a "$pcm_codec" "$out_wav" 2>"$err"; then
       set_last_err_file "$err"
       log_err "FAILED cue extract: $image @${start_sec}-${end_sec}s -> $out_wav"
       [[ -s "$err" ]] && { log_err "  ffmpeg stderr:"; sed 's/^/  | /' "$err" >&2; }

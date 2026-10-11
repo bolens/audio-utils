@@ -32,3 +32,7 @@ Image references include immutable digests. Dependabot monitors the Dockerfiles
 where supported. Distribution packages resolve from the configured Debian
 repositories at build time. Update image pins and rerun setup and native checks
 together. Existing native and Nix workflows remain available independently.
+
+Pull requests changing `.devcontainer/` build this Dockerfile and run the
+post-create smoke checks against a mounted checkout in CI. Their result feeds
+the required Development environment check; unrelated changes skip this image.
