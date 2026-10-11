@@ -10,11 +10,12 @@ The CUE sheet resolves its referenced image relative to the sheet, with a
 same-stem fallback for common moved sets. Track indexes must be valid and
 strictly increasing. Outputs are written beside the CUE as
 `NN - sanitized title.flac`; performer, title, and track number are applied
-from the sheet.
+from the sheet. Album title/performer and album-level `REM DATE`/`REM GENRE`
+are retained as album, album artist, date and genre tags when present.
 
 ```bash
-./cue-to-flac.sh -n /path/to/album.cue
-./cue-to-flac.sh /path/to/album.cue
+./cue-to-flac.sh -n /path/to/album-directory
+./cue-to-flac.sh /path/to/album-directory
 ```
 
 Dry-run output lists each planned filename and time range, which is especially
@@ -25,7 +26,8 @@ useful before splitting sheets with unusual indexes or characters.
 Every segment is extracted to temporary PCM, dual-encoded and verified through
 the shared FLAC pipeline, then tagged with a before/after audio-MD5 check. A
 track is installed only after all checks pass. Valid existing FLACs are skipped
-unless `-y` requests replacement; failures in one track are reported without
+unless `-y` requests replacement; image/output collisions are rejected before
+any track is written; failures in one track are reported without
 presenting the whole sheet as successful.
 
 ## Safety and limitations

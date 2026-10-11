@@ -11,7 +11,9 @@ Album/
 ```
 
 - Tracks use `INDEX 01` only (75 frames/sec).
-- Album TITLE/PERFORMER apply unless overridden per TRACK.
+- Album TITLE/PERFORMER apply unless overridden per TRACK. Album TITLE and
+  PERFORMER are also retained as album/album-artist tags; album-level REM DATE
+  and REM GENRE are retained when present.
 - Image resolved beside the CUE (exact name, then common extensions).
 - Tracks within one CUE run **serially**; multiple CUEs can run in parallel via `-j`.
 - `-d` / `-D` are unsupported (the CUE sheet is kept).
@@ -20,7 +22,8 @@ Album/
 
 - `cue-audit` validates every `FILE` section in multi-file sheets, including
   per-image decoding and `INDEX 01` bounds. `cue-to-flac` conversion remains a
-  single-image workflow.
+  single-image workflow and rejects sheets with multiple `FILE` directives,
+  non-AUDIO tracks, or invalid/duplicate track numbers before writing outputs.
 - No pregaps/`INDEX 00` gap handling beyond start at INDEX 01.
 - Non-UTF-8 CUE sheets may need conversion first.
 - Filename sanitization strips path separators and control chars.

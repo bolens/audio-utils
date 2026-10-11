@@ -144,4 +144,30 @@ EOF
   assert_eq "$(cue_resolve_image "$T/album/album.cue")" "$T/album/Image.wav"
 }
 
+test_album_metadata_preserves_album_scope_and_delimiters() {
+  _load_lib
+  cat >"$T/album.cue" <<'EOF'
+REM DATE 2009
+REM GENRE "Hard Rock"
+PERFORMER "AC/DC"
+TITLE "Black | Ice"
+FILE "image.flac" WAVE
+  TRACK 01 AUDIO
+    TITLE "Track Title"
+    PERFORMER "Guest"
+    REM DATE 2010
+    REM GENRE "Other"
+    INDEX 01 00:00:00
+EOF
+  local value
+  local -a metadata=()
+  while IFS= read -r -d '' value; do metadata+=("$value"); done < <(
+    cue_album_metadata0 "$T/album.cue")
+  assert_eq "${#metadata[@]}" 4
+  assert_eq "${metadata[0]}" 'Black | Ice'
+  assert_eq "${metadata[1]}" 'AC/DC'
+  assert_eq "${metadata[2]}" 2009
+  assert_eq "${metadata[3]}" 'Hard Rock'
+}
+
 run_tests

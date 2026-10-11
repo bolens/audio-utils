@@ -133,6 +133,37 @@ cue_resolve_image() {
   return 1
 }
 
+# Emit album-level metadata as NUL-delimited values (title, performer, date, genre).
+# Stop at the first TRACK so per-track directives cannot replace album tags.
+cue_album_metadata0() {
+  local cue_path=$1 line key rest key_u rem_key
+  local title="" performer="" date="" genre=""
+  [[ -f "$cue_path" ]] || return 1
+  while IFS= read -r line || [[ -n "$line" ]]; do
+    line=${line%$'\r'}
+    line="${line#"${line%%[![:space:]]*}"}"
+    [[ -n "$line" ]] || continue
+    key=${line%%[[:space:]]*}
+    rest=${line#"$key"}
+    rest="${rest#"${rest%%[![:space:]]*}"}"
+    key_u=${key^^}
+    case "$key_u" in
+      TRACK) break ;;
+      TITLE) title=$(cue_unquote "$rest") ;;
+      PERFORMER) performer=$(cue_unquote "$rest") ;;
+      REM)
+        rem_key=${rest%%[[:space:]]*}
+        rest=${rest#"$rem_key"}
+        case "${rem_key^^}" in
+          DATE) date=$(cue_unquote "$rest") ;;
+          GENRE) genre=$(cue_unquote "$rest") ;;
+        esac
+        ;;
+    esac
+  done <"$cue_path"
+  printf '%s\0' "$title" "$performer" "$date" "$genre"
+}
+
 # Print tracks: INDEX|TITLE|PERFORMER|START_SEC|END_SEC
 # END_SEC empty for the last track (caller uses full duration).
 # Pipe delimiter avoids bash IFS collapsing empty tab fields.
@@ -140,7 +171,8 @@ cue_list_tracks() {
   local cue_path="$1"
   local line key rest key_u track_num="" album_title="" album_perf=""
   local title="" performer="" index01="" in_track=0
-  local inum itime start_sec i next_start end_sec
+  local inum itime start_sec i next_start end_sec file_count=0 track_id
+  local -A seen_tracks=()
   local -a idx_nums=() titles=() perfs=() starts=()
 
   [[ -f "$cue_path" ]] || {
@@ -160,6 +192,13 @@ cue_list_tracks() {
     key_u=${key^^}
 
     case "$key_u" in
+      FILE)
+        file_count=$((file_count + 1))
+        if ((file_count > 1)); then
+          log_err "Error: single-image CUE required: $cue_path"
+          return 1
+        fi
+        ;;
       TITLE)
         if ((in_track)); then
           title=$(cue_unquote "$rest")
@@ -175,6 +214,16 @@ cue_list_tracks() {
         fi
         ;;
       TRACK)
+        if [[ ! "$rest" =~ ^([0-9]{1,2})[[:space:]]+([Aa][Uu][Dd][Ii][Oo])[[:space:]]*$ ]]; then
+          log_err "Error: invalid or non-AUDIO TRACK in $cue_path"
+          return 1
+        fi
+        track_id=$((10#${BASH_REMATCH[1]}))
+        if ((track_id < 1)) || [[ -n "${seen_tracks[$track_id]:-}" ]]; then
+          log_err "Error: duplicate or invalid TRACK number in $cue_path"
+          return 1
+        fi
+        seen_tracks[$track_id]=1
         if ((in_track)); then
           if [[ -z "$index01" ]]; then
             log_err "Error: TRACK ${track_num:-?} missing INDEX 01 in $cue_path"
