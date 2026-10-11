@@ -23,6 +23,11 @@ useful before splitting sheets with unusual indexes or characters.
 
 ## Verification and reruns
 
+Known 8-, 16- and 24-bit integer images retain their PCM width. Unknown or
+unsupported precision, floating-point and lossy inputs fail before writing
+tracks. Portable 32-bit support is not assumed. WavPack images are refused
+until their hybrid/lossless mode and correction-file handling can be verified.
+
 Every segment is extracted to temporary PCM, dual-encoded and verified through
 the shared FLAC pipeline, then tagged with a before/after audio-MD5 check. A
 track is installed only after all checks pass. Valid existing FLACs are skipped
@@ -54,6 +59,7 @@ Usage:
 Options:
   -f FILE  -L FILE  -S FILE  -n  -y  -j N  -q  -v  -h  --version
 
+Integer PCM images: 8/16/24 bits; unsupported precision or modes rejected.
 -d / -D rejected (CUE sheet is kept).
 Exit codes: 0 ok, 1 failures, 2 usage/deps
 Shared file tools: --exclude GLOB (repeatable, case-sensitive source basename glob)

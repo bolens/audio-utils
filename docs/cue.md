@@ -24,6 +24,11 @@ Album/
   per-image decoding and `INDEX 01` bounds. `cue-to-flac` conversion remains a
   single-image workflow and rejects sheets with multiple `FILE` directives,
   non-AUDIO tracks, or invalid/duplicate track numbers before writing outputs.
+- Integer images with known 8-, 16- or 24-bit precision keep their PCM width.
+  Other widths, unknown precision, floating-point and lossy inputs are rejected
+  before splitting; 32-bit support is not assumed across backend versions.
+  WavPack images are refused until hybrid/lossless mode and correction-file
+  handling can be verified.
 - No pregaps/`INDEX 00` gap handling beyond start at INDEX 01.
 - Non-UTF-8 CUE sheets may need conversion first.
 - Filename sanitization strips path separators and control chars.

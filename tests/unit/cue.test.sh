@@ -170,4 +170,22 @@ EOF
   assert_eq "${metadata[3]}" 'Hard Rock'
 }
 
+test_cue_precision_mapping_never_guesses() {
+  _load_lib
+  # shellcheck disable=SC2329  # callbacks invoked by sourced helper
+  audio_codec() { printf '%s\n' "${test_codec:-flac}"; }
+  # shellcheck disable=SC2329  # callbacks invoked by sourced helper
+  audio_bits_per_sample() { [[ -n "${test_bits:-}" ]] || return 1; printf '%s\n' "$test_bits"; }
+  local test_bits test_codec=flac
+  test_bits=8; assert_eq "$(cue_extract_pcm_codec image)" pcm_u8
+  test_bits=16; assert_eq "$(cue_extract_pcm_codec image)" pcm_s16le
+  test_bits=24; assert_eq "$(cue_extract_pcm_codec image)" pcm_s24le
+  test_bits=32; assert_exit 1 cue_extract_pcm_codec image
+  test_bits=20; assert_exit 1 cue_extract_pcm_codec image
+  test_bits=''; assert_exit 1 cue_extract_pcm_codec image
+  test_codec=pcm_f32le; test_bits=32; assert_exit 1 cue_extract_pcm_codec image
+  test_codec=wavpack; test_bits=16; assert_exit 1 cue_extract_pcm_codec image
+  test_codec=mp3; test_bits=16; assert_exit 1 cue_extract_pcm_codec image
+}
+
 run_tests

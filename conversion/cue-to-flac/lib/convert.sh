@@ -32,7 +32,7 @@ convert_one() {
   local cue="$1"
   local image dest_dir tmpdir line idx title perf start_sec end_sec track_records
   local wav flac_out safe name notes="" fail=0
-  local metadata_value
+  local metadata_value pcm_codec
   local -A planned_names=()
   local -a enc_out tracks=() album_metadata=()
 
@@ -50,6 +50,11 @@ convert_one() {
     return 1
   fi
   mapfile -t tracks <<<"$track_records"
+
+  if ! pcm_codec=$(cue_extract_pcm_codec "$image"); then
+    log_fail "$cue" "unsupported or unreadable image precision"
+    return 1
+  fi
 
   # Validate every planned destination before splitting any track. An image can
   # itself have a track-shaped name (or share an inode with an existing output).
@@ -107,7 +112,7 @@ convert_one() {
       fi
     fi
 
-    if ! cue_extract_segment "$image" "$start_sec" "$end_sec" "$wav"; then
+    if ! cue_extract_segment "$image" "$start_sec" "$end_sec" "$wav" "$pcm_codec"; then
       log_fail "$cue" "extract failed track=$idx"
       fail=1
       continue
