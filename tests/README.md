@@ -63,6 +63,15 @@ publication; Gitea copies validate only. Actions remains the publication owner
 until the cutover is accepted. The migration contract and remaining acceptance work
 are recorded in [`specs/005-woodpecker-publishing/spec.md`](../specs/005-woodpecker-publishing/spec.md).
 
+Six required native workflows split core unit/smoke/MCP/fleet validation, all-tool
+ShellCheck, full Fedora lint, the Node 20 MCP floor, and both distribution/current
+FFmpeg functional legs. Functional installs and tests use at most two CPUs, and
+run as a disposable unprivileged UID with isolated state. Pull requests, main
+pushes, manual runs and host-configured cron events select the native checks;
+feature pushes avoid duplicate PR work. Publication remains main-push only.
+A weekly host cron must be configured before retiring the existing weekly Actions
+validation schedule.
+
 Existing GitHub Actions gates remain required until the exact-source Woodpecker
 checks pass and the owning host settings migrate. Native macOS and GitHub OIDC
 signing are retained platform exceptions. Docker build/runtime checks remain on
