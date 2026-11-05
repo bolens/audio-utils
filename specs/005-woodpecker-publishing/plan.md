@@ -31,3 +31,8 @@ copies only generated fixtures through the Docker API with numeric ownership,
 mounts runtime input read-only, reads back a complete output snapshot, and removes
 only its UUID-named containers/volumes. This proves transport/acceptance behavior;
 it does not grant jobs access to a general host Docker daemon.
+
+Full-history cloning uses the installed plugin 2.11.0 pinned by digest, with
+both depth zero and partial false. Partial cloning otherwise overrides depth;
+core validation must prove the actual checkout is not shallow before historical
+checks can move off their existing owner.
