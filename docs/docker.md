@@ -135,3 +135,11 @@ copies the same digest to `sha-<full-commit>` and `latest`, rechecking protected
 main immediately before each write and refusing a conflicting immutable tag.
 The hosted Docker runtime remains an explicit migration exception; no registry
 promotion has been performed to validate this migration.
+
+Before reverting the publishing flag, stop new publishing triggers and cancel or
+drain every active native candidate and hosted runtime/promotion bridge. Confirm
+that queued dispatches cannot still write aliases, then clear the flag and restore
+the prior workflow/check ownership together. This prevents an in-flight bridge
+from publishing after the legacy publisher resumes. Preserve immutable tags and
+inspect pending receipts before retrying. Failed validation PR checks do not need
+publication credentials or a flag change.
