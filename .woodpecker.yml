@@ -1,0 +1,34 @@
+# Portable validation on Gitea-connected Woodpecker runners. No publication credentials.
+when:
+  - event:
+      - push
+      - pull_request
+      - manual
+steps:
+  - name: verify
+    image: node:26-bookworm@sha256:fa52d1669505e29b58c042875b1d65c229e0787a3610fd52869b22b68e480853
+    environment:
+      CI: 'true'
+    commands:
+      - |-
+        export DEBIAN_FRONTEND=noninteractive
+        apt-get update
+        apt-get install -y --no-install-recommends make python3 python3-yaml jq curl xz-utils ffmpeg flac
+      - |-
+        python3 - <<'INSTALL'
+        import hashlib, io, pathlib, tarfile, urllib.request, yaml
+        config = yaml.safe_load(pathlib.Path('.github/actions/install-shellcheck/action.yml').read_text())['inputs']
+        version, checksum = config['version']['default'], config['sha256']['default']
+        url = f'https://github.com/koalaman/shellcheck/releases/download/{version}/shellcheck-{version}.linux.x86_64.tar.xz'
+        data = urllib.request.urlopen(url, timeout=60).read()
+        assert hashlib.sha256(data).hexdigest() == checksum, 'ShellCheck checksum mismatch'
+        with tarfile.open(fileobj=io.BytesIO(data), mode='r:xz') as archive:
+            binary = archive.extractfile(f'shellcheck-{version}/shellcheck').read()
+        path = pathlib.Path('/usr/local/bin/shellcheck')
+        path.write_bytes(binary)
+        path.chmod(0o755)
+        INSTALL
+      - make check JOBS=2
+      - make test JOBS=2
+      - make coverage
+      - cd mcp/npm && npm ci --ignore-scripts --no-audit --no-fund && npm test && npm audit --omit=dev
