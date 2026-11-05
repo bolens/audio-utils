@@ -75,6 +75,11 @@ def source_bytes(root, relative):
 
 
 def git(root, *args, binary="git"):
+    # Resolve using the caller's fixed tool profile before isolating Git config.
+    if binary == "git":
+        binary = shutil.which("git")
+        if binary is None:
+            raise ValueError("git is absent from the declared tool PATH")
     env = {
         "PATH": "/usr/bin:/bin",
         "HOME": "/nonexistent",

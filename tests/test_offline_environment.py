@@ -5,6 +5,7 @@ import base64
 import importlib.util
 import json
 import os
+import shutil
 from pathlib import Path
 import subprocess
 import tempfile
@@ -26,6 +27,19 @@ IMAGE = "sha256:" + "3" * 64
 
 
 class OfflineEnvironmentTests(unittest.TestCase):
+    def test_nix_profile_git_resolved_before_child_path_sanitization(self):
+        expected = self.identity()
+        binary = shutil.which("git")
+        self.assertIsNotNone(binary)
+        tools = Path(self.temporary.name) / "profile-bin"
+        tools.mkdir()
+        wrapper = tools / "git"
+        # This fixture path is controlled; no caller Git/config state is copied.
+        wrapper.write_text('#!/bin/sh\nexec "' + binary + '" "$@"\n')
+        wrapper.chmod(0o755)
+        with patch.dict(os.environ, {"PATH": str(tools)}):
+            self.assertEqual(self.identity(), expected)
+
     def test_recipe_configuration_is_literal_and_limits_precede_fetch(self):
         recipe = (ROOT / "ci/offline-environment/Dockerfile").read_text()
         prepare = (ROOT / "ci/offline-environment/prepare.sh").read_text()
