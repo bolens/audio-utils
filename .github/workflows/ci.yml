@@ -19,6 +19,7 @@ permissions:
 
 jobs:
   changes:
+    if: (vars.WOODPECKER_LINUX_CI != 'true' || vars.WOODPECKER_PUBLISHING != 'true')
     name: Detect changes
     runs-on: ubuntu-latest
     timeout-minutes: 5
@@ -161,7 +162,7 @@ jobs:
   shellcheck-lib:
     name: shellcheck (lib)
     needs: changes
-    if: needs.changes.outputs.lib == 'true'
+    if: (vars.WOODPECKER_LINUX_CI != 'true' || vars.WOODPECKER_PUBLISHING != 'true') && (needs.changes.outputs.lib == 'true')
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
@@ -179,9 +180,7 @@ jobs:
   shellcheck-conversion:
     name: shellcheck (conversion ${{ matrix.shard }}/${{ matrix.shards }})
     needs: changes
-    if: >-
-      needs.changes.outputs.conversion == 'true' ||
-      needs.changes.outputs.lib == 'true'
+    if: (vars.WOODPECKER_LINUX_CI != 'true' || vars.WOODPECKER_PUBLISHING != 'true') && (needs.changes.outputs.conversion == 'true' || needs.changes.outputs.lib == 'true')
     runs-on: ubuntu-latest
     timeout-minutes: 10
     strategy:
@@ -218,9 +217,7 @@ jobs:
   shellcheck-util:
     name: shellcheck (util ${{ matrix.shard }}/${{ matrix.shards }})
     needs: changes
-    if: >-
-      needs.changes.outputs.util == 'true' ||
-      needs.changes.outputs.lib == 'true'
+    if: (vars.WOODPECKER_LINUX_CI != 'true' || vars.WOODPECKER_PUBLISHING != 'true') && (needs.changes.outputs.util == 'true' || needs.changes.outputs.lib == 'true')
     runs-on: ubuntu-latest
     timeout-minutes: 10
     strategy:
@@ -258,7 +255,7 @@ jobs:
   shellcheck-fedora:
     name: shellcheck (Fedora ${{ matrix.shard }})
     needs: changes
-    if: needs.changes.outputs.lib == 'true'
+    if: (vars.WOODPECKER_LINUX_CI != 'true' || vars.WOODPECKER_PUBLISHING != 'true') && (needs.changes.outputs.lib == 'true')
     runs-on: ubuntu-latest
     timeout-minutes: 10
     strategy:
@@ -303,7 +300,7 @@ jobs:
   test-unit-smoke:
     name: tests (unit + smoke)
     needs: changes
-    if: needs.changes.outputs.code == 'true'
+    if: (vars.WOODPECKER_LINUX_CI != 'true' || vars.WOODPECKER_PUBLISHING != 'true') && (needs.changes.outputs.code == 'true')
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
@@ -332,7 +329,7 @@ jobs:
   test-mcp-node:
     name: tests (MCP Node gateway)
     needs: changes
-    if: needs.changes.outputs.mcp == 'true' || needs.changes.outputs.lib == 'true'
+    if: (vars.WOODPECKER_LINUX_CI != 'true' || vars.WOODPECKER_PUBLISHING != 'true') && (needs.changes.outputs.mcp == 'true' || needs.changes.outputs.lib == 'true')
     runs-on: ubuntu-latest
     timeout-minutes: 10
     defaults:
@@ -363,7 +360,7 @@ jobs:
   check-docs:
     name: docs (local links)
     needs: changes
-    if: needs.changes.outputs.docs == 'true'
+    if: (vars.WOODPECKER_LINUX_CI != 'true' || vars.WOODPECKER_PUBLISHING != 'true') && (needs.changes.outputs.docs == 'true')
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
@@ -379,7 +376,7 @@ jobs:
   prepare-codecs:
     name: prepare optional codecs
     needs: changes
-    if: needs.changes.outputs.code == 'true'
+    if: (vars.WOODPECKER_LINUX_CI != 'true' || vars.WOODPECKER_PUBLISHING != 'true') && (needs.changes.outputs.code == 'true')
     runs-on: ubuntu-latest
     timeout-minutes: 15
     outputs:
@@ -454,7 +451,7 @@ jobs:
   test-functional:
     name: tests (functional ${{ matrix.shard }}/2, ffmpeg ${{ matrix.ffmpeg }})
     needs: [changes, prepare-codecs]
-    if: needs.changes.outputs.code == 'true'
+    if: (vars.WOODPECKER_LINUX_CI != 'true' || vars.WOODPECKER_PUBLISHING != 'true') && (needs.changes.outputs.code == 'true')
     runs-on: ubuntu-latest
     timeout-minutes: 20
     strategy:
@@ -615,7 +612,7 @@ jobs:
       - check-docs
       - prepare-codecs
       - test-functional
-    if: always()
+    if: (vars.WOODPECKER_LINUX_CI != 'true' || vars.WOODPECKER_PUBLISHING != 'true') && (always())
     runs-on: ubuntu-latest
     steps:
       - name: Aggregate results

@@ -33,6 +33,9 @@ The installer tests remain isolated and run normally. The existing generated-fix
 Fedora runs the same `make check` coverage as before: one matrix job runs `make check-shared` for the shared library, MCP scripts, tests, action pins, documentation links, and generated references. Eight other matrix jobs partition the complete conversion and utility lists by index. Each tool appears in exactly one shard, and each shard uses the runner CPU count for parallel checks. The CI aggregate waits for every shard and fails if any fails. The pinned Fedora container and existing path/scheduled-run triggers are unchanged.
 
 Both the runner and direct harness invocation isolate HOME, XDG config/state/cache/data/runtime paths, and TMPDIR in disposable directories.
+Activate an already-installed Node runtime before running the npm stdio smoke
+test. Installer shims can try downloading another runtime after HOME/XDG isolation,
+which tests neither the installed runtime nor the MCP protocol within its timeout.
 
 Mixed valid/corrupt WAV batches run with one and two workers in `converter-edge-cases.test.sh`. Checks cover failure reporting, decoded output equivalence, byte-for-byte source retention, and absence of output for the corrupt input.
 
@@ -57,16 +60,38 @@ and requires every selected job to succeed; only unselected jobs may skip.
 
 ## Woodpecker CI
 
-[.woodpecker.yml](../.woodpecker.yml) runs on pushes, pull requests, and manual builds
-in a Gitea-connected Woodpecker installation. Either Linux Docker runner can
-execute the workflow. Container images are pinned by digest.
+[`.woodpecker/`](../.woodpecker/) runs portable Linux checks on either forge.
+The migration targets direct GitHub-connected Woodpecker for canonical
+publication; Gitea copies validate only. Actions remains the publication owner
+until the cutover is accepted. The migration contract and remaining acceptance work
+are recorded in [`specs/005-woodpecker-publishing/spec.md`](../specs/005-woodpecker-publishing/spec.md).
 
-The workflow runs the shared-library, script and documentation lint gate, unit and smoke tests,
-coverage inventory, mocked development-adapter tests, and Node MCP tests and production dependency audit. The ShellCheck
-version and checksum come from the existing installer action. Codec-heavy functional
-matrices and image publication continue in GitHub Actions.
+Six required native workflows split core unit/smoke/MCP/fleet validation, all-tool
+ShellCheck, full Fedora lint, the Node 20 MCP floor, and both distribution/current
+FFmpeg functional legs. Functional installs and tests use at most two CPUs, and
+run as a disposable unprivileged UID with isolated state. Pull requests, main
+pushes, manual runs and host-configured cron events select the native checks;
+feature pushes avoid duplicate PR work. Publication remains main-push only.
+A weekly host cron must be configured before retiring the existing weekly Actions
+validation schedule.
 
-Activate this repository in Woodpecker after its GitHub source branch has been
-synchronized to Gitea. The existing GitHub checks remain required until their
-coverage and release responsibilities are migrated explicitly. Review image
-digest updates alongside the repository toolchain and lockfiles.
+The rolling FFmpeg lane reads the official release's `checksums.sha256` asset,
+then verifies the archive before installing only its two regular binary members.
+It uses no anonymous GitHub REST quota or publication credentials. If the mutable
+latest tag moves between reads, a checksum mismatch fails without installing.
+Release downloads have finite retries, connection/transfer timeouts and body caps.
+Core and tool lint share the pinned ShellCheck installer; its version and both
+architecture checksums remain unchanged.
+
+Existing GitHub Actions gates remain required until the exact-source Woodpecker
+checks pass and the owning host settings migrate. Native macOS and GitHub OIDC
+signing are retained platform exceptions. Docker build/runtime checks remain on
+Actions until equivalent isolated build and fixture execution are proven; runners
+do not receive a host Docker socket or broader privileges.
+
+The publisher configuration is staged, but delivery remains disabled until the
+coordinated owner cutover. Delivery requires the authenticated server
+secret broker's exact GitHub repository/ref/SHA policy and the canonical GitHub
+repository variable `WOODPECKER_PUBLISHING=true`. No PR, fork, manual or Gitea
+workflow receives publication credentials. Existing release/version rules remain
+in [the release playbook](../RELEASING.md).

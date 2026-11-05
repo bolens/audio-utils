@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Exercise the built CLI image on disposable bind mounts, without networking."""
+"""Exercise the built CLI image on disposable mounts, without networking."""
 import argparse
 import hashlib
 import os
@@ -9,6 +9,8 @@ import subprocess
 import tempfile
 import wave
 
+from container_fixtures import run_volume
+
 SUITE = 'audio-utils'
 
 
@@ -16,6 +18,8 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--engine', default='docker')
     parser.add_argument('--image', default=SUITE + ':local')
+    parser.add_argument('--transport', choices=['bind', 'volume'], default='bind',
+                        help='volume copies fixtures through the Docker API for a remote daemon')
     args = parser.parse_args()
     uid = os.getuid() or 10001
     gid = os.getgid() if os.getuid() else 10001
@@ -27,13 +31,17 @@ def main():
         outputs.mkdir()
         if os.getuid() == 0:
             os.chown(outputs, uid, gid)
-        options = ['--rm', '--network=none', '--read-only', '--cap-drop=ALL',
+        options = ['--network=none', '--read-only', '--cap-drop=ALL',
                    '--security-opt=no-new-privileges', '--tmpfs', '/tmp:rw,nosuid,nodev,mode=1777',
-                   '--user', f'{uid}:{gid}', '--workdir', '/output',
-                   '--mount', f'type=bind,src={inputs},dst=/input,readonly',
-                   '--mount', f'type=bind,src={outputs},dst=/output']
+                   '--user', f'{uid}:{gid}', '--workdir', '/output']
+        if args.transport == 'bind':
+            options = ['--rm', *options,
+                       '--mount', f'type=bind,src={inputs},dst=/input,readonly',
+                       '--mount', f'type=bind,src={outputs},dst=/output']
         if Path(args.engine).name == 'podman':
             options += ['--userns=keep-id']
+
+        volume_owners = {}
 
         def run(*command, entry=None, code=0, default_user=False):
             opts = options.copy()
@@ -44,8 +52,13 @@ def main():
                     opts.remove('--userns=keep-id')
             if entry:
                 opts += ['--entrypoint', entry]
-            result = subprocess.run([args.engine, 'run', *opts, args.image, *map(str, command)],
-                                    capture_output=True, text=True, timeout=180)
+            if args.transport == 'volume':
+                result = run_volume(args.engine, args.image, opts, command, inputs, outputs, uid, gid, volume_owners)
+                volume_owners.clear()
+                volume_owners.update(result.fixture_owners)
+            else:
+                result = subprocess.run([args.engine, 'run', *opts, '--', args.image, *map(str, command)],
+                                        capture_output=True, text=True, timeout=180)
             if result.returncode != code:
                 raise AssertionError(f'{command!r}: expected {code}, got {result.returncode}\n'
                                      f'{result.stdout}\n{result.stderr}')
@@ -56,8 +69,10 @@ def main():
                 raise AssertionError(f'Source changed: {path.name!r}')
 
         def owned(path):
-            if path.stat().st_uid != uid or path.stat().st_gid != gid:
-                raise AssertionError(f'Output ownership differs from {uid}:{gid}: {path}')
+            actual = (volume_owners.get(path.relative_to(outputs).as_posix())
+                      if args.transport == 'volume' else (path.stat().st_uid, path.stat().st_gid))
+            if actual != (uid, gid):
+                raise AssertionError(f'Output ownership differs from {uid}:{gid} (actual {actual}): {path}')
 
         if run('-u', entry='id', default_user=True).strip() != '10001':
             raise AssertionError('Image must default to UID 10001')

@@ -1,0 +1,22 @@
+# Credential-free Linux validation; all lanes are required.
+labels:
+  platform: linux/amd64
+  backend: docker
+clone:
+  git:
+    image: woodpeckerci/plugin-git:2.11.0@sha256:9802cb7852dcf31f9c5c1d1ddeadfb9002d4fae85751f7b6a792eedb267bcc59
+    settings:
+      depth: 0
+      partial: false
+when:
+  - event: push
+    branch: main
+  - event:
+      - pull_request
+      - manual
+      - cron
+steps:
+  - name: mcp-minimum-node
+    image: node:20-bookworm-slim@sha256:2cf067cfed83d5ea958367df9f966191a942351a2df77d6f0193e162b5febfc0
+    commands:
+      - cd mcp/npm && npm ci --ignore-scripts --no-audit --no-fund && npm test && npm audit --omit=dev
