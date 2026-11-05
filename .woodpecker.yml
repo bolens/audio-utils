@@ -28,7 +28,7 @@ steps:
         path.write_bytes(binary)
         path.chmod(0o755)
         INSTALL
-      - make check JOBS=2
+      - make check-shared JOBS=2
       - make test JOBS=2
       - make coverage
       - cd mcp/npm && npm ci --ignore-scripts --no-audit --no-fund && npm test && npm audit --omit=dev
