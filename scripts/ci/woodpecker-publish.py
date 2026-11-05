@@ -167,6 +167,31 @@ def prepare():
     (OUTPUT / "kaniko.env").write_text(f"PLUGIN_TAGS={candidate}\n")
 
 
+def archive_config(sha, tag):
+    import hashlib
+    import tarfile
+    with tarfile.open(OUTPUT / "image.tar") as archive:
+        images = json.load(archive.extractfile("manifest.json"))
+        if len(images) != 1:
+            raise ValueError("candidate archive must contain exactly one image")
+        config_name = images[0]["Config"]
+        if not re.fullmatch(r"sha256:[0-9a-f]{64}", config_name):
+            raise ValueError("unexpected Kaniko archive config identity")
+        config_bytes = archive.extractfile(config_name).read()
+        if "sha256:" + hashlib.sha256(config_bytes).hexdigest() != config_name:
+            raise ValueError("candidate archive config digest mismatch")
+        config = json.loads(config_bytes)
+        labels = config.get("config", {}).get("Labels") or {}
+        if (labels.get("org.opencontainers.image.revision") != sha
+                or labels.get("org.opencontainers.image.source") != "https://github.com/" + REPOSITORY
+                or config.get("os") != "linux" or config.get("architecture") != "amd64" or config.get("config", {}).get("User") != "10001:10001"):
+            raise ValueError("candidate archive differs from the canonical source/platform")
+        number = os.environ.get("CI_PIPELINE_NUMBER", "")
+        if not re.fullmatch(r"[1-9][0-9]*", number) or images[0].get("RepoTags") != [f"{IMAGE}:candidate-{sha}-{number}"]:
+            raise ValueError("candidate archive belongs to another pipeline")
+        return config_name
+
+
 def manifest():
     sha, tag = guard()
     digest = (OUTPUT / "image.digest").read_text().strip()
@@ -177,8 +202,12 @@ def manifest():
     if (image.get("Digest") != digest or labels.get("org.opencontainers.image.revision") != sha
             or labels.get("org.opencontainers.image.source") != f"https://github.com/{REPOSITORY}"):
         raise ValueError("published candidate identity mismatch")
+    config_digest = archive_config(sha, tag)
+    remote = json.loads(run("skopeo", "inspect", "--raw", f"docker://{IMAGE}@{digest}"))
+    if remote.get("config", {}).get("digest") != config_digest:
+        raise ValueError("registry candidate config differs from the exact native archive")
     record = {"repository": REPOSITORY, "commit": sha, "tag": tag,
-              "image": IMAGE, "digest": digest,
+              "image": IMAGE, "digest": digest, "configDigest": config_digest,
               "builder": os.environ["CI_PIPELINE_URL"], "status": "candidate-only"}
     (OUTPUT / "image-manifest.json").write_text(json.dumps(record, indent=2) + "\n")
     # Signing, runtime acceptance and alias/release promotion are intentionally
@@ -186,11 +215,32 @@ def manifest():
     return record
 
 
+def handoff():
+    sha, _ = guard()
+    record = json.loads((OUTPUT / "image-manifest.json").read_text())
+    number = os.environ.get("CI_PIPELINE_NUMBER", "")
+    expected_builder = f"https://woodpecker.bolens.dev/repos/11/pipeline/{number}"
+    if (not re.fullmatch(r"[1-9][0-9]*", number) or record.get("commit") != sha
+            or record.get("repository") != REPOSITORY or record.get("image") != IMAGE
+            or record.get("builder") != expected_builder
+            or any(not re.fullmatch(r"sha256:[0-9a-f]{64}", record.get(key, ""))
+                   for key in ("digest", "configDigest"))):
+        raise ValueError("handoff differs from the exact native candidate identity")
+    api(f"repos/{REPOSITORY}/actions/workflows/docker.yml/dispatches", "POST", {
+        "ref": "main", "inputs": {"woodpecker_bridge": "true", "source_sha": sha,
+            "image_digest": record["digest"], "config_digest": record["configDigest"],
+            "pipeline_number": number}})
+    # Do not occupy an agent waiting for the bridge: the bridge must first observe
+    # this pipeline's final success, then test/promote exactly these bytes.
+    (OUTPUT / "handoff.json").write_text(json.dumps({**record,
+        "status": "pending-runtime-and-promotion"}, indent=2) + "\n")
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("phase", choices=["guard", "prepare", "manifest"])
+    parser.add_argument("phase", choices=["guard", "prepare", "manifest", "handoff"])
     args = parser.parse_args()
-    {"guard": guard, "prepare": prepare, "manifest": manifest}[args.phase]()
+    {"guard": guard, "prepare": prepare, "manifest": manifest, "handoff": handoff}[args.phase]()
 
 
 if __name__ == "__main__":

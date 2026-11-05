@@ -41,6 +41,8 @@ def main():
         if Path(args.engine).name == 'podman':
             options += ['--userns=keep-id']
 
+        volume_owners = {}
+
         def run(*command, entry=None, code=0, default_user=False):
             opts = options.copy()
             if default_user:
@@ -51,7 +53,9 @@ def main():
             if entry:
                 opts += ['--entrypoint', entry]
             if args.transport == 'volume':
-                result = run_volume(args.engine, args.image, opts, command, inputs, outputs, uid, gid)
+                result = run_volume(args.engine, args.image, opts, command, inputs, outputs, uid, gid, volume_owners)
+                volume_owners.clear()
+                volume_owners.update(result.fixture_owners)
             else:
                 result = subprocess.run([args.engine, 'run', *opts, '--', args.image, *map(str, command)],
                                         capture_output=True, text=True, timeout=180)
@@ -65,8 +69,10 @@ def main():
                 raise AssertionError(f'Source changed: {path.name!r}')
 
         def owned(path):
-            if path.stat().st_uid != uid or path.stat().st_gid != gid:
-                raise AssertionError(f'Output ownership differs from {uid}:{gid}: {path}')
+            actual = (volume_owners.get(path.relative_to(outputs).as_posix())
+                      if args.transport == 'volume' else (path.stat().st_uid, path.stat().st_gid))
+            if actual != (uid, gid):
+                raise AssertionError(f'Output ownership differs from {uid}:{gid} (actual {actual}): {path}')
 
         if run('-u', entry='id', default_user=True).strip() != '10001':
             raise AssertionError('Image must default to UID 10001')

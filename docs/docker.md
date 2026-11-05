@@ -96,8 +96,11 @@ python3 scripts/test-docker.py --image audio-utils:local --transport volume
 ```
 
 It uses private named volumes, a read-only input mount, a writable output mount,
-and the same numeric UID/GID and acceptance checks. Output snapshots preserve
-numeric ownership and reflect deletions. Each volume holds a seeded `data` child
+and the same numeric UID/GID and acceptance checks. Exported input snapshots must
+preserve every path, kind, permission and file byte before outputs are accepted.
+Output snapshots verify daemon-exported numeric UID/GID and reflect deletions.
+Local fixture copies belong to the controller user; owner evidence is retained
+across runs so a wrong container-created UID cannot be relabeled by a later seed. Each volume holds a seeded `data` child
 directory; subpath mounts preserve its UID/GID instead of reusing the daemon-owned
 volume root. Test containers and volumes are removed
 on success and failure; cleanup failure fails the run. The default bind transport
@@ -108,3 +111,27 @@ exposing a general host Docker socket to repository jobs.
 To roll back, run the previously verified registry digest. Never overwrite source
 media as a recovery step. Publishing containers does not change CLI VERSION or
 create a versioned source release.
+
+## Woodpecker publication cutover
+
+Until native checks, broker policy and the hosted bridge pass acceptance, the
+legacy GitHub Docker publisher remains active and the new publisher is an
+undiscovered `.woodpecker-publishing.yml.example`. Activation moves the example
+into `.woodpecker/publishing.yml` and explicitly enables `WOODPECKER_PUBLISHING`.
+Gitea mirrors validate only; canonical GitHub protected-main pushes may publish.
+
+The pinned socket-free Kaniko plugin builds one immutable candidate using only
+image-filtered `ghcr_username` and `ghcr_password`. A protected-ref broker lease
+`github_publish_lease` provides a short-lived App token in memory for the exact
+source. The native helper verifies archive and registry config/source/platform,
+then dispatches the thin hosted Docker bridge and exits with a pending receipt.
+
+That bridge requires the approved App actor, exact current-main commit and native
+repo 11 pipeline, and all seven successful native workflow contexts from the
+configured `WOODPECKER_STATUS_CREATOR_ID`. The context prefix defaults to
+`ci/woodpecker`. It pulls the candidate digest, checks its immutable identity,
+and runs the complete existing runtime fixture suite without rebuilding. It then
+copies the same digest to `sha-<full-commit>` and `latest`, rechecking protected
+main immediately before each write and refusing a conflicting immutable tag.
+The hosted Docker runtime remains an explicit migration exception; no registry
+promotion has been performed to validate this migration.

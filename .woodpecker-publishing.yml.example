@@ -36,11 +36,13 @@ steps:
         from_secret: ghcr_username
       password:
         from_secret: ghcr_password
+      tags: candidate-${CI_COMMIT_SHA}-${CI_PIPELINE_NUMBER}
       env_file: .woodpecker-out/kaniko.env
       dockerfile: Dockerfile
       context: .
       extra_opts: >-
         --digest-file=.woodpecker-out/image.digest
+        --tar-path=.woodpecker-out/image.tar
         --label=org.opencontainers.image.source=https://github.com/bolens/audio-utils
         --label=org.opencontainers.image.revision=${CI_COMMIT_SHA}
   - name: verify-candidate-identity
@@ -51,3 +53,4 @@ steps:
     commands:
       - apt-get update && apt-get install -y --no-install-recommends gh git python3 skopeo ca-certificates
       - python3 scripts/ci/woodpecker-publish.py manifest
+      - python3 scripts/ci/woodpecker-publish.py handoff

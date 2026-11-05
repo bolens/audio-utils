@@ -3,8 +3,9 @@ labels:
   platform: linux/amd64
   backend: docker
 when:
+  - event: push
+    branch: main
   - event:
-      - push
       - pull_request
       - manual
 steps:
@@ -40,6 +41,8 @@ steps:
       - python3 -m unittest discover -s tests -p test_development_container.py -v
       - python3 -m unittest discover -s tests -p test_publication_policy.py -v
       - python3 -m unittest discover -s tests -p test_container_fixtures.py -v
+      - python3 -m unittest discover -s tests -p test_image_bridge.py -v
+      - python3 -m unittest discover -s tests -p test_native_pipeline_status.py -v
       - cd mcp/npm && npm test && npm audit --omit=dev
   - name: fleet-contracts
     image: node:26-trixie@sha256:6d2c7d5d074bf72f81ddc252b4fbb5d625bc028eeda49cb4b8c2ff8eda1ee617

@@ -27,6 +27,7 @@ class VolumeFixturesTests(unittest.TestCase):
         self.commands = []
         self.state = {"Status": "exited", "ExitCode": 2}
         self.bad_snapshot = False
+        self.changed_input = False
         self.cleanup_failure = False
 
     def engine(self, command, **kwargs):
@@ -38,13 +39,29 @@ class VolumeFixturesTests(unittest.TestCase):
             code = 1
         elif args[0] == "inspect":
             stdout = json.dumps(self.state)
+        elif args[0] == "cp" and args[-2].endswith(":/input"):
+            stream = io.BytesIO()
+            with tarfile.open(fileobj=stream, mode="w") as archive:
+                archive.add(self.inputs, arcname="input")
+                if self.changed_input:
+                    member = tarfile.TarInfo("input/unexpected")
+                    archive.addfile(member)
+            stdout = stream.getvalue()
         elif args[0] == "cp" and args[-2].endswith(":/output"):
-            destination = Path(args[-1])
-            destination.mkdir()
-            if self.bad_snapshot:
-                (destination / "escape").symlink_to("/etc/passwd")
-            else:
-                (destination / "new").write_text("new snapshot")
+            stream = io.BytesIO()
+            with tarfile.open(fileobj=stream, mode="w") as archive:
+                root = tarfile.TarInfo("output")
+                root.type, root.uid, root.gid, root.mode = tarfile.DIRTYPE, 10001, 10001, 0o755
+                archive.addfile(root)
+                member = tarfile.TarInfo("output/escape" if self.bad_snapshot else "output/new")
+                if self.bad_snapshot:
+                    member.type, member.linkname = tarfile.SYMTYPE, "/etc/passwd"
+                    archive.addfile(member)
+                else:
+                    payload = b"new snapshot"
+                    member.size, member.uid, member.gid, member.mode = len(payload), 0, 0, 0o644
+                    archive.addfile(member, io.BytesIO(payload))
+            stdout = stream.getvalue()
         elif self.cleanup_failure and args[:2] == ["volume", "rm"]:
             code = 1
         if kwargs.get("check") and code:
@@ -78,6 +95,36 @@ class VolumeFixturesTests(unittest.TestCase):
         self.assertEqual(create[create.index("--") + 1:], ["image:exact", "--help"])
         self.assertEqual(sum(args[:2] == ["volume", "rm"] for args, _ in self.commands), 2)
 
+    def test_wrong_created_owner_survives_copyback_and_next_seed(self):
+        with patch.object(subprocess, "run", side_effect=self.engine):
+            result = self.invoke()
+        self.assertEqual(result.fixture_owners["new"], (0, 0))
+        data = fixtures.fixture_archive(self.inputs, self.outputs, 10001, 10001, result.fixture_owners)
+        with tarfile.open(fileobj=io.BytesIO(data)) as archive:
+            self.assertEqual((archive.getmember("output/data/new").uid, archive.getmember("output/data/new").gid), (0, 0))
+            self.assertEqual(archive.getmember("output/data").uid, 10001)
+
+    def test_export_paths_duplicates_and_special_files_fail_before_extraction(self):
+        for name, kind in [("output/../escape", tarfile.REGTYPE), ("/output/escape", tarfile.REGTYPE),
+                           ("other/file", tarfile.REGTYPE), ("output/fifo", tarfile.FIFOTYPE)]:
+            with self.subTest(name=name), tempfile.TemporaryDirectory() as directory:
+                stream = io.BytesIO()
+                with tarfile.open(fileobj=stream, mode="w") as archive:
+                    member = tarfile.TarInfo(name)
+                    member.type = kind
+                    archive.addfile(member)
+                with self.assertRaisesRegex(RuntimeError, "unsafe output"):
+                    fixtures.extract_snapshot(stream.getvalue(), Path(directory) / "output")
+                self.assertFalse((Path(directory) / "output").exists())
+        stream = io.BytesIO()
+        with tarfile.open(fileobj=stream, mode="w") as archive:
+            for _ in range(2):
+                member = tarfile.TarInfo("output")
+                member.type = tarfile.DIRTYPE
+                archive.addfile(member)
+        with tempfile.TemporaryDirectory() as directory, self.assertRaisesRegex(RuntimeError, "unsafe output"):
+            fixtures.extract_snapshot(stream.getvalue(), Path(directory) / "output")
+
     def test_unsafe_output_is_rejected_before_local_fixture_deletion_and_cleanup_runs(self):
         self.bad_snapshot = True
         with patch.object(subprocess, "run", side_effect=self.engine):
@@ -92,6 +139,14 @@ class VolumeFixturesTests(unittest.TestCase):
         with patch.object(subprocess, "run", side_effect=self.engine), patch("sys.stderr", new_callable=io.StringIO):
             with self.assertRaisesRegex(RuntimeError, "did not complete normally"):
                 self.invoke()
+        self.assertEqual(sum(args[:2] == ["volume", "rm"] for args, _ in self.commands), 2)
+
+    def test_remote_input_mutation_fails_before_output_replacement(self):
+        self.changed_input = True
+        with patch.object(subprocess, "run", side_effect=self.engine):
+            with self.assertRaisesRegex(RuntimeError, "changed the read-only input"):
+                self.invoke()
+        self.assertTrue((self.outputs / "old").is_file())
         self.assertEqual(sum(args[:2] == ["volume", "rm"] for args, _ in self.commands), 2)
 
     def test_cleanup_failure_prevents_success(self):

@@ -1,7 +1,11 @@
 #!/usr/bin/env bash
 # Run the existing two functional shards using tracked source and isolated state.
 set -euo pipefail
-root=$(git rev-parse --show-toplevel)
+git_local_environment=$(git rev-parse --local-env-vars)
+while IFS= read -r git_variable; do unset "$git_variable"; done <<<"$git_local_environment"
+export GIT_CONFIG_NOSYSTEM=1 GIT_CONFIG_GLOBAL=/dev/null
+root=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/../.." && pwd)
+test "$(git -C "$root" rev-parse --show-toplevel)" = "$root"
 cd -- "$root"
 scratch=$(mktemp -d)
 trap 'rm -rf -- "$scratch"' EXIT
@@ -13,7 +17,10 @@ if [[ $(id -u) == 0 ]]; then
     chown -hR 10001:10001 "$scratch"
     runner=(setpriv --reuid=10001 --regid=10001 --clear-groups)
 fi
-"${runner[@]}" env HOME="$scratch/home" TMPDIR="$scratch/tmp" \
+# Optional codec installers use nproc internally; affinity keeps their parallel
+# compiles within the same two-CPU contract as this functional lane.
+cpus=$(python3 -c 'import os; print(",".join(map(str, sorted(os.sched_getaffinity(0))[:2])))')
+taskset --cpu-list "$cpus" "${runner[@]}" env HOME="$scratch/home" TMPDIR="$scratch/tmp" \
     XDG_CONFIG_HOME="$scratch/home/config" XDG_CACHE_HOME="$scratch/home/cache" \
     XDG_STATE_HOME="$scratch/home/state" LANG=C.UTF-8 LC_ALL=C.UTF-8 \
     bash -s -- "$scratch/source" <<'RUN'
@@ -37,7 +44,7 @@ for shard in 0 1; do
     done
     ((${#mine[@]} > 0)) || continue
     status=0
-    bash tests/run.sh "${mine[@]}" 2>&1 | tee "$TMPDIR/functional-$shard.log" || status=$?
+    bash tests/run.sh -j 2 "${mine[@]}" 2>&1 | tee "$TMPDIR/functional-$shard.log" || status=$?
     skips=$(grep -c '# SKIP' "$TMPDIR/functional-$shard.log" || true)
     unexpected=0
     while IFS= read -r line; do

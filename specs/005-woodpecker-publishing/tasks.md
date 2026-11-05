@@ -9,7 +9,7 @@
 - [x] Execute publication denial, lease caching/refresh and identity unit tests.
 - [ ] Independently review publication/trust boundary and denial cases.
 - [ ] Prove safe socket-free build and isolated runtime fixture transport.
-- [ ] Prove thin GitHub OIDC bridge and Pages branch publishing without creating a release tag.
+- [ ] Prove the thin hosted Docker acceptance/exact-digest promotion bridge without registry writes.
 - [ ] Obtain native exact-head acceptance, then migrate required checks and remove duplicate triggers.
 
 Unchecked items are required remaining work; no unexecuted path counts as a pass.

@@ -3,8 +3,9 @@ labels:
   platform: linux/amd64
   backend: docker
 when:
+  - event: push
+    branch: main
   - event:
-      - push
       - pull_request
       - manual
 steps:
