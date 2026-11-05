@@ -57,16 +57,20 @@ and requires every selected job to succeed; only unselected jobs may skip.
 
 ## Woodpecker CI
 
-[.woodpecker.yml](../.woodpecker.yml) runs on pushes, pull requests, and manual builds
-in a Gitea-connected Woodpecker installation. Either Linux Docker runner can
-execute the workflow. Container images are pinned by digest.
+[`.woodpecker/`](../.woodpecker/) runs portable Linux checks on either forge.
+The migration targets direct GitHub-connected Woodpecker for canonical
+publication; Gitea copies validate only. Actions remains the publication owner
+until the cutover is accepted. The migration contract and remaining acceptance work
+are recorded in [`specs/005-woodpecker-publishing/spec.md`](../specs/005-woodpecker-publishing/spec.md).
 
-The workflow runs the shared-library, script and documentation lint gate, unit and smoke tests,
-coverage inventory, mocked development-adapter tests, and Node MCP tests and production dependency audit. The ShellCheck
-version and checksum come from the existing installer action. Codec-heavy functional
-matrices and image publication continue in GitHub Actions.
+Existing GitHub Actions gates remain required until the exact-source Woodpecker
+checks pass and the owning host settings migrate. Native macOS and GitHub OIDC
+signing are retained platform exceptions. Docker build/runtime checks remain on
+Actions until equivalent isolated build and fixture execution are proven; runners
+do not receive a host Docker socket or broader privileges.
 
-Activate this repository in Woodpecker after its GitHub source branch has been
-synchronized to Gitea. The existing GitHub checks remain required until their
-coverage and release responsibilities are migrated explicitly. Review image
-digest updates alongside the repository toolchain and lockfiles.
+Publication is disabled by default. Activation requires the authenticated server
+secret broker's exact GitHub repository/ref/SHA policy and the canonical GitHub
+repository variable `WOODPECKER_PUBLISHING=true`. No PR, fork, manual or Gitea
+workflow receives publication credentials. Existing release/version rules remain
+in [the release playbook](../RELEASING.md).

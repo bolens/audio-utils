@@ -1,4 +1,4 @@
-# Portable validation on Gitea-connected Woodpecker runners. No publication credentials.
+# Credential-free Linux validation; all lanes are required.
 labels:
   platform: linux/amd64
   backend: docker
@@ -34,7 +34,18 @@ steps:
         path.chmod(0o755)
         INSTALL
       - make check-shared JOBS=2
+      - npm ci --prefix mcp/npm --ignore-scripts --no-audit --no-fund
       - make test JOBS=2
       - make coverage
       - python3 -m unittest discover -s tests -p test_development_container.py -v
-      - cd mcp/npm && npm ci --ignore-scripts --no-audit --no-fund && npm test && npm audit --omit=dev
+      - python3 -m unittest discover -s tests -p test_publication_policy.py -v
+      - cd mcp/npm && npm test && npm audit --omit=dev
+  - name: fleet-contracts
+    image: node:26-trixie@sha256:6d2c7d5d074bf72f81ddc252b4fbb5d625bc028eeda49cb4b8c2ff8eda1ee617
+    environment:
+      CI: 'true'
+      LANG: C.UTF-8
+      LC_ALL: C.UTF-8
+    commands:
+      - apt-get update && apt-get install -y --no-install-recommends git curl ca-certificates python3 python3-venv shellcheck
+      - bash scripts/ci/check-fleet.sh

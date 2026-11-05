@@ -8,3 +8,5 @@ Installation validation alone does not establish feature completion.
 - [Verified audio workflows and shared utility engine](003-preservation-baseline/spec.md): [plan](003-preservation-baseline/plan.md), [coverage](003-preservation-baseline/coverage.md), [legacy contracts](003-preservation-baseline/legacy-contracts.md), [94-tool mapping](003-preservation-baseline/legacy-coverage.md), [tasks](003-preservation-baseline/tasks.md).
 
 - [Development environments](004-development-environments/spec.md): locked tooling, platform boundaries, and container validation.
+
+- [005-woodpecker-publishing](005-woodpecker-publishing/spec.md): portable CI and controlled publication (implementation in progress).

@@ -1,0 +1,15 @@
+# Credential-free Linux validation; all lanes are required.
+labels:
+  platform: linux/amd64
+  backend: docker
+when:
+  - event:
+      - push
+      - pull_request
+      - manual
+steps:
+  - name: fedora-shellcheck
+    image: fedora:latest@sha256:43b29f65a41eb9c35e1cd5323e3bdf3b655c2357a9f4f1ff2f9c2798e5045d80
+    commands:
+      - dnf -y install ShellCheck make findutils diffutils jq python3
+      - make check-shared check-tools JOBS=2
