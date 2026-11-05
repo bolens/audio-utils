@@ -31,8 +31,8 @@
     "scripts/ci/offline_environment.py"
   ],
   "workspace_paths": [
-    "/woodpecker",
-    "/woodpecker/src/github.com/bolens/audio-utils"
+    "/woodpecker/src/github.com/bolens/audio-utils",
+    "/woodpecker/src/gitea.bolens.dev/bolens/audio-utils"
   ],
   "devenv_arguments": [
     "--max-jobs",

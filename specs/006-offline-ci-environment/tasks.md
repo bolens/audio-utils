@@ -7,7 +7,7 @@
 - [ ] Complete independent source review and normal source delivery checks.
 - [ ] Prove actual constrained preparation with no host store/auth/cache mounts.
 - [ ] Verify image filesystem, dependency content and no old application source.
-- [ ] Pass full network-none gate at the observed workspace and an alternate nested path with fresh random state.
+- [ ] Pass full network-none gate at both forge-resolved workspace paths with fresh random state.
 - [ ] Prove current-source negative test fails with unchanged environment key.
 - [ ] Publish exact admitted digest and normally review consumer/profile changes.
 - [ ] Prove genuine native PR/main execution and Gitea source/profile parity.

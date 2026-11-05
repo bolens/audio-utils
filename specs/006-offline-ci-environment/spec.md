@@ -8,7 +8,7 @@ provide deterministic execution.
 Prepare an immutable public toolchain bound to the complete locked environment
 and reviewed dependency declarations. Execute the unchanged full development gate
 against current source with OS-level networking disabled, fresh per-container
-state, the observed `/woodpecker` workspace plus an alternate nested path and explicit bounded resources. Preserve media,
+state, both forge-resolved workspace paths and explicit bounded resources. Preserve media,
 source safety, six native check identities, credentials policy and publishing.
 
 Acceptance requires real content verification and full-gate executions, including
