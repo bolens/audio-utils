@@ -213,7 +213,12 @@ bluray_makemkv_backup() {
     return 1
   }
   printf '%s\n' "$info" >"$outdir/.makemkv-info.txt"
-  expected=$(printf '%s\n' "$info" | bluray_expected_title_count "$title_spec" "$min_length")
+  if [[ "$title_spec" == all ]]; then
+    expected=$(printf '%s\n' "$info" | bluray_expected_title_count "$title_spec" "$min_length")
+  else
+    # The explicit-title count does not consume inventory; avoid an unread pipe.
+    expected=1
+  fi
   if ! "$bin" --robot "--minlength=$min_length" mkv \
     "$source" "$title_spec" "$outdir" >"$err" 2>&1; then
     set_last_err_file "$err"

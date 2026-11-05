@@ -14,15 +14,24 @@ NAME = "ffmpeg-master-latest-linux64-gpl.tar.xz"
 
 def download(name, destination, maximum):
     """Bound downloads and transient HTTP retries; never use anonymous REST quota."""
+    transfer_seconds = 180
+    retry_window_seconds = 300
+    process_seconds = 360
+    if name == NAME:
+        transfer_seconds = 600
+        retry_window_seconds = 600
+        # curl's retry window limits when another attempt can start, not when
+        # its final transfer must end. Bound both plus process cleanup overhead.
+        process_seconds = retry_window_seconds + transfer_seconds + 60
     subprocess.run([
         "curl", "--fail", "--silent", "--show-error", "--location",
         "--proto", "=https", "--proto-redir", "=https",
-        "--connect-timeout", "15", "--max-time", "180",
-        "--retry", "3", "--retry-delay", "5", "--retry-max-time", "300",
+        "--connect-timeout", "15", "--max-time", str(transfer_seconds),
+        "--retry", "3", "--retry-delay", "5", "--retry-max-time", str(retry_window_seconds),
         "--max-filesize", str(maximum), "--user-agent", "audio-utils-ci/1",
         "--header", "Cache-Control: no-cache", "--output", str(destination),
         f"{BASE}/{name}",
-    ], check=True, timeout=360)
+    ], check=True, timeout=process_seconds)
     if destination.stat().st_size > maximum:
         raise ValueError("upstream release asset exceeds its size limit")
 
