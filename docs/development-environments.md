@@ -63,3 +63,17 @@ python3 scripts/development-container.py run apple -- bash scripts/check-develop
 The helper exports an OCI archive and uses `container image load`. Native ARM Macs target `aarch64-linux`; x86 Linux builds target `x86_64-linux`. [Building Linux images from macOS requires a Linux builder](https://devenv.sh/containers/). This workflow does not assume Apple container implements Docker Compose or Docker's daemon API.
 
 Apple execution is not verified by Linux tests. The product targets GNU/Linux. Native macOS checks exercise the development toolset; use a Linux container for Linux runtime behavior. The development image does not provide the Monkey's Audio encoder, Musepack encoder/decoder, keyfinder-cli, or SoX DFF handler; those optional cases report skips. Optional codec and hardware cases retain explicit skip reporting; no proprietary codecs are installed by this profile. Tests use disposable generated media and retain sources.
+
+## Native Linux CI parity
+
+The existing Woodpecker `woodpecker` workflow also runs the locked `devenv test`
+gate in a pinned Nix container, without a Docker socket, host mounts or publisher
+credentials. Nix builds use one job and two cores; application tests use bounded workers.
+The generated validation-only profile includes the same gate and check identity.
+
+Keep `WOODPECKER_NIX_CI` absent or false until the exact PR and genuine merged-main
+native runs pass. Only then may the operator set it to literal `true` to skip the
+duplicate hosted Linux `devenv test` step. Clearing the flag restores that check.
+The flag does not skip macOS, actual Docker development/runtime/editor-image
+validation, or OIDC signing, and does not authorize publishing. Source review and
+workflow parsing do not prove cold-store Nix execution or native parity.
