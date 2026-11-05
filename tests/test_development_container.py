@@ -55,7 +55,8 @@ class RemoteDevelopmentContainerTests(unittest.TestCase):
         self.addCleanup(self.temporary.cleanup)
         self.root = Path(self.temporary.name)
         (self.root / "home").mkdir()
-        fixture_env = {**os.environ, "HOME": str(self.root / "home"), "GIT_CONFIG_NOSYSTEM": "1", "GIT_CONFIG_GLOBAL": os.devnull}
+        fixture_env = {key: value for key, value in os.environ.items() if not key.startswith("GIT_")}
+        fixture_env.update(HOME=str(self.root / "home"), GIT_CONFIG_NOSYSTEM="1", GIT_CONFIG_GLOBAL=os.devnull)
         self.repo = self.root / "checkout with spaces"
         (self.repo / "scripts").mkdir(parents=True)
         helper = Path(__file__).resolve().parents[1] / "scripts/check-development-container.sh"
