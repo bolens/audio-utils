@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Key, prepare, check and execute an offline toolchain; never build/publish on import.
 A prepared manifest is NOT readiness. Actual network-none, fresh-state full-gate
-Docker observations belong to the independent Root proof controller.
+Docker observations require independent operator verification.
 """
 
 from __future__ import annotations
