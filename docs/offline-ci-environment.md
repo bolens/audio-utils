@@ -43,7 +43,8 @@ filesystem/history for secrets and application source, then run this image with:
 
 - `--network=none`, no host Nix store, cache, socket, privileges or shared writes;
 - a fresh container COW store/database and fresh HOME/XDG state for every run;
-- each exact forge workspace path from the contract and default random `.devenv.*`;
+- the observed native workspace `/woodpecker`, plus the alternate nested path
+  from the contract to prove path independence, and default random `.devenv.*`;
 - the current tracked checkout, not the preparation snapshot;
 - `run --root CHECKOUT`, which executes exact pinned devenv with
   `--max-jobs 1 --cores 2 --offline test` and npm forced offline.
@@ -75,7 +76,8 @@ part of this prototype.
 A later reviewed change can pin that verified digest in the existing core workflow
 step in `.woodpecker/woodpecker.yml`, set `network_mode: none`, and regenerate the
 byte-identical validation profile. Keep all six existing workflow basenames,
-required checks and publishing dependencies. Both forge paths must pass first.
+required checks and publishing dependencies. The actual workspace and alternate path must pass first. The nested path is a
+robustness check, not a claimed observed forge layout.
 The source checkout must remain available to the runner; test code is never baked
 into the toolchain. Publishing steps retain their existing network and credential
 policy and do not move into this environment.
