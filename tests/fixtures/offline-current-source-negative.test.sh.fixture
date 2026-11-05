@@ -1,0 +1,8 @@
+#!/usr/bin/env bash
+# Inert until copied to tests/unit/*.test.sh in an owned proof checkout.
+set -euo pipefail
+source "$(dirname "${BASH_SOURCE[0]}")/../harness.sh"
+test_offline_current_source_negative() {
+  fail 'OFFLINE_CURRENT_SOURCE_NEGATIVE_EXECUTED'
+}
+run_tests
