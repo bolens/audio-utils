@@ -11,7 +11,7 @@ repo-check
 devenv test
 ```
 
-The shell supplies Bash, GNU utilities, Python, Node, ShellCheck, FFmpeg, FLAC, and preservation tools. On Linux, `repo-check` runs `make check`, the adapter tests, locked MCP dependency installation and tests, and `make test-all JOBS=4`. Override `JOBS` to change test concurrency. npm installation requires network access; media tests use disposable fixtures and report optional codec skips. Native macOS runs lint and adapter tests only. See [requirements.md](requirements.md) and [../tests/README.md](../tests/README.md) for preservation contracts.
+The shell supplies Bash, GNU utilities, Python, Ruff, Node, ShellCheck, FFmpeg, FLAC, and preservation tools. On Linux, `repo-check` runs `make check`, Ruff on the Python adapter and its tests, the adapter tests, locked MCP dependency installation and tests, and `make test-all JOBS=4`. Override `JOBS` to change test concurrency. npm installation requires network access; media tests use disposable fixtures and report optional codec skips. Native macOS runs lint and adapter tests only. See [requirements.md](requirements.md) and [../tests/README.md](../tests/README.md) for preservation contracts.
 
 Commit `devenv.lock` with deliberate input updates. Local state and `devenv.local.nix` / `devenv.local.yaml` overrides are ignored. Existing Nix cache settings are used without changing daemon trust.
 
@@ -28,6 +28,28 @@ python3 scripts/development-container.py run podman -- bash scripts/check-develo
 Omit the command for an interactive Bash shell. The helper mounts the checkout at `/workspace`, runs with the caller's UID/GID, and uses Podman's keep-id mapping. It forwards arguments and exit status without constructing a shell command. These mounts require a local engine with access to the checkout path; remote Docker daemons need their own source transfer. Paths containing commas are rejected because they cannot be represented by this mount syntax.
 
 The image contains tools, not checkout files. Build archives live under `.devenv/containers/` and are never uploaded by the helper. Existing production images and Compose stacks are separate from this development image.
+
+## Remote Docker validation
+
+When a Docker daemon cannot mount the local checkout, use the optional tracked-source
+adapter after loading the development image into that daemon:
+
+```sh
+bash scripts/check-development-container.sh localhost/audio-utils-dev:latest \
+  bash -c 'make check && make test && make coverage'
+```
+
+This requires local Git, Python and GNU tar. `CONTAINER_ENGINE` selects the Docker
+CLI executable; its existing remote-daemon configuration is respected. The adapter
+copies current tracked files into a disposable container, including tracked edits.
+It excludes ignored and untracked files, `.git` credentials and local dependency
+directories. Keep secrets out of tracked files. The copy and parent directories
+belong to UID/GID 10001. Execution uses that unprivileged user, drops all
+capabilities, prevents privilege escalation and disables networking. It does not
+mount the checkout or Docker socket. Commands that install dependencies need a
+separately prepared image. The container is removed after success or failure and
+its command exit status is returned. The local bind-mount adapter remains useful
+for interactive development and the full network-dependent `repo-check` gate.
 
 ## Apple container
 

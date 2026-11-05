@@ -36,4 +36,5 @@ steps:
       - make check-shared JOBS=2
       - make test JOBS=2
       - make coverage
+      - python3 -m unittest discover -s tests -p test_development_container.py -v
       - cd mcp/npm && npm ci --ignore-scripts --no-audit --no-fund && npm test && npm audit --omit=dev

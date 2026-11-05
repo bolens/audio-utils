@@ -62,7 +62,7 @@ in a Gitea-connected Woodpecker installation. Either Linux Docker runner can
 execute the workflow. Container images are pinned by digest.
 
 The workflow runs the shared-library, script and documentation lint gate, unit and smoke tests,
-coverage inventory, and Node MCP tests and production dependency audit. The ShellCheck
+coverage inventory, mocked development-adapter tests, and Node MCP tests and production dependency audit. The ShellCheck
 version and checksum come from the existing installer action. Codec-heavy functional
 matrices and image publication continue in GitHub Actions.
 

@@ -2,6 +2,7 @@
 set -euo pipefail
 cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.."
 make check
+ruff check scripts/development-container.py tests/test_development_container.py
 python3 -m unittest discover -s tests -p test_development_container.py -v
 if [[ $(uname -s) == Linux ]]; then
   npm ci --prefix mcp/npm --ignore-scripts --no-audit --no-fund
