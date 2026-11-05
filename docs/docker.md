@@ -146,3 +146,23 @@ the prior workflow/check ownership together. This prevents an in-flight bridge
 from publishing after the legacy publisher resumes. Preserve immutable tags and
 inspect pending receipts before retrying. Failed validation PR checks do not need
 publication credentials or a flag change.
+
+## Retiring duplicate portable Linux validation
+
+Both repository variables `WOODPECKER_LINUX_CI=true` and
+`WOODPECKER_PUBLISHING=true` are required to retire the duplicate portable Linux
+jobs. Keep `WOODPECKER_LINUX_CI` absent or false until exact PR and merged-main
+native checks pass, the broker and publishing owner are accepted, and required
+checks migrate to the tested native contexts. The publishing flag follows its
+separate coordinated owner cutover; it can be enabled first while duplicate Linux
+validation remains active. Publication rollback restores these hosted checks when its flag
+is cleared; cancel or drain active publishers before changing that owner flag.
+Native macOS, Linux Nix/devenv validation while its native parity remains unproven,
+actual Docker/runtime/devcontainer validation, and metadata/update automation
+remain hosted. The validation flag does not authorize credentials or publication.
+
+Before retiring the legacy weekly CI schedule, trigger and verify the actual
+native weekly cron: `weekly-full-validation`, Monday 11:17 UTC (`17 11 * * 1`),
+branch `main`. All six native validation lanes must pass; cron never selects the
+publisher. The hosted Docker Monday 12:43 UTC schedule remains. Preserve required
+Docker/development-environment checks while migrating portable CI/source checks.

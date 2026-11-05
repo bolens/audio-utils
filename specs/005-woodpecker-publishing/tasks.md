@@ -21,11 +21,16 @@
   cases across both repositories, including wrong forge URLs and owners. Synthetic
   sentinels are absent from excluded publishers; the image/event barrier rejects
   registry secrets in command or environment steps. Provider HTTP fetching occurs
-  before filtering; signed broker SDK empty-secret response integration proof remains pending.
+  before filtering; signed broker SDK isolated empty-secret integration passed; live acceptance remains pending.
 - [ ] Prove the native clone's full-history assertion before retiring historical checks.
   Every workflow pins the already-installed clone plugin 2.11.0 with depth zero
   and partial false. The actual compiler preserves both settings and trusted
   clone authentication; the core job asserts the checkout is not shallow.
+- [x] Prepare reviewed two-flag Linux retirement guards without changing retained exceptions.
+  Actionlint and 396 combined flag/original-condition cases passed across both
+  repositories. Broker isolated provider integration passed in the host coordinator's actual
+  SDK3.18/3.20 runtime proof; live provider acceptance remains pending.
+- [ ] Obtain final retirement-head PR and merged-main native acceptance before flags.
 - [ ] Obtain native exact-head acceptance, then migrate required checks and remove duplicate triggers.
 
 Unchecked items are required remaining work; no unexecuted path counts as a pass.
