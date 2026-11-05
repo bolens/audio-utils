@@ -105,10 +105,11 @@ test_makemkv_backup_passes_explicit_source() {
 
 test_makemkv_backup_honors_title_and_minlength() {
   _load_bluray
+  # Inventory larger than a pipe buffer exposes an unread-input SIGPIPE under pipefail.
   mkdir -p "$T/bin" "$T/disc/BDMV" "$T/out"
   # shellcheck disable=SC2016 # mock script expands these at execution time
   printf '%s\n' '#!/usr/bin/env bash' \
-    'if [[ " $* " == *" info "* ]]; then printf '\''TINFO:7,9,0,"0:02:00"\n'\''; exit; fi' \
+    'if [[ " $* " == *" info "* ]]; then printf '\''TINFO:7,9,0,"0:02:00"\n'\''; printf '\''%1048576s\n'\'' ""; exit; fi' \
     'dest=${!#}; printf x >"$dest/title.mkv"' \
     'printf '\''%s\0'\'' "$@" >"$MAKE_ARGS"' >"$T/bin/makemkvcon"
   chmod +x "$T/bin/makemkvcon"
