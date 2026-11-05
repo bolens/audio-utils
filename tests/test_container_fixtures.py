@@ -2,11 +2,11 @@
 import importlib.util
 import io
 import json
-from pathlib import Path
 import subprocess
 import tarfile
 import tempfile
 import unittest
+from pathlib import Path
 from unittest.mock import patch
 
 SPEC = importlib.util.spec_from_file_location("fixtures", Path(__file__).resolve().parents[1] / "scripts/container_fixtures.py")
@@ -127,33 +127,29 @@ class VolumeFixturesTests(unittest.TestCase):
 
     def test_unsafe_output_is_rejected_before_local_fixture_deletion_and_cleanup_runs(self):
         self.bad_snapshot = True
-        with patch.object(subprocess, "run", side_effect=self.engine):
-            with self.assertRaisesRegex(RuntimeError, "unsafe output"):
-                self.invoke()
+        with patch.object(subprocess, "run", side_effect=self.engine), self.assertRaisesRegex(RuntimeError, "unsafe output"):
+            self.invoke()
         self.assertTrue((self.outputs / "old").is_file())
         self.assertEqual(sum(args[:2] == ["volume", "rm"] for args, _ in self.commands), 2)
 
     def test_transport_failure_is_not_converted_into_an_expected_command_exit(self):
         self.state = {"Status": "created", "ExitCode": 0}
         self.cleanup_failure = True
-        with patch.object(subprocess, "run", side_effect=self.engine), patch("sys.stderr", new_callable=io.StringIO):
-            with self.assertRaisesRegex(RuntimeError, "did not complete normally"):
-                self.invoke()
+        with patch.object(subprocess, "run", side_effect=self.engine), patch("sys.stderr", new_callable=io.StringIO), self.assertRaisesRegex(RuntimeError, "did not complete normally"):
+            self.invoke()
         self.assertEqual(sum(args[:2] == ["volume", "rm"] for args, _ in self.commands), 2)
 
     def test_remote_input_mutation_fails_before_output_replacement(self):
         self.changed_input = True
-        with patch.object(subprocess, "run", side_effect=self.engine):
-            with self.assertRaisesRegex(RuntimeError, "changed the read-only input"):
-                self.invoke()
+        with patch.object(subprocess, "run", side_effect=self.engine), self.assertRaisesRegex(RuntimeError, "changed the read-only input"):
+            self.invoke()
         self.assertTrue((self.outputs / "old").is_file())
         self.assertEqual(sum(args[:2] == ["volume", "rm"] for args, _ in self.commands), 2)
 
     def test_cleanup_failure_prevents_success(self):
         self.cleanup_failure = True
-        with patch.object(subprocess, "run", side_effect=self.engine):
-            with self.assertRaisesRegex(RuntimeError, "cleanup failed"):
-                self.invoke()
+        with patch.object(subprocess, "run", side_effect=self.engine), self.assertRaisesRegex(RuntimeError, "cleanup failed"):
+            self.invoke()
 
 
 if __name__ == "__main__":

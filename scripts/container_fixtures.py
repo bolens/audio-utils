@@ -2,12 +2,12 @@
 import hashlib
 import io
 import json
-from pathlib import Path, PurePosixPath
 import shutil
 import subprocess
 import tarfile
 import tempfile
 import uuid
+from pathlib import Path, PurePosixPath
 
 
 def fixture_archive(inputs, outputs, uid, gid, owners=None):

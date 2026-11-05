@@ -3,9 +3,9 @@
 import argparse
 import json
 import os
-from pathlib import Path
 import re
 import subprocess
+from pathlib import Path
 
 from woodpecker_native_status import wait_for_native_success
 

@@ -4,7 +4,7 @@
 - [x] Verify direct GitHub source authority and server-side secret broker contract with coordinator.
 - [x] Execute shared lint, unit/smoke, gateway audit/tests and pinned fleet validators locally.
 - [ ] Execute complete Fedora/tool and both functional-codec lanes on native exact-head Woodpecker.
-- [x] Prepare default-disabled candidate workflows and exact-source identity helpers.
+- [x] Stage active publisher configuration with broker/flag enforcement and exact-source identity helpers.
 - [x] Independently review candidate/JIT helpers; fix retry, subprocess redaction and token-lifetime findings.
 - [x] Execute publication denial, lease caching/refresh and identity unit tests.
 - [x] Independently review publication/trust boundary and denial cases.
@@ -16,6 +16,12 @@
   This proves compatibility and transport; it does not replace native exact-head
   event, broker or hosted dispatch/promotion acceptance.
 - [ ] Prove the thin hosted Docker acceptance/exact-digest promotion bridge without registry writes.
+- [x] Prove actual 3.20 parser/compiler event filters exclude publisher steps and credential consumption for PR/manual/cron/Gitea events.
+  Actual v3.20.1 parser, metadata matcher and compiler passed 256 event/branch/forge
+  cases across both repositories, including wrong forge URLs and owners. Synthetic
+  sentinels are absent from excluded publishers; the image/event barrier rejects
+  registry secrets in command or environment steps. Provider HTTP fetching occurs
+  before filtering; corrected signed broker SDK204/no-values integration proof remains pending.
 - [ ] Obtain native exact-head acceptance, then migrate required checks and remove duplicate triggers.
 
 Unchecked items are required remaining work; no unexecuted path counts as a pass.

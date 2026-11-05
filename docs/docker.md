@@ -114,11 +114,14 @@ create a versioned source release.
 
 ## Woodpecker publication cutover
 
-Until native checks, broker policy and the hosted bridge pass acceptance, the
-legacy GitHub Docker publisher remains active and the new publisher is an
-undiscovered `.woodpecker-publishing.yml.example`. Activation moves the example
-into `.woodpecker/publishing.yml` and explicitly enables `WOODPECKER_PUBLISHING`.
-Gitea mirrors validate only; canonical GitHub protected-main pushes may publish.
+The staged `.woodpecker/publishing.yml` selects only canonical GitHub protected-main
+pushes. The server broker must approve the event and the canonical repository
+variable `WOODPECKER_PUBLISHING` must explicitly enable delivery. Until native
+checks, broker policy and the hosted bridge pass acceptance, keep that flag off
+and retain the legacy GitHub Docker owner. PR, manual, cron and Gitea events do not
+select publisher steps or credentials. Gitea mirrors retain validation only.
+Coordinate the flag and publishing-owner transition before merging this active
+configuration; a missing broker credential fails closed.
 
 The pinned socket-free Kaniko plugin builds one immutable candidate using only
 image-filtered `ghcr_username` and `ghcr_password`. A protected-ref broker lease

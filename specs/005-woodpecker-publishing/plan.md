@@ -11,7 +11,8 @@ at execution time at the fixed TLS broker endpoint; short-lived tokens remain
 only in memory/subprocess environments and refresh below 120 seconds remaining.
 Git trace/debug settings are removed from authenticated subprocesses. Repository variable
 WOODPECKER_PUBLISHING must explicitly enable production delivery; its absence
-keeps activation disabled. The broker is the security boundary, not YAML filters.
+keeps delivery disabled. The publisher configuration is staged in discovery;
+coordinate the enabled broker/flag and owner transition before merging. The broker is the security boundary, not YAML filters.
 
 Socket-free Kaniko builds an immutable candidate, with its source/platform/config
 bound to the native pipeline. A thin hosted Docker bridge waits for all seven

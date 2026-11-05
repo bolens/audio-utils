@@ -81,7 +81,8 @@ signing are retained platform exceptions. Docker build/runtime checks remain on
 Actions until equivalent isolated build and fixture execution are proven; runners
 do not receive a host Docker socket or broader privileges.
 
-Publication is disabled by default. Activation requires the authenticated server
+The publisher configuration is staged, but delivery remains disabled until the
+coordinated owner cutover. Delivery requires the authenticated server
 secret broker's exact GitHub repository/ref/SHA policy and the canonical GitHub
 repository variable `WOODPECKER_PUBLISHING=true`. No PR, fork, manual or Gitea
 workflow receives publication credentials. Existing release/version rules remain

@@ -2,11 +2,11 @@
 import importlib.util
 import json
 import os
-from pathlib import Path
 import subprocess
 import sys
 import tempfile
 import unittest
+from pathlib import Path
 from unittest.mock import patch
 
 DIRECTORY = Path(__file__).resolve().parents[1] / "scripts/ci"
@@ -41,12 +41,10 @@ class ImageBridgeTests(unittest.TestCase):
         for key, value in [("GITHUB_ACTOR_ID", "123"), ("GITHUB_REPOSITORY", "fork/other"),
                            ("GITHUB_WORKFLOW_REF", "wrong"), ("GITHUB_REF", "refs/pull/1/merge"),
                            ("GITHUB_SHA", "d" * 40)]:
-            with self.subTest(key=key), patch.dict(os.environ, {**self.env, key: value}, clear=True), patch.object(bridge, "run", side_effect=[SHA, ""]):
-                with self.assertRaises(ValueError):
-                    bridge.context()
-        with patch.dict(os.environ, self.env, clear=True), patch.object(bridge, "run", side_effect=[SHA, ""]), patch.object(bridge, "api", return_value={"sha": "d" * 40}):
-            with self.assertRaisesRegex(ValueError, "superseded"):
+            with self.subTest(key=key), patch.dict(os.environ, {**self.env, key: value}, clear=True), patch.object(bridge, "run", side_effect=[SHA, ""]), self.assertRaises(ValueError):
                 bridge.context()
+        with patch.dict(os.environ, self.env, clear=True), patch.object(bridge, "run", side_effect=[SHA, ""]), patch.object(bridge, "api", return_value={"sha": "d" * 40}), self.assertRaisesRegex(ValueError, "superseded"):
+            bridge.context()
 
     def test_runtime_source_uid_platform_and_candidate_digest_binding(self):
         image = {"Id": CONFIG, "Os": "linux", "Architecture": "amd64", "Config": {"User": "10001:10001", "Labels": {
@@ -61,9 +59,8 @@ class ImageBridgeTests(unittest.TestCase):
             replacement = json.dumps(value)
             bad = list(replies)
             bad[index] = replacement
-            with self.subTest(index=index), patch.object(bridge, "run", side_effect=bad):
-                with self.assertRaises(ValueError):
-                    bridge.candidate_identity(self.record)
+            with self.subTest(index=index), patch.object(bridge, "run", side_effect=bad), self.assertRaises(ValueError):
+                bridge.candidate_identity(self.record)
 
     def test_verify_requires_native_success_before_runtime_and_records_only_after(self):
         with patch.object(bridge, "context", return_value=self.record), patch.object(bridge, "wait_for_native_success", side_effect=ValueError("native failed")), patch.object(bridge, "run") as run:
@@ -80,9 +77,8 @@ class ImageBridgeTests(unittest.TestCase):
                 run.assert_not_called()
 
     def test_alias_auth_failure_is_not_absence_and_children_strip_secrets(self):
-        with patch.object(subprocess, "run", return_value=subprocess.CompletedProcess([], 1, "", "unauthorized")):
-            with self.assertRaisesRegex(ValueError, "alias state"):
-                bridge.inspect_alias("latest")
+        with patch.object(subprocess, "run", return_value=subprocess.CompletedProcess([], 1, "", "unauthorized")), self.assertRaisesRegex(ValueError, "alias state"):
+            bridge.inspect_alias("latest")
         with patch.dict(os.environ, {"GH_TOKEN": "test", "GITHUB_TOKEN": "test", "WOODPECKER_PUBLISH_LEASE": "test", "GIT_TRACE": "1"}, clear=True):
             self.assertFalse({"GH_TOKEN", "GITHUB_TOKEN", "WOODPECKER_PUBLISH_LEASE", "GIT_TRACE"} & bridge.environment().keys())
             self.assertEqual(bridge.environment(auth=True)["GH_TOKEN"], "test")

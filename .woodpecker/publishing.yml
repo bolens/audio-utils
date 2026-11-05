@@ -1,9 +1,6 @@
-# DEFAULT DISABLED: example is outside Woodpecker config discovery.
-# Activate only after broker/native proof by moving this example to
-# .woodpecker/publishing.yml. Keep every required validation dependency.
-# Keep the validation dependency, broker policy and host variable required.
-# This workflow publishes candidates only. Runtime verification, OIDC bridge and
-# serialized alias promotion remain required before consumer delivery is enabled.
+# Canonical GitHub protected-main publication; broker and repository flag are required.
+# PR, manual, cron and Gitea events never select publisher steps or secrets.
+# The hosted bridge accepts the exact digest before immutable/latest promotion.
 labels:
   platform: linux/amd64
   backend: docker
