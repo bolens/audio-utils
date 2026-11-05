@@ -1,0 +1,105 @@
+"""Archive, lifecycle and failure contracts for remote Docker fixture transport."""
+import importlib.util
+import io
+import json
+from pathlib import Path
+import subprocess
+import tarfile
+import tempfile
+import unittest
+from unittest.mock import patch
+
+SPEC = importlib.util.spec_from_file_location("fixtures", Path(__file__).resolve().parents[1] / "scripts/container_fixtures.py")
+fixtures = importlib.util.module_from_spec(SPEC)
+SPEC.loader.exec_module(fixtures)
+
+
+class VolumeFixturesTests(unittest.TestCase):
+    def setUp(self):
+        self.temporary = tempfile.TemporaryDirectory()
+        self.addCleanup(self.temporary.cleanup)
+        root = Path(self.temporary.name)
+        self.inputs, self.outputs = root / "input", root / "output"
+        self.inputs.mkdir()
+        self.outputs.mkdir()
+        (self.inputs / '-雪 [*]\n.wav').write_bytes(b"original PCM fixture")
+        (self.outputs / "old").write_text("must disappear")
+        self.commands = []
+        self.state = {"Status": "exited", "ExitCode": 2}
+        self.bad_snapshot = False
+        self.cleanup_failure = False
+
+    def engine(self, command, **kwargs):
+        args = command[1:]
+        self.commands.append((args, kwargs))
+        stdout = ""
+        code = 0
+        if args[:2] == ["volume", "inspect"]:
+            code = 1
+        elif args[0] == "inspect":
+            stdout = json.dumps(self.state)
+        elif args[0] == "cp" and args[-2].endswith(":/output"):
+            destination = Path(args[-1])
+            destination.mkdir()
+            if self.bad_snapshot:
+                (destination / "escape").symlink_to("/etc/passwd")
+            else:
+                (destination / "new").write_text("new snapshot")
+        elif self.cleanup_failure and args[:2] == ["volume", "rm"]:
+            code = 1
+        if kwargs.get("check") and code:
+            raise subprocess.CalledProcessError(code, command)
+        return subprocess.CompletedProcess(command, code, stdout, "")
+
+    def invoke(self):
+        return fixtures.run_volume("docker", "image:exact", ["--network=none", "--read-only", "--cap-drop=ALL", "--security-opt=no-new-privileges", "--user", "10001:10001"], ["--help"], self.inputs, self.outputs, 10001, 10001)
+
+    def test_archive_preserves_hostile_names_and_numeric_directory_ownership(self):
+        data = fixtures.fixture_archive(self.inputs, self.outputs, 10001, 10002)
+        with tarfile.open(fileobj=io.BytesIO(data)) as archive:
+            self.assertIn('input/data/-雪 [*]\n.wav', archive.getnames())
+            for member in archive:
+                self.assertEqual((member.uid, member.gid, member.uname, member.gname), (10001, 10002, "", ""))
+        self.assertEqual((self.inputs / '-雪 [*]\n.wav').read_bytes(), b"original PCM fixture")
+
+    def test_volume_run_preserves_real_exit_and_replaces_snapshot_without_bind_paths(self):
+        with patch.object(subprocess, "run", side_effect=self.engine):
+            result = self.invoke()
+        self.assertEqual(result.returncode, 2)
+        self.assertEqual(sorted(p.name for p in self.outputs.iterdir()), ["new"])
+        create = next(args for args, _ in self.commands if args[0] == "create" and args[2].endswith("-runtime"))
+        self.assertIn("--read-only", create)
+        self.assertIn("--cap-drop=ALL", create)
+        self.assertIn("--network=none", create)
+        self.assertTrue(any("dst=/input,volume-subpath=data,readonly" in value for value in create))
+        self.assertTrue(any("dst=/output,volume-subpath=data" in value for value in create))
+        self.assertFalse(any("type=bind" in value for value in create))
+        self.assertNotIn(str(self.inputs), create)
+        self.assertEqual(create[create.index("--") + 1:], ["image:exact", "--help"])
+        self.assertEqual(sum(args[:2] == ["volume", "rm"] for args, _ in self.commands), 2)
+
+    def test_unsafe_output_is_rejected_before_local_fixture_deletion_and_cleanup_runs(self):
+        self.bad_snapshot = True
+        with patch.object(subprocess, "run", side_effect=self.engine):
+            with self.assertRaisesRegex(RuntimeError, "unsafe output"):
+                self.invoke()
+        self.assertTrue((self.outputs / "old").is_file())
+        self.assertEqual(sum(args[:2] == ["volume", "rm"] for args, _ in self.commands), 2)
+
+    def test_transport_failure_is_not_converted_into_an_expected_command_exit(self):
+        self.state = {"Status": "created", "ExitCode": 0}
+        self.cleanup_failure = True
+        with patch.object(subprocess, "run", side_effect=self.engine), patch("sys.stderr", new_callable=io.StringIO):
+            with self.assertRaisesRegex(RuntimeError, "did not complete normally"):
+                self.invoke()
+        self.assertEqual(sum(args[:2] == ["volume", "rm"] for args, _ in self.commands), 2)
+
+    def test_cleanup_failure_prevents_success(self):
+        self.cleanup_failure = True
+        with patch.object(subprocess, "run", side_effect=self.engine):
+            with self.assertRaisesRegex(RuntimeError, "cleanup failed"):
+                self.invoke()
+
+
+if __name__ == "__main__":
+    unittest.main()

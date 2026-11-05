@@ -38,8 +38,8 @@ See [GitHub's registry guide](https://docs.github.com/en/packages/working-with-a
 The image defaults to UID/GID 10001. On Linux, use your UID/GID so new files belong
 to you. Create writable output directories before mounting them. Container paths,
 including paths in configuration and manifests, must refer to the mounted paths.
-Only bind mounts make media available to the container. No host library is copied
-into the image. The build context allows runtime source directories only.
+Supply media through explicit mounts. The build context allows runtime source
+directories only.
 
 Audio converters write verified outputs beside their input. Mount a disposable
 working copy read-write for conversion. Existing audio flags retain their meaning:
@@ -87,6 +87,23 @@ conversions, source/output comparisons, unusual filenames, ownership checks,
 non-root defaults, dry runs and failures with a read-only root and no network.
 Host Python 3.11+ is needed for tests. Rootless Podman can run the same checks via
 `make test-docker CONTAINER_ENGINE=podman`. Existing native suites remain separate.
+
+For a remote Docker 26+ daemon, the optional volume transport transfers only the
+same disposable fixtures through `docker cp`, without daemon-host bind paths:
+
+```sh
+python3 scripts/test-docker.py --image audio-utils:local --transport volume
+```
+
+It uses private named volumes, a read-only input mount, a writable output mount,
+and the same numeric UID/GID and acceptance checks. Output snapshots preserve
+numeric ownership and reflect deletions. Each volume holds a seeded `data` child
+directory; subpath mounts preserve its UID/GID instead of reusing the daemon-owned
+volume root. Test containers and volumes are removed
+on success and failure; cleanup failure fails the run. The default bind transport
+is unchanged. Volume transport is tested with Docker; Podman keeps its existing
+bind-mode validation. CI must use an isolated build/runtime engine rather than
+exposing a general host Docker socket to repository jobs.
 
 To roll back, run the previously verified registry digest. Never overwrite source
 media as a recovery step. Publishing containers does not change CLI VERSION or

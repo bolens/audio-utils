@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Exercise the built CLI image on disposable bind mounts, without networking."""
+"""Exercise the built CLI image on disposable mounts, without networking."""
 import argparse
 import hashlib
 import os
@@ -9,6 +9,8 @@ import subprocess
 import tempfile
 import wave
 
+from container_fixtures import run_volume
+
 SUITE = 'audio-utils'
 
 
@@ -16,6 +18,8 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--engine', default='docker')
     parser.add_argument('--image', default=SUITE + ':local')
+    parser.add_argument('--transport', choices=['bind', 'volume'], default='bind',
+                        help='volume copies fixtures through the Docker API for a remote daemon')
     args = parser.parse_args()
     uid = os.getuid() or 10001
     gid = os.getgid() if os.getuid() else 10001
@@ -27,11 +31,13 @@ def main():
         outputs.mkdir()
         if os.getuid() == 0:
             os.chown(outputs, uid, gid)
-        options = ['--rm', '--network=none', '--read-only', '--cap-drop=ALL',
+        options = ['--network=none', '--read-only', '--cap-drop=ALL',
                    '--security-opt=no-new-privileges', '--tmpfs', '/tmp:rw,nosuid,nodev,mode=1777',
-                   '--user', f'{uid}:{gid}', '--workdir', '/output',
-                   '--mount', f'type=bind,src={inputs},dst=/input,readonly',
-                   '--mount', f'type=bind,src={outputs},dst=/output']
+                   '--user', f'{uid}:{gid}', '--workdir', '/output']
+        if args.transport == 'bind':
+            options = ['--rm', *options,
+                       '--mount', f'type=bind,src={inputs},dst=/input,readonly',
+                       '--mount', f'type=bind,src={outputs},dst=/output']
         if Path(args.engine).name == 'podman':
             options += ['--userns=keep-id']
 
@@ -44,8 +50,11 @@ def main():
                     opts.remove('--userns=keep-id')
             if entry:
                 opts += ['--entrypoint', entry]
-            result = subprocess.run([args.engine, 'run', *opts, args.image, *map(str, command)],
-                                    capture_output=True, text=True, timeout=180)
+            if args.transport == 'volume':
+                result = run_volume(args.engine, args.image, opts, command, inputs, outputs, uid, gid)
+            else:
+                result = subprocess.run([args.engine, 'run', *opts, '--', args.image, *map(str, command)],
+                                        capture_output=True, text=True, timeout=180)
             if result.returncode != code:
                 raise AssertionError(f'{command!r}: expected {code}, got {result.returncode}\n'
                                      f'{result.stdout}\n{result.stderr}')

@@ -35,7 +35,7 @@ class PublicationPolicyTests(unittest.TestCase):
         self.addCleanup(self.git.stop)
 
     def test_lease_is_redeemed_at_fixed_endpoint_and_cached_without_trace_env(self):
-        reply = io.BytesIO(json.dumps({"token": "unit-test-token", "expires_at": 5000}).encode())
+        reply = io.BytesIO(json.dumps({"token": "unit-test-token", "expires_at": "1970-01-01T01:23:20Z"}).encode())
         with patch.dict(os.environ, {"WOODPECKER_PUBLISH_LEASE": "unit-test-lease", "GH_DEBUG": "api", "GIT_TRACE": "1"}), patch.object(publisher, "_GITHUB_CREDENTIAL", None), patch("time.time", return_value=1000), patch("urllib.request.build_opener") as build:
             build.return_value.open.return_value = reply
             first = publisher.github_environment()

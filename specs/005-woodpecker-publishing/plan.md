@@ -21,3 +21,9 @@ existing platform guarantees and do not claim execution from source inspection.
 Validate shell/YAML/fleet contracts, mocked publication denial/identity behavior,
 native application gates, then exact-source Woodpecker with no production release.
 Migrate one owning trigger/status only after that evidence and root settings proof.
+
+The optional Docker volume fixture transport preserves default bind behavior. It
+copies only generated fixtures through the Docker API with numeric ownership,
+mounts runtime input read-only, reads back a complete output snapshot, and removes
+only its UUID-named containers/volumes. This proves transport/acceptance behavior;
+it does not grant jobs access to a general host Docker daemon.
