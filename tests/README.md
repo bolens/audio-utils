@@ -75,6 +75,14 @@ feature pushes avoid duplicate PR work. Publication remains main-push only.
 A weekly host cron must be configured before retiring the existing weekly Actions
 validation schedule.
 
+The rolling FFmpeg lane reads the official release's `checksums.sha256` asset,
+then verifies the archive before installing only its two regular binary members.
+It uses no anonymous GitHub REST quota or publication credentials. If the mutable
+latest tag moves between reads, a checksum mismatch fails without installing.
+Release downloads have finite retries, connection/transfer timeouts and body caps.
+Core and tool lint share the pinned ShellCheck installer; its version and both
+architecture checksums remain unchanged.
+
 Existing GitHub Actions gates remain required until the exact-source Woodpecker
 checks pass and the owning host settings migrate. Native macOS and GitHub OIDC
 signing are retained platform exceptions. Docker build/runtime checks remain on

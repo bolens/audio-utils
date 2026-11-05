@@ -27,23 +27,11 @@ steps:
         export DEBIAN_FRONTEND=noninteractive
         apt-get update
         apt-get install -y --no-install-recommends make python3 python3-yaml jq curl xz-utils ffmpeg flac
-      - |-
-        python3 - <<'INSTALL'
-        import hashlib, io, pathlib, tarfile, urllib.request, yaml
-        config = yaml.safe_load(pathlib.Path('.github/actions/install-shellcheck/action.yml').read_text())['inputs']
-        version, checksum = config['version']['default'], config['sha256']['default']
-        url = f'https://github.com/koalaman/shellcheck/releases/download/{version}/shellcheck-{version}.linux.x86_64.tar.xz'
-        data = urllib.request.urlopen(url, timeout=60).read()
-        assert hashlib.sha256(data).hexdigest() == checksum, 'ShellCheck checksum mismatch'
-        with tarfile.open(fileobj=io.BytesIO(data), mode='r:xz') as archive:
-            binary = archive.extractfile(f'shellcheck-{version}/shellcheck').read()
-        path = pathlib.Path('/usr/local/bin/shellcheck')
-        path.write_bytes(binary)
-        path.chmod(0o755)
-        INSTALL
+      - bash .devcontainer/install-shellcheck.sh
       - test "$(git rev-parse --is-shallow-repository)" = false
       - python3 scripts/ci/sync-woodpecker-validation.py --check
       - python3 -m unittest discover -s tests -p test_validation_profile.py
+      - python3 -m unittest discover -s tests -p test_ci_release_downloads.py
       - make check-shared JOBS=2
       - npm ci --prefix mcp/npm --ignore-scripts --no-audit --no-fund
       - make test JOBS=2
