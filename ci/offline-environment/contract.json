@@ -35,6 +35,7 @@
     "/woodpecker/src/gitea.bolens.dev/bolens/audio-utils"
   ],
   "devenv_arguments": [
+    "--verbose",
     "--max-jobs",
     "1",
     "--cores",

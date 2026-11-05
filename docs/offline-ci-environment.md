@@ -46,7 +46,11 @@ filesystem/history for secrets and application source, then run this image with:
 - each forge-resolved workspace path from the contract and default random `.devenv.*`;
 - the current tracked checkout, not the preparation snapshot;
 - `run --root CHECKOUT`, which executes exact pinned devenv with
-  `--max-jobs 1 --cores 2 --offline test` and npm forced offline.
+  `--verbose --max-jobs 1 --cores 2 --offline test` and npm forced offline.
+
+Pinned devenv hides successful task output by default. Global `--verbose` exposes
+it with the exact `[devenv:enterTest] ` prefix; remove only that prefix when
+parsing summaries, not timestamped failure-report replay.
 
 Record full logs and process exits. Compare the actual full development gate,
 including each Python family, Node TAP results and the Bash runner's

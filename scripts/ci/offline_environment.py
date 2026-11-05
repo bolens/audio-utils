@@ -113,7 +113,7 @@ def validate_contract(contract):
         raise ValueError("mutable environment identity")
     if (
         contract["devenv_arguments"]
-        != ["--max-jobs", "1", "--cores", "2", "--offline", "test"]
+        != ["--verbose", "--max-jobs", "1", "--cores", "2", "--offline", "test"]
         or contract["network_mode"] != "none"
     ):
         raise ValueError("offline gate contract changed")
@@ -465,6 +465,11 @@ def validate_runtime_isolation(interfaces, mountpoints, docker_marker):
 
 def run_gate(root, manifest):
     identity = check_manifest(root, manifest)
+    return _run_checked_gate(root, manifest, identity)
+
+
+def _run_checked_gate(root, manifest, identity):
+    """Internal execution primitive; normal CLI always validates the full key."""
     validate_runtime_isolation(
         [p.name for p in Path("/sys/class/net").iterdir()],
         [

@@ -403,6 +403,17 @@ class OfflineEnvironmentTests(unittest.TestCase):
         )
         self.assertEqual(first, self.identity()["environment_key"])
 
+    def test_public_runner_never_bypasses_full_manifest_key(self):
+        with (
+            patch.object(
+                MODULE, "check_manifest", side_effect=ValueError("key mismatch")
+            ),
+            patch.object(MODULE, "_run_checked_gate") as execute,
+        ):
+            with self.assertRaisesRegex(ValueError, "key mismatch"):
+                MODULE.run_gate(self.root, self.manifest())
+        execute.assert_not_called()
+
     def test_runtime_environment_drops_all_make_and_filter_controls(self):
         manifest = self.manifest()
         identity = manifest["identity"]
@@ -449,7 +460,7 @@ class OfflineEnvironmentTests(unittest.TestCase):
         self.assertEqual(captured["env"]["npm_config_offline"], "true")
         self.assertEqual(
             captured["command"],
-            [CLI, "--max-jobs", "1", "--cores", "2", "--offline", "test"],
+            [CLI, "--verbose", "--max-jobs", "1", "--cores", "2", "--offline", "test"],
         )
 
 
