@@ -49,20 +49,37 @@ Fleet policy: <https://github.com/bolens/.github/blob/main/RELEASING.md>.
 
 ## Source lint
 
-The Source lint workflow checks maintained JavaScript and Python files selected by
-[`.github/source-lint.json`](.github/source-lint.json) on every pull request
-and push to `main`. Existing native checks remain part of the merge gate.
+The native Woodpecker core checks maintained JavaScript and Python files selected
+by [`.github/source-lint.json`](.github/source-lint.json), using
+[`scripts/ci/check-fleet.sh`](scripts/ci/check-fleet.sh) and the same pinned fleet
+tooling as [the hosted Source lint fallback](.github/workflows/source-lint.yml).
+The hosted check runs whenever either `WOODPECKER_LINUX_CI` or
+`WOODPECKER_PUBLISHING` is not `true`. After the paired cutover is accepted,
+require all six native PR checks plus `Development environment` and `Docker runtime`
+on the current head; do not require an intentionally skipped fallback.
+
 Use the [shared local reproduction instructions](https://github.com/bolens/.github/blob/7603518f305fb76f7bb1b9979f2692521f633b82/docs/source-lint.md)
-with the same tooling revision pinned in
-[the workflow](.github/workflows/source-lint.yml). Review exclusions when adding
-source files; generated and imported files retain their native validation.
-Require the new check to pass on the current PR head before merging.
+with the same pinned tooling revision. Review exclusions when adding source files;
+generated and imported files retain their native validation. See the
+[cutover contract](docs/docker.md) for profile, flag, and protection ordering.
 
 ## Container delivery
 
-Docker PR checks build the runtime image and run `make test-docker`. Require
-`Docker runtime` alongside existing checks. Main pushes publish the tested image
-to GHCR with `latest` and full-commit tags. Verify the Publish GHCR job and pull
-and smoke-test the published digest after merge. Roll back by digest as described
-in [Docker](docs/docker.md). Container delivery does not bump VERSION or create a
-source release tag. PR and scheduled jobs never publish packages.
+Docker PR checks build the runtime image and run `make test-docker`. Keep
+`Docker runtime` required alongside native checks and the retained development
+environment gates, including macOS and actual Docker execution.
+
+With `WOODPECKER_PUBLISHING=true`, the broker policy and full Woodpecker profile
+must be enabled together. Canonical main pushes build an immutable candidate in
+Woodpecker. The retained hosted `Accept exact Woodpecker image` bridge runs full
+runtime acceptance, then promotes that exact digest to the commit and `latest`
+tags without rebuilding. Require the native publisher and bridge to succeed and
+verify the candidate, commit, and `latest` tags resolve to the accepted digest.
+With publication disabled, the hosted `Publish GHCR` job remains the fallback.
+
+Follow [Docker](docs/docker.md) for the ordered cutover and rollback: drain native
+and hosted publishers, select the validation-only profile, then clear the
+publication flag. Roll runtime deployments back by verified digest. Container
+delivery does not bump VERSION or create a source release tag. PR and scheduled
+jobs never publish packages; product releases remain separately authorized signed
+tag and GitHub-release operations above.

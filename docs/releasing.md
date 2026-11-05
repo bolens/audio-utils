@@ -2,7 +2,7 @@
 
 [Documentation](README.md)
 
-Releases are GitHub releases backed by an annotated `vMAJOR.MINOR.PATCH` tag.
+Releases are GitHub releases backed by a signed annotated `vMAJOR.MINOR.PATCH` tag.
 The repository `VERSION` and `mcp/npm/package{,-lock}.json` versions must match
 the tag without its `v` prefix. The npm package remains private and is not
 published separately.
@@ -52,12 +52,31 @@ git merge --ff-only origin/main
 
 ## Publish
 
+Use the authoritative GitHub checkout and a separately authorized product release.
+Follow [the owning delivery playbook](../RELEASING.md) for remote and publication
+authority; Gitea copies do not create duplicate tags or releases.
+
 1. Confirm `main` is clean, contains the merged PR, passes the version
    consistency checks above, and still has no tag for the release version.
-2. Create the GitHub release and its annotated tag from the exact merged
-   `origin/main` commit. Use concise notes grouped by user-visible features,
-   fixes, security/dependency changes, and validation.
-3. Verify the release is published (not draft or prerelease), its tag and target
+2. Create and verify a signed annotated tag at the exact validated merged
+   `origin/main` commit, then push only that tag:
+
+   ```bash
+   version="$(<VERSION)"
+   git tag -s "v${version}" origin/main -m "audio-utils ${version}"
+   git verify-tag "v${version}"
+   git push origin "refs/tags/v${version}"
+   ```
+
+3. Create the GitHub release from that existing remote tag:
+
+   ```bash
+   gh release create "v${version}" --verify-tag --generate-notes
+   ```
+
+   Use concise notes grouped by user-visible features, fixes,
+   security/dependency changes, and validation.
+4. Verify the release is published (not draft or prerelease), its tag and target
    commit are correct, and the tag is visible after `git fetch --tags`.
 
 Never move or overwrite a published release tag. Correct a bad release with a
