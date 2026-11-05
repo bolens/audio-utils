@@ -1,4 +1,7 @@
 # Portable validation on Gitea-connected Woodpecker runners. No publication credentials.
+labels:
+  platform: linux/amd64
+  backend: docker
 when:
   - event:
       - push
@@ -6,9 +9,11 @@ when:
       - manual
 steps:
   - name: verify
-    image: node:26-bookworm@sha256:fa52d1669505e29b58c042875b1d65c229e0787a3610fd52869b22b68e480853
+    image: node:26-trixie@sha256:6d2c7d5d074bf72f81ddc252b4fbb5d625bc028eeda49cb4b8c2ff8eda1ee617
     environment:
       CI: 'true'
+      LANG: C.UTF-8
+      LC_ALL: C.UTF-8
     commands:
       - |-
         export DEBIAN_FRONTEND=noninteractive
