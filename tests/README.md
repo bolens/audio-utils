@@ -54,3 +54,19 @@ select the MCP tests. Removed tools and category-level inputs select all survivi
 tools in that group; newly nested tool Makefiles remain discoverable. Invalid
 changed-file JSON fails planning. The required CI gate validates filter outputs
 and requires every selected job to succeed; only unselected jobs may skip.
+
+## Woodpecker CI
+
+[.woodpecker.yml](../.woodpecker.yml) runs on pushes, pull requests, and manual builds
+in a Gitea-connected Woodpecker installation. Either Linux Docker runner can
+execute the workflow. Container images are pinned by digest.
+
+The workflow runs the shared-library, script and documentation lint gate, unit and smoke tests,
+coverage inventory, mocked development-adapter tests, and Node MCP tests and production dependency audit. The ShellCheck
+version and checksum come from the existing installer action. Codec-heavy functional
+matrices and image publication continue in GitHub Actions.
+
+Activate this repository in Woodpecker after its GitHub source branch has been
+synchronized to Gitea. The existing GitHub checks remain required until their
+coverage and release responsibilities are migrated explicitly. Review image
+digest updates alongside the repository toolchain and lockfiles.

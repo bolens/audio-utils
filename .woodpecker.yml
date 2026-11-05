@@ -1,0 +1,40 @@
+# Portable validation on Gitea-connected Woodpecker runners. No publication credentials.
+labels:
+  platform: linux/amd64
+  backend: docker
+when:
+  - event:
+      - push
+      - pull_request
+      - manual
+steps:
+  - name: verify
+    image: node:26-trixie@sha256:6d2c7d5d074bf72f81ddc252b4fbb5d625bc028eeda49cb4b8c2ff8eda1ee617
+    environment:
+      CI: 'true'
+      LANG: C.UTF-8
+      LC_ALL: C.UTF-8
+    commands:
+      - |-
+        export DEBIAN_FRONTEND=noninteractive
+        apt-get update
+        apt-get install -y --no-install-recommends make python3 python3-yaml jq curl xz-utils ffmpeg flac
+      - |-
+        python3 - <<'INSTALL'
+        import hashlib, io, pathlib, tarfile, urllib.request, yaml
+        config = yaml.safe_load(pathlib.Path('.github/actions/install-shellcheck/action.yml').read_text())['inputs']
+        version, checksum = config['version']['default'], config['sha256']['default']
+        url = f'https://github.com/koalaman/shellcheck/releases/download/{version}/shellcheck-{version}.linux.x86_64.tar.xz'
+        data = urllib.request.urlopen(url, timeout=60).read()
+        assert hashlib.sha256(data).hexdigest() == checksum, 'ShellCheck checksum mismatch'
+        with tarfile.open(fileobj=io.BytesIO(data), mode='r:xz') as archive:
+            binary = archive.extractfile(f'shellcheck-{version}/shellcheck').read()
+        path = pathlib.Path('/usr/local/bin/shellcheck')
+        path.write_bytes(binary)
+        path.chmod(0o755)
+        INSTALL
+      - make check-shared JOBS=2
+      - make test JOBS=2
+      - make coverage
+      - python3 -m unittest discover -s tests -p test_development_container.py -v
+      - cd mcp/npm && npm ci --ignore-scripts --no-audit --no-fund && npm test && npm audit --omit=dev

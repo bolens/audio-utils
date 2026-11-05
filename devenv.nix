@@ -12,7 +12,7 @@ in
   process.manager.implementation = "overmind";
   packages = with pkgs; [
     bashInteractive coreutils findutils gawk git gnugrep gnumake gnused
-    diffutils python3 nodejs_24 shellcheck cacert curl wget jq file
+    diffutils python3 ruff nodejs_24 shellcheck cacert curl wget jq file
     ffmpeg flac sox mediainfo chromaprint rsgain minisign par2cmdline
     gnutar gzip unzip zip which cmake stdenv.cc
   ] ++ lib.optionals pkgs.stdenv.hostPlatform.isLinux [ pkgs.util-linux pkgs.bpm-tools ];
