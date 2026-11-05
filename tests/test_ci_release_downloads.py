@@ -74,9 +74,13 @@ class ReleaseDownloadTests(unittest.TestCase):
         self.assertEqual([args[-1] for args, _ in calls], [
             ROLLING.BASE + "/checksums.sha256", ROLLING.BASE + "/" + ROLLING.NAME,
         ])
-        for args, kwargs in calls:
+        self.assertEqual([kwargs for _, kwargs in calls], [
+            {"check": True, "timeout": 360}, {"check": True, "timeout": 1260},
+        ])
+        self.assertEqual([args[args.index("--max-time") + 1] for args, _ in calls], ["180", "600"])
+        self.assertEqual([args[args.index("--retry-max-time") + 1] for args, _ in calls], ["300", "600"])
+        for args, _ in calls:
             self.assertNotIn("api.github.com", " ".join(args))
-            self.assertEqual(kwargs, {"check": True, "timeout": 360})
             self.assertEqual(args[args.index("--retry") + 1], "3")
             self.assertEqual(args[args.index("--proto") + 1], "=https")
             self.assertEqual(args[args.index("--proto-redir") + 1], "=https")
