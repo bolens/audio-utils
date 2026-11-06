@@ -132,12 +132,13 @@ class OfflineEnvironmentTests(unittest.TestCase):
             args[:6],
             ["nix", "--offline", "flake", "prefetch", "--json", "--no-use-registries"],
         )
+        self.assertEqual(args[6:9], ["--option", "flake-registry", ""])
         self.assertTrue(
-            args[6].startswith(
+            args[9].startswith(
                 "github:cachix/devenv/" + locked["rev"] + "?narHash=sha256-"
             )
         )
-        self.assertTrue(args[6].endswith("%3D"))
+        self.assertTrue(args[9].endswith("%3D"))
         self.assertNotIn("archive", args)
         self.assertNotIn("build", args)
         self.assertEqual(command.call_args.kwargs["timeout"], 180)
@@ -634,6 +635,8 @@ class OfflineEnvironmentTests(unittest.TestCase):
             all(name not in captured["env"] for name in inherited if name != "PATH")
         )
         self.assertEqual(captured["env"]["npm_config_offline"], "true")
+        self.assertIn("flake-registry =\n", captured["env"]["NIX_CONFIG"])
+        self.assertNotIn("channels.nixos.org", captured["env"]["NIX_CONFIG"])
         self.assertEqual(
             captured["command"],
             [CLI, "--verbose", "--max-jobs", "1", "--cores", "2", "--offline", "test"],
