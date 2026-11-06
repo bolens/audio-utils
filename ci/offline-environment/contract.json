@@ -27,6 +27,8 @@
   ],
   "recipe_inputs": [
     "ci/offline-environment/Dockerfile",
+    "ci/offline-environment/bootstrap.sh",
+    "ci/offline-environment/realize.sh",
     "ci/offline-environment/prepare.sh",
     "scripts/ci/offline_environment.py"
   ],

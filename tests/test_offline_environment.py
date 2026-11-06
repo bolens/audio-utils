@@ -43,17 +43,52 @@ class OfflineEnvironmentTests(unittest.TestCase):
 
     def test_recipe_configuration_is_literal_and_limits_precede_fetch(self):
         recipe = (ROOT / "ci/offline-environment/Dockerfile").read_text()
+        bootstrap = (ROOT / "ci/offline-environment/bootstrap.sh").read_text()
+        realize = (ROOT / "ci/offline-environment/realize.sh").read_text()
         prepare = (ROOT / "ci/offline-environment/prepare.sh").read_text()
         self.assertNotIn("NIX_CONFIG=", recipe)
         self.assertIn(
             "export NIX_CONFIG='experimental-features = nix-command flakes\nsandbox = false\n",
-            prepare,
+            bootstrap,
         )
+        self.assertIn("cpu_quota == 2 * cpu_period", bootstrap)
+        self.assertIn("$memory_max == 4294967296 && $swap_max == 0", bootstrap)
         self.assertLess(
-            prepare.index("cpu_quota == 2 * cpu_period"), prepare.index("nix --version")
+            realize.index("bootstrap.sh realize"), realize.index("nix --version")
         )
-        self.assertIn("$memory_max == 4294967296 && $swap_max == 0", prepare)
+        self.assertIn("bootstrap.sh manifest", prepare)
+        self.assertNotIn("nix build", prepare)
+        self.assertNotIn("nix flake", prepare)
+        self.assertNotIn(
+            "/bin/devenv", prepare.replace("--cli /opt/audio-ci/devenv/bin/devenv", "")
+        )
+        self.assertIn(
+            "/opt/audio-ci/python scripts/ci/offline_environment.py prepare", prepare
+        )
         self.assertIn('ENTRYPOINT ["/opt/audio-ci/python",', recipe)
+        first = recipe.split("RUN bash ci/offline-environment/realize.sh", 1)[0]
+        self.assertNotIn("source-identity.json", first)
+        self.assertNotIn("COPY . ", first)
+        self.assertNotIn("offline_environment.py", first)
+        for changed in [
+            recipe.replace("COPY devenv.nix", "COPY source-identity.json devenv.nix"),
+            recipe.replace("RUN bash ci/offline-environment/realize.sh", "RUN true"),
+        ]:
+            self.put("ci/offline-environment/Dockerfile", changed)
+            with self.assertRaises(ValueError):
+                self.identity()
+        self.put("ci/offline-environment/Dockerfile", recipe)
+
+    def test_late_refusal_reports_only_static_reasons_and_phase(self):
+        with patch.object(MODULE, "PREPARATION_PHASE", "store-inventory"):
+            actual = MODULE.refusal_report(ValueError("invalid closure path/hash"))
+            self.assertEqual(actual["phase"], "store-inventory")
+            self.assertEqual(actual["reason"], "invalid closure path/hash")
+            for error in [ValueError("PRIVATE_SENTINEL"), OSError("PRIVATE_SENTINEL")]:
+                report = MODULE.refusal_report(error)
+                self.assertEqual(report["reason"], "unclassified-refusal")
+                self.assertNotIn("PRIVATE_SENTINEL", json.dumps(report))
+            self.assertFalse(actual["readiness_inferred"])
 
     def setUp(self):
         self.temporary = tempfile.TemporaryDirectory(prefix="audio-offline-fixture-")

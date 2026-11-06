@@ -19,6 +19,10 @@ Unknown Nix imports, local overrides, symlinks and untracked dependency declarat
 are refused. New fetchers need an inventory review. Network isolation is the final
 boundary: Nix `--offline` alone does not block operating-system network access.
 
+Late preparation diagnostics expose only fixed phase names, numeric counts and
+exact known static guard messages. Arbitrary JSON, operating-system, subprocess
+and cache values stay redacted; unknown failures never establish readiness.
+
 The context command accepts only clean committed source and copies the explicit
 public environment/recipe allowlist, plus source identity and declaration hashes.
 It does not copy the application checkout, `.git`, credentials or host caches.
@@ -31,10 +35,18 @@ retain executable copies of an old application checkout.
 After source review and a normal reviewed commit, an operator can generate an
 owned context with `python3 scripts/ci/offline_environment.py context --output DIR`.
 Preparation may reach only public upstreams; no registry credentials are supplied
-to the build. The sole Dockerfile RUN checks actual cgroup limits before fetching:
-2 CPUs, 4 GiB RAM and no swap. Unsupported `buildx --resource` enforcement fails
-before downloads. Runtime proof additionally uses pids limit 512; the build resource
-option does not promise that limit. A deadline is a failure ceiling, never a
+to the build. Two sequential Dockerfile RUNs share the same pinned base and private
+store/database. The first copies only five environment files, `.gitignore` and
+stable realization/bootstrap scripts, then realizes the CLI, shell/test outputs
+and npm content. The second copies the full public allowlist and serializes the
+manifest/checker using the already realized Python/profile. It does not fetch,
+evaluate or build dependencies. Late checker/provenance changes therefore reuse
+the successful first layer; environment or bootstrap changes invalidate it.
+
+Both RUNs check actual cgroup limits before work: 2 CPUs, 4 GiB RAM and no swap.
+Unsupported `buildx --resource` enforcement fails before downloads. The guard is
+part of the cached realization recipe itself. Runtime proof additionally uses
+pids limit 512; the build resource option does not promise that limit. A deadline is a failure ceiling, never a
 success condition.
 
 An independent operator must bind the resulting image ID/digest and manifest key,
@@ -52,11 +64,19 @@ Pinned devenv hides successful task output by default. Global `--verbose` expose
 it with the exact `[devenv:enterTest] ` prefix; remove only that prefix when
 parsing summaries, not timestamped failure-report replay.
 
-Record full logs and process exits. Compare the actual full development gate,
-including each Python family, Node TAP results and the Bash runner's
-`=== tests: N files, pass=X fail=Y skip=Z`, against the genuine accepted native
-step; the separate functional lane's summary is not this baseline. Require every
-expected family, no additional skips, and success. Source locations are
+Record full logs and process exits. Existing successful native status alone may
+not expose counts. First run the accepted canonical source in a separate fresh
+offline container, verifying all five environment files byte-for-byte against the
+fully validated candidate manifest. That independent observer baseline uses the
+same internal execution body, not a public key-bypass flag. Normal execution
+always checks the complete current-source environment key.
+
+Compare the candidate's full gate with the actual canonical baseline: each Python
+family, Node test summaries and the Bash runner's
+`=== tests: N files, pass=X fail=Y skip=Z`. Account separately for the added helper's
+source-bound focused test family. Require the same Node reporter, every expected
+family, no additional skips and success. The separate functional lane's summary
+is not this full-gate baseline. Source locations are
 `scripts/check-development.sh`, `tests/run.sh:170`, and the npm test script.
 
 For the negative proof, copy `tests/fixtures/offline-current-source-negative.test.sh.fixture`

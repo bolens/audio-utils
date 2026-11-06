@@ -6,8 +6,13 @@ ENV AUDIO_CI_NIX_BASE=${NIX_BASE} \
     AUDIO_CI_DEVENV_REV=42246161fa3bf7cd18f8334d08c73d6aaa8762d3 \
     AUDIO_CI_ENV_PREPARE=1 NIX_REMOTE=local
 WORKDIR /opt/audio-ci-input
-# Context is produced only by offline_environment.py context from clean Git.
-# No complete checkout, .git, private config or host cache is accepted.
+# Stable, public dependency inputs only. A late checker/key change reuses this
+# resource-checked layer without repeating upstream dependency downloads.
+COPY devenv.nix devenv.yaml devenv.lock .gitignore /opt/audio-ci-input/
+COPY mcp/npm/package.json mcp/npm/package-lock.json /opt/audio-ci-input/mcp/npm/
+COPY ci/offline-environment/bootstrap.sh ci/offline-environment/realize.sh /opt/audio-ci-input/ci/offline-environment/
+RUN bash ci/offline-environment/realize.sh
+# Generated clean public allowlist, never the application checkout or host cache.
 COPY . /opt/audio-ci-input/
 RUN bash ci/offline-environment/prepare.sh
 

@@ -37,6 +37,66 @@ FETCH_SCHEMAS = ("fetcher-cache-v3.sqlite", "fetcher-cache-v4.sqlite")
 CACHE_DOMAINS = {"gitRevToTreeHash", "gitRevToLastModified", "fetchToStore"}
 
 
+PREPARATION_PHASE = None
+PREPARATION_PHASES = frozenset(
+    {
+        "context",
+        "store-inventory",
+        "cli-binding",
+        "cli-source-binding",
+        "public-fetcher-metadata",
+        "serialize",
+    }
+)
+SAFE_PREPARATION_REASONS = frozenset(
+    {
+        "invalid closure inventory",
+        "invalid closure path/hash",
+        "unbound CLI executable",
+        "unbound CLI source",
+        "unsupported public source cache record",
+        "unbound cached source path",
+        "unexpected source cache fields",
+        "invalid source cache timestamp",
+        "invalid public Git tree identity",
+        "invalid public Git timestamp",
+        "symlink metadata is forbidden",
+        "metadata exceeds bound",
+    }
+)
+
+
+def preparation_phase(phase, count=None):
+    global PREPARATION_PHASE
+    if phase not in PREPARATION_PHASES or (
+        count is not None and (type(count) is not int or count < 0)
+    ):
+        raise ValueError("invalid preparation diagnostic")
+    PREPARATION_PHASE = phase
+    event = {"phase": phase}
+    if count is not None:
+        event["count"] = count
+    print(
+        "offline-environment-prepare " + json.dumps(event, sort_keys=True), flush=True
+    )
+
+
+def refusal_report(error):
+    # Only exact hand-authored validation messages may cross the CLI boundary.
+    # JSON/OS/subprocess exceptions can include source values and remain redacted.
+    reason = (
+        str(error)
+        if type(error) is ValueError and str(error) in SAFE_PREPARATION_REASONS
+        else "unclassified-refusal"
+    )
+    return {
+        "error_type": type(error).__name__,
+        "phase": PREPARATION_PHASE,
+        "reason": reason,
+        "readiness_inferred": False,
+    }
+
+
 def canonical(value):
     return json.dumps(
         value, sort_keys=True, separators=(",", ":"), ensure_ascii=True
@@ -168,6 +228,19 @@ def validate_recipe(root, contract):
         "${NIX_BASE}",
     ]:
         raise ValueError("Docker base recipe drift")
+    if re.findall(r"^RUN (.+)$", recipe, re.M) != [
+        "bash ci/offline-environment/realize.sh",
+        "bash ci/offline-environment/prepare.sh",
+    ]:
+        raise ValueError("Docker preparation phase drift")
+    first = recipe.split("RUN bash ci/offline-environment/realize.sh", 1)[0]
+    expected = [
+        "devenv.nix devenv.yaml devenv.lock .gitignore /opt/audio-ci-input/",
+        "mcp/npm/package.json mcp/npm/package-lock.json /opt/audio-ci-input/mcp/npm/",
+        "ci/offline-environment/bootstrap.sh ci/offline-environment/realize.sh /opt/audio-ci-input/ci/offline-environment/",
+    ]
+    if re.findall(r"^COPY (.+)$", first, re.M) != expected:
+        raise ValueError("Docker stable dependency copy boundary drift")
     pins = re.findall(r"AUDIO_CI_DEVENV_REV=([a-f0-9]{40})", recipe)
     if pins != [contract["devenv_revision"]]:
         raise ValueError("Docker CLI recipe drift")
@@ -313,6 +386,7 @@ def project_fetcher_rows(rows, revisions, store_paths):
 
 
 def prepare_manifest(root, output, cli, cli_source):
+    preparation_phase("context")
     # Only the Dockerfile preparation stage may write this toolchain manifest.
     if (
         os.geteuid() != 0
@@ -356,15 +430,18 @@ def prepare_manifest(root, output, cli, cli_source):
         != "nix (Nix) " + contract["nix_version"]
     ):
         raise ValueError("preparation did not use declared Nix base")
+    preparation_phase("store-inventory")
     rows = json.loads(
         subprocess.check_output(["nix", "path-info", "--json", "--all"], timeout=60)
     )
+    preparation_phase("store-inventory", len(rows))
     if isinstance(rows, list):
         rows = {r["path"]: r for r in rows}
     store_rows = {p: {"narHash": r["narHash"]} for p, r in rows.items()}
     valid_store_rows(store_rows)
     cli = cli.resolve()
     cli_root = str(cli.parent.parent)
+    preparation_phase("cli-binding", int(cli_root in store_rows))
     if cli.name != "devenv" or cli_root not in store_rows:
         raise ValueError("unbound CLI executable")
     revisions = {
@@ -373,6 +450,7 @@ def prepare_manifest(root, output, cli, cli_source):
         if "locked" in node
     }
     revisions.add(contract["devenv_revision"])
+    preparation_phase("cli-source-binding", int(str(cli_source) in store_rows))
     if not STORE.fullmatch(str(cli_source)) or str(cli_source) not in store_rows:
         raise ValueError("unbound CLI source")
     revisions.update(
@@ -381,6 +459,7 @@ def prepare_manifest(root, output, cli, cli_source):
         if "rev" in n.get("locked", {})
     )
     caches = {}
+    preparation_phase("public-fetcher-metadata")
     for name in FETCH_SCHEMAS:
         path = Path.home() / ".cache/nix" / name
         if path.is_file() and not path.is_symlink():
@@ -392,6 +471,7 @@ def prepare_manifest(root, output, cli, cli_source):
                     revisions,
                     store_rows,
                 )
+    preparation_phase("serialize", len(store_rows))
     manifest = {
         "schema": 1,
         "state": "prepared-not-proven-offline",
@@ -604,6 +684,5 @@ if __name__ == "__main__":
     ) as error:
         raise SystemExit(
             "offline environment refused: "
-            + type(error).__name__
-            + "; no readiness inferred"
+            + json.dumps(refusal_report(error), sort_keys=True)
         ) from None
