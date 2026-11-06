@@ -18,6 +18,7 @@ import resource
 import shutil
 import socket
 import sqlite3
+import struct
 import subprocess
 import sys
 import tempfile
@@ -82,6 +83,23 @@ SAFE_PREPARATION_REASONS = frozenset(
 )
 
 
+RUNTIME_REFUSAL_CLASSES = {
+    "incomplete network namespace census": "network-census",
+    "network administration capability forbidden": "network-capability",
+    "external network topology forbidden": "network-topology",
+    "configured network tunnel forbidden": "network-topology",
+    "external network address forbidden": "network-address",
+    "external network route forbidden": "network-route",
+    "network-none disposable Docker runtime required": "runtime-container",
+    "mounted/shared Nix store or database forbidden": "runtime-store",
+    "environment input/recipe key mismatch": "environment-identity",
+    "untracked dependency declaration is forbidden": "environment-identity",
+    "local override/credential configuration is forbidden": "environment-identity",
+    "execution root is not this checkout": "runtime-root",
+    "wrong execution platform": "runtime-platform",
+}
+
+
 def preparation_phase(phase, count=None):
     global PREPARATION_PHASE
     if phase not in PREPARATION_PHASES or (
@@ -102,12 +120,14 @@ def refusal_report(error):
     # JSON/OS/subprocess exceptions can include source values and remain redacted.
     reason = (
         str(error)
-        if type(error) is ValueError and str(error) in SAFE_PREPARATION_REASONS
+        if type(error) is ValueError
+        and str(error) in SAFE_PREPARATION_REASONS | RUNTIME_REFUSAL_CLASSES.keys()
         else "unclassified-refusal"
     )
     return {
         "error_type": type(error).__name__,
         "phase": PREPARATION_PHASE,
+        "guard_class": RUNTIME_REFUSAL_CLASSES.get(reason, "unclassified"),
         "reason": reason,
         "readiness_inferred": False,
     }
@@ -827,10 +847,9 @@ def materialize_cli_source(contract, cli_source, metadata):
         or any(metadata["locked"].get(key) != value for key, value in expected.items())
     ):
         raise ValueError("CLI source metadata mismatch")
-    # BuildKit can retain a sysfs mount tagged to a different network namespace.
-    # Enumerate interfaces through a socket in this process's current namespace.
-    if {name for _, name in socket.if_nameindex()} != {"lo"}:
-        raise ValueError("CLI source materialization requires network isolation")
+    # BuildKit sysfs can describe a different namespace. Use the same closed
+    # current-process topology policy as runtime, without Docker/mount markers.
+    validate_network_namespace(network_namespace())
     reference = (
         "github:cachix/devenv/"
         + contract["devenv_revision"]
@@ -1075,9 +1094,189 @@ def prepare_runtime_source_cache(root, manifest, cache_dir):
         )
 
 
-def validate_runtime_isolation(interfaces, mountpoints, docker_marker):
-    if set(interfaces) != {"lo"} or not docker_marker:
+def netlink_attributes(raw):
+    """Decode bounded kernel attributes without interpreting or printing values."""
+    result = {}
+    while raw:
+        if len(raw) < 4:
+            raise ValueError("incomplete network namespace census")
+        size, kind = struct.unpack_from("HH", raw)
+        kind &= 0x3FFF
+        if size < 4 or size > len(raw) or kind in result:
+            raise ValueError("incomplete network namespace census")
+        result[kind] = raw[4:size]
+        raw = raw[(size + 3) & ~3 :]
+    return result
+
+
+def netlink_dump(request, response, payload):
+    """Read a complete current-namespace RTNETLINK dump; never change links."""
+    rows = []
+    total = 0
+    with socket.socket(
+        socket.AF_NETLINK, socket.SOCK_RAW, socket.NETLINK_ROUTE
+    ) as sock:
+        sock.settimeout(2)
+        sock.bind((0, 0))
+        sock.sendto(
+            struct.pack("IHHII", 16 + len(payload), request, 0x301, 1, 0) + payload,
+            (0, 0),
+        )
+        for _ in range(16):
+            data, _, flags, sender = sock.recvmsg(65536)
+            total += len(data)
+            if flags & socket.MSG_TRUNC or sender[0] != 0 or total > 262144:
+                raise ValueError("incomplete network namespace census")
+            while data:
+                if len(data) < 16:
+                    raise ValueError("incomplete network namespace census")
+                size, kind, flags, sequence, _ = struct.unpack_from("IHHII", data)
+                if size < 16 or size > len(data) or sequence != 1 or flags & 0x10:
+                    raise ValueError("incomplete network namespace census")
+                body = data[16:size]
+                data = data[(size + 3) & ~3 :]
+                if kind == 3:
+                    if body and (len(body) != 4 or struct.unpack("i", body)[0] != 0):
+                        raise ValueError("incomplete network namespace census")
+                    return rows
+                if kind != response or len(rows) >= 128:
+                    raise ValueError("incomplete network namespace census")
+                rows.append(body)
+    raise ValueError("incomplete network namespace census")
+
+
+def _read_network_namespace():
+    """Snapshot links, addresses, routes and privilege from this process only."""
+    links = []
+    for raw in netlink_dump(18, 16, struct.pack("BBHiII", 0, 0, 0, 0, 0, 0)):
+        if len(raw) < 16:
+            raise ValueError("incomplete network namespace census")
+        _, _, hardware, index, flags, _ = struct.unpack_from("BBHiII", raw)
+        attrs = netlink_attributes(raw[16:])
+        info = netlink_attributes(attrs[18]) if 18 in attrs else {}
+        links.append(
+            dict(
+                index=index,
+                name=attrs.get(3, b"").rstrip(b"\0").decode("ascii"),
+                hardware=hardware,
+                flags=flags,
+                kind=info.get(1, b"").rstrip(b"\0"),
+                tunnel=netlink_attributes(info[2]) if 2 in info else {},
+                master=attrs.get(10, b"\0" * 4),
+            )
+        )
+    addresses = []
+    for raw in netlink_dump(22, 20, struct.pack("BBBBI", 0, 0, 0, 0, 0)):
+        if len(raw) < 8:
+            raise ValueError("incomplete network namespace census")
+        family, _, _, _, index = struct.unpack_from("BBBBI", raw)
+        netlink_attributes(raw[8:])
+        addresses.append((index, family))
+    routes = []
+    for raw in netlink_dump(
+        26, 24, struct.pack("BBBBBBBBI", 0, 0, 0, 0, 0, 0, 0, 0, 0)
+    ):
+        if len(raw) < 12:
+            raise ValueError("incomplete network namespace census")
+        family, _, _, _, _, _, _, route_type, _ = struct.unpack_from("BBBBBBBBI", raw)
+        attrs = netlink_attributes(raw[12:])
+        oif = attrs.get(4, b"\0" * 4)
+        if len(oif) != 4:
+            raise ValueError("incomplete network namespace census")
+        routes.append(
+            (
+                struct.unpack("I", oif)[0],
+                family,
+                route_type,
+                bool({5, 9, 18, 21, 22, 30} & attrs.keys()),
+            )
+        )
+    capabilities = {}
+    for line in Path("/proc/self/status").read_text().splitlines():
+        field, _, value = line.partition(":")
+        if field in {"CapEff", "CapPrm", "CapInh", "CapAmb", "CapBnd"}:
+            if field in capabilities:
+                raise ValueError("incomplete network namespace census")
+            capabilities[field] = int(value.strip(), 16)
+    if {(link["index"], link["name"]) for link in links} != set(socket.if_nameindex()):
+        raise ValueError("incomplete network namespace census")
+    return dict(
+        links=links, addresses=addresses, routes=routes, capabilities=capabilities
+    )
+
+
+def network_namespace():
+    try:
+        return _read_network_namespace()
+    except (OSError, ValueError, KeyError, struct.error):
+        raise ValueError("incomplete network namespace census") from None
+
+
+def validate_network_namespace(namespace):
+    """Admit loopback plus only an inert kernel IPIP fallback, never a name alone."""
+    links = namespace["links"]
+    caps = namespace["capabilities"]
+    if set(caps) != {"CapEff", "CapPrm", "CapInh", "CapAmb", "CapBnd"}:
+        raise ValueError("incomplete network namespace census")
+    if any(
+        type(bits) is not int or bits < 0 or bits & ((1 << 12) | (1 << 21))
+        for bits in caps.values()
+    ):
+        raise ValueError("network administration capability forbidden")
+    if (
+        not links
+        or len(links) > 2
+        or len({link["index"] for link in links}) != len(links)
+    ):
+        raise ValueError("external network topology forbidden")
+    loopback = [link for link in links if link["name"] == "lo"]
+    if (
+        len(loopback) != 1
+        or loopback[0]["hardware"] != 772
+        or not loopback[0]["flags"] & 8
+    ):
+        raise ValueError("external network topology forbidden")
+    lo = loopback[0]["index"]
+    for link in links:
+        if (
+            type(link["index"]) is not int
+            or link["index"] <= 0
+            or len(link["master"]) != 4
+            or any(link["master"])
+        ):
+            raise ValueError("external network topology forbidden")
+        if link["index"] == lo:
+            continue
+        tunnel = link["tunnel"]
+        if (
+            link["name"] != "tunl0"
+            or link["hardware"] != 768
+            or link["kind"] != b"ipip"
+            or link["flags"] & (1 | 64 | 65536)
+            or not link["flags"] & 128
+        ):
+            raise ValueError("external network topology forbidden")
+        for attribute, size in ((1, 4), (2, 4), (3, 4), (19, 1)):
+            value = tunnel.get(attribute, b"\0" * size)
+            if len(value) != size or any(value):
+                raise ValueError("configured network tunnel forbidden")
+    if any(
+        index != lo or family not in (2, 10) for index, family in namespace["addresses"]
+    ):
+        raise ValueError("external network address forbidden")
+    for index, family, route_type, forwarding in namespace["routes"]:
+        if (
+            family not in (2, 10)
+            or forwarding
+            or (index != lo and not (index == 0 and route_type in (6, 7, 8, 9)))
+        ):
+            raise ValueError("external network route forbidden")
+
+
+def validate_runtime_isolation(namespace, mountpoints, docker_marker):
+    if not docker_marker:
         raise ValueError("network-none disposable Docker runtime required")
+    validate_network_namespace(namespace)
     if any(m == "/nix" or m.startswith("/nix/") for m in mountpoints):
         raise ValueError("mounted/shared Nix store or database forbidden")
 
@@ -1090,7 +1289,7 @@ def run_gate(root, manifest):
 def _run_checked_gate(root, manifest, identity):
     """Internal execution primitive; normal CLI always validates the full key."""
     validate_runtime_isolation(
-        [name for _, name in socket.if_nameindex()],
+        network_namespace(),
         [
             line.split()[4]
             for line in Path("/proc/self/mountinfo").read_text().splitlines()

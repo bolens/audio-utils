@@ -8,10 +8,11 @@ import os
 import shutil
 from pathlib import Path
 import subprocess
+import struct
 import tempfile
 from types import SimpleNamespace
 import unittest
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 
 ROOT = Path(__file__).resolve().parents[1]
 SPEC = importlib.util.spec_from_file_location(
@@ -25,6 +26,40 @@ NAR = "sha256-" + base64.b64encode(b"x" * 32).decode()
 REVISION = "1" * 40
 TREE = "2" * 40
 IMAGE = "sha256:" + "3" * 64
+
+
+def namespace_fixture(tunnel=False):
+    links = [
+        dict(
+            index=1,
+            name="lo",
+            hardware=772,
+            flags=0x49,
+            kind=b"",
+            tunnel={},
+            master=b"\0" * 4,
+        )
+    ]
+    if tunnel:
+        links.append(
+            dict(
+                index=2,
+                name="tunl0",
+                hardware=768,
+                flags=128,
+                kind=b"ipip",
+                tunnel={1: b"\0" * 4, 2: b"\0" * 4, 3: b"\0" * 4},
+                master=b"\0" * 4,
+            )
+        )
+    return dict(
+        links=links,
+        addresses=[(1, 2), (1, 10)],
+        routes=[(1, 2, 2, False), (1, 10, 2, False)],
+        capabilities=dict.fromkeys(
+            ("CapEff", "CapPrm", "CapInh", "CapAmb", "CapBnd"), 0
+        ),
+    )
 
 
 class OfflineEnvironmentTests(unittest.TestCase):
@@ -119,7 +154,7 @@ class OfflineEnvironmentTests(unittest.TestCase):
 
         with (
             patch.object(MODULE, "Path", side_effect=path),
-            patch.object(MODULE.socket, "if_nameindex", return_value=[(1, "lo")]),
+            patch.object(MODULE, "network_namespace", return_value=namespace_fixture()),
             patch.object(
                 MODULE.subprocess,
                 "check_output",
@@ -127,6 +162,11 @@ class OfflineEnvironmentTests(unittest.TestCase):
             ) as command,
         ):
             MODULE.materialize_cli_source(contract, target, metadata)
+            with patch.object(
+                MODULE, "network_namespace", return_value=namespace_fixture(tunnel=True)
+            ):
+                MODULE.materialize_cli_source(contract, target, metadata)
+            self.assertEqual(command.call_count, 2)
         args = command.call_args.args[0]
         self.assertEqual(
             args[:6],
@@ -171,7 +211,9 @@ class OfflineEnvironmentTests(unittest.TestCase):
         for wrong in wrong_results:
             with (
                 self.subTest(response=wrong),
-                patch.object(MODULE.socket, "if_nameindex", return_value=[(1, "lo")]),
+                patch.object(
+                    MODULE, "network_namespace", return_value=namespace_fixture()
+                ),
                 patch.object(
                     MODULE.subprocess,
                     "check_output",
@@ -186,15 +228,13 @@ class OfflineEnvironmentTests(unittest.TestCase):
                     contract, target, {**metadata, "locked": {**locked, "narHash": NAR}}
                 )
             self.assertEqual(command.call_count, 0)
+        external = namespace_fixture(tunnel=True)
+        external["links"][1]["name"] = "eth0"
         with (
-            patch.object(
-                MODULE.socket,
-                "if_nameindex",
-                return_value=[(1, "lo"), (2, "eth0")],
-            ),
+            patch.object(MODULE, "network_namespace", return_value=external),
             patch.object(MODULE.subprocess, "check_output") as command,
         ):
-            with self.assertRaisesRegex(ValueError, "requires network isolation"):
+            with self.assertRaisesRegex(ValueError, "topology"):
                 MODULE.materialize_cli_source(contract, target, metadata)
             self.assertEqual(command.call_count, 0)
 
@@ -740,19 +780,192 @@ class OfflineEnvironmentTests(unittest.TestCase):
         path.unlink()
         self.assertFalse(MODULE.store_object_exists(path))
 
-    def test_loopback_only_and_private_store_required(self):
-        MODULE.validate_runtime_isolation(["lo"], ["/", "/woodpecker"], True)
-        for interfaces, mounts, marker in [
-            (["lo", "eth0"], ["/"], True),
-            (["lo"], ["/nix"], True),
-            (["lo"], ["/nix/var/nix/db"], True),
-            (["lo"], ["/"], False),
+    def test_closed_namespace_and_private_store_required(self):
+        MODULE.validate_runtime_isolation(
+            namespace_fixture(), ["/", "/woodpecker"], True
+        )
+        for mounts, marker in [
+            (["/nix"], True),
+            (["/nix/var/nix/db"], True),
+            (["/"], False),
         ]:
+            with self.subTest(mounts=mounts), self.assertRaises(ValueError):
+                MODULE.validate_runtime_isolation(namespace_fixture(), mounts, marker)
+
+    def test_inert_kernel_ipip_requires_structural_evidence(self):
+        MODULE.validate_network_namespace(namespace_fixture(tunnel=True))
+        for field, value in [
+            ("name", "eth0"),
+            ("hardware", 1),
+            ("kind", b"veth"),
+            ("flags", 129),
+            ("flags", 192),
+            ("flags", 65664),
+            ("flags", 0),
+            ("master", b"\1\0\0\0"),
+            ("master", b"\0"),
+        ]:
+            wrong = namespace_fixture(tunnel=True)
+            wrong["links"][1][field] = value
             with (
-                self.subTest(interfaces=interfaces, mounts=mounts),
-                self.assertRaises(ValueError),
+                self.subTest(field=field, value=value),
+                self.assertRaisesRegex(ValueError, "topology"),
             ):
-                MODULE.validate_runtime_isolation(interfaces, mounts, marker)
+                MODULE.validate_network_namespace(wrong)
+        for attribute, value in [
+            (1, b"\1\0\0\0"),
+            (2, b"\1\0\0\0"),
+            (3, b"\1\0\0\0"),
+            (19, b"\1"),
+            (2, b"\0"),
+        ]:
+            wrong = namespace_fixture(tunnel=True)
+            wrong["links"][1]["tunnel"][attribute] = value
+            with (
+                self.subTest(attribute=attribute),
+                self.assertRaisesRegex(ValueError, "configured"),
+            ):
+                MODULE.validate_network_namespace(wrong)
+
+    def test_nonloopback_addresses_routes_and_privilege_are_denied(self):
+        for index, family in [(2, 2), (2, 10), (55, 2), (1, 55)]:
+            wrong = namespace_fixture(tunnel=True)
+            wrong["addresses"].append((index, family))
+            with (
+                self.subTest(address=(index, family)),
+                self.assertRaisesRegex(ValueError, "address"),
+            ):
+                MODULE.validate_network_namespace(wrong)
+        for route in [
+            (2, 2, 1, False),
+            (55, 2, 1, False),
+            (0, 2, 1, False),
+            (1, 2, 1, True),
+            (1, 55, 1, False),
+        ]:
+            wrong = namespace_fixture(tunnel=True)
+            wrong["routes"].append(route)
+            with self.subTest(route=route), self.assertRaisesRegex(ValueError, "route"):
+                MODULE.validate_network_namespace(wrong)
+        for field in namespace_fixture()["capabilities"]:
+            for capability in (12, 21):
+                wrong = namespace_fixture(tunnel=True)
+                wrong["capabilities"][field] = 1 << capability
+                with (
+                    self.subTest(field=field, capability=capability),
+                    self.assertRaisesRegex(ValueError, "capability"),
+                ):
+                    MODULE.validate_network_namespace(wrong)
+        wrong = namespace_fixture()
+        del wrong["capabilities"]["CapBnd"]
+        with self.assertRaisesRegex(ValueError, "incomplete"):
+            MODULE.validate_network_namespace(wrong)
+
+    def test_netlink_dump_rejects_partial_malformed_or_interrupted_results(self):
+        def message(kind, body=b"", flags=0, sequence=1):
+            return struct.pack("IHHII", 16 + len(body), kind, flags, sequence, 0) + body
+
+        good = message(16, b"link") + message(3, struct.pack("i", 0))
+        for data, flags, sender, accepted in [
+            (good, 0, (0, 0), True),
+            (b"short", 0, (0, 0), False),
+            (message(16, flags=0x10), 0, (0, 0), False),
+            (message(3, struct.pack("i", -1)), 0, (0, 0), False),
+            (message(16, sequence=2), 0, (0, 0), False),
+            (message(2, struct.pack("i", -1)), 0, (0, 0), False),
+            (good, MODULE.socket.MSG_TRUNC, (0, 0), False),
+            (good, 0, (123, 0), False),
+        ]:
+            fake = MagicMock()
+            fake.__enter__.return_value = fake
+            fake.recvmsg.return_value = (data, [], flags, sender)
+            with (
+                self.subTest(data=data),
+                patch.object(MODULE.socket, "socket", return_value=fake),
+            ):
+                if accepted:
+                    self.assertEqual(MODULE.netlink_dump(18, 16, b""), [b"link"])
+                else:
+                    with self.assertRaisesRegex(ValueError, "incomplete"):
+                        MODULE.netlink_dump(18, 16, b"")
+        with self.assertRaisesRegex(ValueError, "incomplete"):
+            MODULE.netlink_attributes(b"\3\0\1\0")
+
+    def test_kernel_link_address_route_decoder_feeds_closed_namespace_policy(self):
+        def attribute(kind, value):
+            size = 4 + len(value)
+            return struct.pack("HH", size, kind) + value + b"\0" * (-size % 4)
+
+        def link(index, name, hardware, flags, extra=b""):
+            return (
+                struct.pack("BBHiII", 0, 0, hardware, index, flags, 0)
+                + attribute(3, name.encode() + b"\0")
+                + extra
+            )
+
+        tunnel = b"".join(attribute(kind, b"\0" * 4) for kind in (1, 2, 3))
+        info = attribute(1, b"ipip\0") + attribute(2, tunnel)
+        links = [
+            link(1, "lo", 772, 0x49),
+            link(2, "tunl0", 768, 128, attribute(18, info)),
+        ]
+        addresses = [struct.pack("BBBBI", family, 0, 0, 0, 1) for family in (2, 10)]
+        route = struct.pack("BBBBBBBBI", 2, 8, 0, 0, 255, 2, 254, 2, 0) + attribute(
+            4, struct.pack("I", 1)
+        )
+        status = "".join(
+            name + ":\t0000000000000000\n"
+            for name in namespace_fixture()["capabilities"]
+        )
+        original_path = MODULE.Path
+
+        def path(value):
+            if str(value) == "/proc/self/status":
+                return SimpleNamespace(read_text=lambda: status)
+            return original_path(value)
+
+        for forwarding in (None, 18, 21, 22):
+            encoded_route = route
+            if forwarding is not None:
+                encoded_route += attribute(forwarding, b"\0" * 4)
+            with (
+                self.subTest(forwarding=forwarding),
+                patch.object(
+                    MODULE,
+                    "netlink_dump",
+                    side_effect=[links, addresses, [encoded_route]],
+                ),
+                patch.object(MODULE, "Path", side_effect=path),
+                patch.object(
+                    MODULE.socket,
+                    "if_nameindex",
+                    return_value=[(1, "lo"), (2, "tunl0")],
+                ),
+            ):
+                actual = MODULE._read_network_namespace()
+                self.assertEqual(actual["links"][1]["kind"], b"ipip")
+                self.assertEqual(actual["addresses"], [(1, 2), (1, 10)])
+                if forwarding is None:
+                    MODULE.validate_network_namespace(actual)
+                else:
+                    with self.assertRaisesRegex(ValueError, "route"):
+                        MODULE.validate_network_namespace(actual)
+
+    def test_runtime_refusal_classes_are_static_and_redacted(self):
+        for reason, category in MODULE.RUNTIME_REFUSAL_CLASSES.items():
+            result = MODULE.refusal_report(ValueError(reason))
+            self.assertEqual(result["reason"], reason)
+            self.assertEqual(result["guard_class"], category)
+        result = MODULE.refusal_report(ValueError("PRIVATE_SENTINEL"))
+        self.assertEqual(result["reason"], "unclassified-refusal")
+        self.assertNotIn("PRIVATE_SENTINEL", json.dumps(result))
+        with patch.object(
+            MODULE, "_read_network_namespace", side_effect=OSError("PRIVATE_SENTINEL")
+        ):
+            with self.assertRaisesRegex(
+                ValueError, "^incomplete network namespace census$"
+            ):
+                MODULE.network_namespace()
 
     def test_manifest_drift_fails_before_test_execution(self):
         manifest = self.manifest()
@@ -872,7 +1085,7 @@ class OfflineEnvironmentTests(unittest.TestCase):
             patch.object(MODULE, "prepare_runtime_source_cache") as source_cache,
             patch.object(MODULE, "Path", side_effect=runtime_path),
             patch.object(
-                MODULE.socket, "if_nameindex", return_value=[(1, "lo")]
+                MODULE, "network_namespace", return_value=namespace_fixture()
             ) as interfaces,
             patch.object(MODULE.platform, "system", return_value="Linux") as system,
             patch.object(MODULE.platform, "machine", return_value="x86_64") as machine,
@@ -880,8 +1093,9 @@ class OfflineEnvironmentTests(unittest.TestCase):
             patch.object(MODULE.subprocess, "run", side_effect=execute) as gate,
         ):
             self.assertEqual(MODULE.run_gate(self.root, manifest), 1)
-            interfaces.return_value = [(1, "lo"), (2, "eth0")]
-            with self.assertRaisesRegex(ValueError, "network-none"):
+            interfaces.return_value = namespace_fixture(tunnel=True)
+            interfaces.return_value["links"][1]["kind"] = b"veth"
+            with self.assertRaisesRegex(ValueError, "topology"):
                 MODULE.run_gate(self.root, manifest)
             gate.assert_called_once()
             source_cache.assert_called_once()
