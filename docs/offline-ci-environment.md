@@ -44,11 +44,11 @@ and npm content. The second copies the full public allowlist and runs with opera
 networking disabled. It materializes only the exact CLI root source from Nix's
 cached source tree, binding the reviewed revision and explicit NAR hash, then
 serializes the manifest/checker using the already realized Python/profile. It
-does not build dependencies, evaluate their outputs or recursively archive inputs.
+does not run `nix flake archive`, evaluate dependency outputs, or realize missing dependencies.
 It also exports only the reachable tree/blob objects named by reviewed
 `gitRevToTreeHash` rows: v3 uses `tarball-cache`, v4 uses `tarball-cache-v2`.
-The initial e54 network-none gate showed why SQLite mappings alone are insufficient:
-devenv's bundled Nix requires the mapped Git tree objects before accepting them.
+SQLite mappings alone are insufficient: a fresh runtime cache also needs the
+mapped Git tree objects before devenv's bundled Nix can accept those mappings.
 The new candidate includes self-contained, nonthin packs, not a whole cache or
 its refs, history, hooks, configuration, alternates or unrelated objects.
 Late checker/provenance changes reuse the successful first layer; environment or

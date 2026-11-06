@@ -5,8 +5,8 @@
 2. Prepare only stable allowlisted public dependency inputs in the first
    resource-checked Docker RUN. Serialize checker/provenance metadata in a second
    guarded network-none RUN. Materialize only the revision/NAR-pinned CLI root
-   from its cached source, without dependency builds, output evaluation or recursive
-   archiving. Keep private
+   from its cached source, without running `nix flake archive`, evaluating dependency
+   outputs, or realizing missing dependencies. Keep private
    builder COW state and selected public fetcher metadata; never use host caches.
    Export only mapped tree/blob closures as bounded, self-contained packs for
    v3/v4 cache formats. Reimport into fresh bare repositories and verify exact
