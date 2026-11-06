@@ -55,5 +55,6 @@
   "preparation_inputs": [
     ".gitignore"
   ],
-  "nix_version": "2.35.4"
+  "nix_version": "2.35.4",
+  "devenv_source_nar_hash": "sha256-8Ivbm9ltg0hUGQYMuRDOI8hbHUzqB9xKZ9ubKAzzwE8="
 }

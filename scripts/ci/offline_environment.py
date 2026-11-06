@@ -19,6 +19,7 @@ import sqlite3
 import subprocess
 import sys
 import tempfile
+from urllib.parse import urlencode
 
 CONTRACT = "ci/offline-environment/contract.json"
 OVERRIDES = (
@@ -42,6 +43,7 @@ PREPARATION_PHASES = frozenset(
     {
         "context",
         "store-inventory",
+        "cli-source-materialization",
         "cli-binding",
         "cli-source-binding",
         "public-fetcher-metadata",
@@ -62,6 +64,10 @@ SAFE_PREPARATION_REASONS = frozenset(
         "invalid public Git timestamp",
         "symlink metadata is forbidden",
         "metadata exceeds bound",
+        "CLI source metadata mismatch",
+        "CLI source prefetch mismatch",
+        "CLI source NAR mismatch",
+        "CLI source materialization requires network isolation",
     }
 )
 
@@ -171,6 +177,10 @@ def validate_contract(contract):
         contract["nix_base"].split("@")[-1]
     ):
         raise ValueError("mutable environment identity")
+    if not re.fullmatch(
+        r"sha256-[A-Za-z0-9+/]{43}=", contract.get("devenv_source_nar_hash", "")
+    ):
+        raise ValueError("mutable environment identity")
     if (
         contract["devenv_arguments"]
         != ["--verbose", "--max-jobs", "1", "--cores", "2", "--offline", "test"]
@@ -230,7 +240,7 @@ def validate_recipe(root, contract):
         raise ValueError("Docker base recipe drift")
     if re.findall(r"^RUN (.+)$", recipe, re.M) != [
         "bash ci/offline-environment/realize.sh",
-        "bash ci/offline-environment/prepare.sh",
+        "--network=none bash ci/offline-environment/prepare.sh",
     ]:
         raise ValueError("Docker preparation phase drift")
     first = recipe.split("RUN bash ci/offline-environment/realize.sh", 1)[0]
@@ -385,6 +395,61 @@ def project_fetcher_rows(rows, revisions, store_paths):
     return selected
 
 
+def materialize_cli_source(contract, cli_source, metadata):
+    """Copy only the pinned root tree from Nix's cached virtual source to store."""
+    expected = {
+        "type": "github",
+        "owner": "cachix",
+        "repo": "devenv",
+        "rev": contract["devenv_revision"],
+        "narHash": contract["devenv_source_nar_hash"],
+    }
+    if (
+        not isinstance(metadata, dict)
+        or not STORE.fullmatch(str(cli_source))
+        or metadata.get("path") != str(cli_source)
+        or not isinstance(metadata.get("locked"), dict)
+        or any(metadata["locked"].get(key) != value for key, value in expected.items())
+    ):
+        raise ValueError("CLI source metadata mismatch")
+    if {path.name for path in Path("/sys/class/net").iterdir()} != {"lo"}:
+        raise ValueError("CLI source materialization requires network isolation")
+    reference = (
+        "github:cachix/devenv/"
+        + contract["devenv_revision"]
+        + "?"
+        + urlencode({"narHash": expected["narHash"]})
+    )
+    result = json.loads(
+        subprocess.check_output(
+            [
+                "nix",
+                "--offline",
+                "flake",
+                "prefetch",
+                "--json",
+                "--no-use-registries",
+                reference,
+            ],
+            timeout=180,
+        )
+    )
+    if (
+        not isinstance(result, dict)
+        or result.get("storePath") != str(cli_source)
+        or result.get("hash") != expected["narHash"]
+    ):
+        raise ValueError("CLI source prefetch mismatch")
+    locked = result.get("locked")
+    if locked is not None and (
+        not isinstance(locked, dict)
+        or any(
+            key in locked and locked[key] != value for key, value in expected.items()
+        )
+    ):
+        raise ValueError("CLI source prefetch mismatch")
+
+
 def prepare_manifest(root, output, cli, cli_source):
     preparation_phase("context")
     # Only the Dockerfile preparation stage may write this toolchain manifest.
@@ -430,6 +495,10 @@ def prepare_manifest(root, output, cli, cli_source):
         != "nix (Nix) " + contract["nix_version"]
     ):
         raise ValueError("preparation did not use declared Nix base")
+    preparation_phase("cli-source-materialization")
+    materialize_cli_source(
+        contract, cli_source, read_json(Path("/tmp/audio-ci-cli-source.json"))
+    )
     preparation_phase("store-inventory")
     rows = json.loads(
         subprocess.check_output(["nix", "path-info", "--json", "--all"], timeout=60)
@@ -453,6 +522,8 @@ def prepare_manifest(root, output, cli, cli_source):
     preparation_phase("cli-source-binding", int(str(cli_source) in store_rows))
     if not STORE.fullmatch(str(cli_source)) or str(cli_source) not in store_rows:
         raise ValueError("unbound CLI source")
+    if store_rows[str(cli_source)]["narHash"] != contract["devenv_source_nar_hash"]:
+        raise ValueError("CLI source NAR mismatch")
     revisions.update(
         n["locked"]["rev"]
         for n in read_json(cli_source / "flake.lock")["nodes"].values()

@@ -19,7 +19,10 @@ network fallback is permitted. See the owning [runbook](../../docs/offline-ci-en
 
 Dependency realization and metadata serialization use separate sequential guarded
 RUNs. Stable public dependency input changes invalidate the first layer; late
-checker/provenance changes reuse it without another fetch. Both executions enforce
+checker/provenance changes reuse it. The second phase has OS networking disabled
+and materializes only the exact revision/NAR-pinned CLI root from cached source,
+then serializes metadata. Virtual flake metadata is not registered-source proof;
+missing content must fail rather than trigger an online fallback. Both executions enforce
 2 CPUs/4 GiB/no swap themselves. Failures report static phase/reason codes and safe
 counts; arbitrary exception or cache values are not printed. Preparation success
 still does not establish actual offline readiness.

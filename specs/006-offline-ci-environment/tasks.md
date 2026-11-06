@@ -5,6 +5,7 @@
 - [x] Add focused regression fixtures and existing development-gate coverage.
 - [x] Split stable dependency realization from metadata-only serialization; guard both RUNs.
 - [x] Add static late-refusal diagnostics with unknown-value redaction.
+- [x] Pin the CLI-source NAR and require cache-only root materialization in network-none phase two.
 - [ ] Complete independent source review and normal source delivery checks.
 - [ ] Prove both actual constrained phases and safe realization-layer reuse with no host store/auth/cache mounts.
 - [ ] Verify image filesystem, dependency content and no old application source.

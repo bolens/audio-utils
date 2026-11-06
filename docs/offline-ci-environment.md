@@ -8,8 +8,10 @@ successful shell warmup does not establish offline readiness.
 
 `ci/offline-environment/contract.json` binds Linux amd64, the existing Nix base
 digest, the exact devenv CLI revision, `devenv.nix`, `devenv.yaml`, `devenv.lock`,
-and both npm dependency files. The recipe, checker and preparation script are also
-keyed. The conservative declaration inventory includes whole mixed installer,
+and both npm dependency files. The explicit CLI-source NAR pin is also part of the contract and key. Nix 2.35
+flake metadata can name a virtual store path without registering its source;
+preparation must materialize and verify that pinned root before admitting it.
+The recipe, checker and preparation script are also keyed. The conservative declaration inventory includes whole mixed installer,
 hook, Makefile and fixture-generator files; edits to those bodies can require an
 unnecessary environment rebuild. Ordinary `lib/` implementation and unit or
 functional test bodies are excluded from the key and always run from the current
@@ -38,10 +40,13 @@ Preparation may reach only public upstreams; no registry credentials are supplie
 to the build. Two sequential Dockerfile RUNs share the same pinned base and private
 store/database. The first copies only five environment files, `.gitignore` and
 stable realization/bootstrap scripts, then realizes the CLI, shell/test outputs
-and npm content. The second copies the full public allowlist and serializes the
-manifest/checker using the already realized Python/profile. It does not fetch,
-evaluate or build dependencies. Late checker/provenance changes therefore reuse
-the successful first layer; environment or bootstrap changes invalidate it.
+and npm content. The second copies the full public allowlist and runs with operating-system
+networking disabled. It materializes only the exact CLI root source from Nix's
+cached source tree, binding the reviewed revision and explicit NAR hash, then
+serializes the manifest/checker using the already realized Python/profile. It
+does not build dependencies, evaluate their outputs or recursively archive inputs.
+Late checker/provenance changes reuse the successful first layer; environment or
+bootstrap changes invalidate it. A missing cached source fails closed offline.
 
 Both RUNs check actual cgroup limits before work: 2 CPUs, 4 GiB RAM and no swap.
 Unsupported `buildx --resource` enforcement fails before downloads. The guard is

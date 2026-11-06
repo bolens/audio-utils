@@ -73,6 +73,7 @@ class OfflineEnvironmentTests(unittest.TestCase):
         for changed in [
             recipe.replace("COPY devenv.nix", "COPY source-identity.json devenv.nix"),
             recipe.replace("RUN bash ci/offline-environment/realize.sh", "RUN true"),
+            recipe.replace("RUN --network=none bash", "RUN bash"),
         ]:
             self.put("ci/offline-environment/Dockerfile", changed)
             with self.assertRaises(ValueError):
@@ -89,6 +90,120 @@ class OfflineEnvironmentTests(unittest.TestCase):
                 self.assertEqual(report["reason"], "unclassified-refusal")
                 self.assertNotIn("PRIVATE_SENTINEL", json.dumps(report))
             self.assertFalse(actual["readiness_inferred"])
+
+    def test_cli_source_materialization_is_root_only_and_pinned(self):
+        contract = json.loads((self.root / MODULE.CONTRACT).read_text())
+        target = Path("/nix/store/" + "c" * 32 + "-source")
+        locked = {
+            "type": "github",
+            "owner": "cachix",
+            "repo": "devenv",
+            "rev": contract["devenv_revision"],
+            "narHash": contract["devenv_source_nar_hash"],
+        }
+        metadata = {"path": str(target), "locked": locked}
+        response = {
+            "storePath": str(target),
+            "hash": locked["narHash"],
+            "locked": locked,
+        }
+
+        def path(value):
+            if str(value) == "/sys/class/net":
+                return SimpleNamespace(
+                    iterdir=lambda: iter([SimpleNamespace(name="lo")])
+                )
+            return Path(value)
+
+        with (
+            patch.object(MODULE, "Path", side_effect=path),
+            patch.object(
+                MODULE.subprocess,
+                "check_output",
+                return_value=json.dumps(response).encode(),
+            ) as command,
+        ):
+            MODULE.materialize_cli_source(contract, target, metadata)
+        args = command.call_args.args[0]
+        self.assertEqual(
+            args[:6],
+            ["nix", "--offline", "flake", "prefetch", "--json", "--no-use-registries"],
+        )
+        self.assertTrue(
+            args[6].startswith(
+                "github:cachix/devenv/" + locked["rev"] + "?narHash=sha256-"
+            )
+        )
+        self.assertTrue(args[6].endswith("%3D"))
+        self.assertNotIn("archive", args)
+        self.assertNotIn("build", args)
+        self.assertEqual(command.call_args.kwargs["timeout"], 180)
+
+    def test_cli_source_metadata_or_prefetch_mismatch_fails_closed(self):
+        contract = json.loads((self.root / MODULE.CONTRACT).read_text())
+        target = Path("/nix/store/" + "c" * 32 + "-source")
+        locked = {
+            "type": "github",
+            "owner": "cachix",
+            "repo": "devenv",
+            "rev": contract["devenv_revision"],
+            "narHash": contract["devenv_source_nar_hash"],
+        }
+        metadata = {"path": str(target), "locked": locked}
+        response = {
+            "storePath": str(target),
+            "hash": locked["narHash"],
+            "locked": locked,
+        }
+
+        def path(value):
+            if str(value) == "/sys/class/net":
+                return SimpleNamespace(
+                    iterdir=lambda: iter([SimpleNamespace(name="lo")])
+                )
+            return Path(value)
+
+        wrong_results = [
+            [],
+            {**response, "storePath": "/nix/store/" + "d" * 32 + "-source"},
+            {**response, "hash": NAR},
+            {**response, "locked": {**locked, "rev": "0" * 40}},
+            {**response, "locked": {**locked, "owner": "foreign"}},
+            {**response, "locked": []},
+        ]
+        for wrong in wrong_results:
+            with (
+                self.subTest(response=wrong),
+                patch.object(MODULE, "Path", side_effect=path),
+                patch.object(
+                    MODULE.subprocess,
+                    "check_output",
+                    return_value=json.dumps(wrong).encode(),
+                ),
+            ):
+                with self.assertRaisesRegex(ValueError, "CLI source prefetch mismatch"):
+                    MODULE.materialize_cli_source(contract, target, metadata)
+        with patch.object(MODULE.subprocess, "check_output") as command:
+            with self.assertRaisesRegex(ValueError, "CLI source metadata mismatch"):
+                MODULE.materialize_cli_source(
+                    contract, target, {**metadata, "locked": {**locked, "narHash": NAR}}
+                )
+            self.assertEqual(command.call_count, 0)
+        with (
+            patch.object(
+                MODULE,
+                "Path",
+                return_value=SimpleNamespace(
+                    iterdir=lambda: iter(
+                        [SimpleNamespace(name="lo"), SimpleNamespace(name="eth0")]
+                    )
+                ),
+            ),
+            patch.object(MODULE.subprocess, "check_output") as command,
+        ):
+            with self.assertRaisesRegex(ValueError, "requires network isolation"):
+                MODULE.materialize_cli_source(contract, target, metadata)
+            self.assertEqual(command.call_count, 0)
 
     def setUp(self):
         self.temporary = tempfile.TemporaryDirectory(prefix="audio-offline-fixture-")

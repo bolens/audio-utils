@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Metadata-only layer: no dependency build, evaluation or network fetch.
+# Offline pinned CLI-root materialization and metadata; no dependency build/evaluation.
 set -euo pipefail
 [[ $# == 0 && -f source-identity.json ]]
 # shellcheck source=ci/offline-environment/bootstrap.sh

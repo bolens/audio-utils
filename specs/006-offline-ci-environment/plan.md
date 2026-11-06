@@ -4,7 +4,9 @@
    declarations; reject unresolved imports, overrides and context leakage.
 2. Prepare only stable allowlisted public dependency inputs in the first
    resource-checked Docker RUN. Serialize checker/provenance metadata in a second
-   guarded RUN without fetching, evaluating or building dependencies. Keep private
+   guarded network-none RUN. Materialize only the revision/NAR-pinned CLI root
+   from its cached source, without dependency builds, output evaluation or recursive
+   archiving. Keep private
    builder COW state and selected public fetcher metadata; never use host caches.
    Report only static late-refusal phases/reasons and safe counts.
 3. Run exact pinned devenv against the current checkout with a small environment

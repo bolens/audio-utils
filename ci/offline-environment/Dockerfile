@@ -12,9 +12,9 @@ COPY devenv.nix devenv.yaml devenv.lock .gitignore /opt/audio-ci-input/
 COPY mcp/npm/package.json mcp/npm/package-lock.json /opt/audio-ci-input/mcp/npm/
 COPY ci/offline-environment/bootstrap.sh ci/offline-environment/realize.sh /opt/audio-ci-input/ci/offline-environment/
 RUN bash ci/offline-environment/realize.sh
-# Generated clean public allowlist, never the application checkout or host cache.
+# Generated public allowlist; offline CLI-root materialization and metadata only.
 COPY . /opt/audio-ci-input/
-RUN bash ci/offline-environment/prepare.sh
+RUN --network=none bash ci/offline-environment/prepare.sh
 
 FROM ${NIX_BASE}
 # Fresh private builder store, never a host store. Contents still require the
