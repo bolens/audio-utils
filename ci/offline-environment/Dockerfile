@@ -3,7 +3,7 @@ ARG NIX_BASE=docker.io/nixos/nix:2.35.4@sha256:f159a58f390677f41e8e900a74b6e2f9c
 FROM ${NIX_BASE} AS prepare
 ARG NIX_BASE
 ENV AUDIO_CI_NIX_BASE=${NIX_BASE} \
-    AUDIO_CI_DEVENV_REV=42246161fa3bf7cd18f8334d08c73d6aaa8762d3 \
+    AUDIO_CI_DEVENV_REV=b904dcb51fe48c30db250038241507f60752f222 \
     AUDIO_CI_ENV_PREPARE=1 NIX_REMOTE=local
 WORKDIR /opt/audio-ci-input
 # Stable, public dependency inputs only. A late checker/key change reuses this

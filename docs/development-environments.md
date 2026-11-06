@@ -91,3 +91,18 @@ Ordinary local `devenv` setup above is unchanged. The
 publication and rollback. Preserve all six native identities, validation mirrors,
 macOS, real Docker export and devcontainer checks. Rollback pairs a previously
 accepted image with compatible dependency inputs.
+
+## devenv 2.4 offline toolchain
+
+The toolchain upgrade uses devenv 2.4.0 and the reviewed nix2container revision
+while preserving unrelated locked input graphs. CI accepts cache configuration
+only for the fixed upstream CLI and retains standard unprivileged Nix builders.
+The container helper uses the 2.x copy-subcommand option order.
+
+The selected offline native image binds these inputs. It passed the content
+audit, all six full-gate runtime cases and both negative controls, and its public
+immutable manifest was verified anonymously. The
+[offline environment guide](offline-ci-environment.md#consumer-and-successor-changes)
+records the admitted source, environment key and selected digest. Protected PR and
+genuine-main checks verify consumer delivery; future input changes require the
+same successor admission before selecting a new image.

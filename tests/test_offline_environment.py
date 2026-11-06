@@ -1133,6 +1133,7 @@ class OfflineEnvironmentTests(unittest.TestCase):
             all(name not in captured["env"] for name in inherited if name != "PATH")
         )
         self.assertEqual(captured["env"]["npm_config_offline"], "true")
+        self.assertIn("build-users-group = nixbld\n", captured["env"]["NIX_CONFIG"])
         self.assertIn("flake-registry =\n", captured["env"]["NIX_CONFIG"])
         self.assertNotIn("channels.nixos.org", captured["env"]["NIX_CONFIG"])
         self.assertEqual(

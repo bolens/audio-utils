@@ -1330,7 +1330,7 @@ def _run_checked_gate(root, manifest, identity):
             CI="true",
             JOBS="2",
             NIX_REMOTE="local",
-            NIX_CONFIG="experimental-features = nix-command flakes\nsandbox = false\nbuild-users-group =\nmax-jobs = 1\ncores = 2\nsubstituters =\nflake-registry =\n",
+            NIX_CONFIG="experimental-features = nix-command flakes\nsandbox = false\nbuild-users-group = nixbld\nmax-jobs = 1\ncores = 2\nsubstituters =\nflake-registry =\n",
             npm_config_offline="true",
             npm_config_cache=manifest["npm_cache"],
             NPM_CONFIG_USERCONFIG=str(user_config),
