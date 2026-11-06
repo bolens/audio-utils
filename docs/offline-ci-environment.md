@@ -1,141 +1,148 @@
-# Offline CI environment (candidate)
+# Offline CI environment
 
-This prototype prepares a public toolchain image for the existing Audio development
-gate. It is not selected by either live Woodpecker profile. An image build or a
-successful shell warmup does not establish offline readiness.
+The native Linux development gate consumes an immutable public dependency image
+and executes the current checkout through its bound checker. Application and test
+code run from that checkout; an old executable application checkout is not baked
+into the image. Ordinary local development setup is unchanged.
 
-## Inputs and source ownership
+## Inputs and preparation
 
-`ci/offline-environment/contract.json` binds Linux amd64, the existing Nix base
-digest, the exact devenv CLI revision, `devenv.nix`, `devenv.yaml`, `devenv.lock`,
-and both npm dependency files. The explicit CLI-source NAR pin is also part of the contract and key. Nix 2.35
-flake metadata can name a virtual store path without registering its source;
-preparation must materialize and verify that pinned root before admitting it.
-The recipe, checker and preparation script are also keyed. The conservative declaration inventory includes whole mixed installer,
-hook, Makefile and fixture-generator files; edits to those bodies can require an
-unnecessary environment rebuild. Ordinary `lib/` implementation and unit or
-functional test bodies are excluded from the key and always run from the current
-checkout. Consuming workflow files are excluded to avoid a digest/key cycle.
+`ci/offline-environment/contract.json` binds the base digest, platform, pinned Nix
+and devenv versions, environment locks, npm declarations and reviewed recipe/gate
+dependency declarations. Conservative mixed installer/hook/fixture declarations
+are keyed as complete files. Ordinary product and unit/functional test bodies
+are excluded and always come from current source. Consumer workflow files are
+excluded to avoid a digest/key cycle. Unknown imports, overrides, symlinks and
+untracked dependency declarations fail closed.
 
-Unknown Nix imports, local overrides, symlinks and untracked dependency declarations
-are refused. New fetchers need an inventory review. Network isolation is the final
-boundary: Nix `--offline` alone does not block operating-system network access.
+Prepare only a clean committed public allowlist with the repository helper:
 
-Late preparation diagnostics expose only fixed phase names, numeric counts and
-exact known static guard messages. Arbitrary JSON, operating-system, subprocess
-and cache values stay redacted; unknown failures never establish readiness.
+```sh
+python3 scripts/ci/offline_environment.py context --output DIR
+```
 
-The context command accepts only clean committed source and copies the explicit
-public environment/recipe allowlist, plus source identity and declaration hashes.
-It does not copy the application checkout, `.git`, credentials or host caches.
-The final image retains the private builder's Nix store/database, declared public
-input sources, selected fetcher metadata, closed public tree/blob packs and verified npm content. It must not
-retain executable copies of an old application checkout.
+`DIR` must be a new owned destination. Two guarded RUNs use private builder COW state, 2 CPUs, 4 GiB memory and no swap.
+The stable first phase realizes public dependencies. The second has OS networking
+disabled: it materializes the revision/NAR-pinned CLI root, exports only declared
+Git tree/blob closures and writes checked metadata. It does not run
+`nix flake archive`, evaluate dependency outputs or realize missing dependencies.
+Late checker changes can reuse a verified first layer; lock or bootstrap changes
+invalidate it. No host store/cache, credentials or application checkout is copied.
 
-## Preparation and proof
+## Closed offline source and npm state
 
-After source review and a normal reviewed commit, an operator can generate an
-owned context with `python3 scripts/ci/offline_environment.py context --output DIR`.
-Preparation may reach only public upstreams; no registry credentials are supplied
-to the build. Two sequential Dockerfile RUNs share the same pinned base and private
-store/database. The first copies only five environment files, `.gitignore` and
-stable realization/bootstrap scripts, then realizes the CLI, shell/test outputs
-and npm content. The second copies the full public allowlist and runs with operating-system
-networking disabled. It materializes only the exact CLI root source from Nix's
-cached source tree, binding the reviewed revision and explicit NAR hash, then
-serializes the manifest/checker using the already realized Python/profile. It
-does not run `nix flake archive`, evaluate dependency outputs, or realize missing dependencies.
-It also exports only the reachable tree/blob objects named by reviewed
-`gitRevToTreeHash` rows: v3 uses `tarball-cache`, v4 uses `tarball-cache-v2`.
-SQLite mappings alone are insufficient: a fresh runtime cache also needs the
-mapped Git tree objects before devenv's bundled Nix can accept those mappings.
-The new candidate includes self-contained, nonthin packs, not a whole cache or
-its refs, history, hooks, configuration, alternates or unrelated objects.
-Late checker/provenance changes reuse the successful first layer; environment or
-bootstrap changes invalidate it. A missing cached source fails closed offline.
+SQLite revision mappings require their Git objects. v3 uses `tarball-cache`; v4
+uses pack-only `tarball-cache-v2`. Retain only self-contained packs of the mapped
+reachable tree/blob objects, without commits, refs, hooks, copied configuration,
+alternates or unreachable objects. Per-cache limits are 200,000 objects, 512 MiB
+uncompressed object bytes and a 512 MiB pack. Verify hashes, exact reachability,
+types, sizes and census when preparing and hydrating a fresh private bare SHA-1
+repository with empty templates and strict `index-pack`.
 
-Both RUNs check actual cgroup limits before work: 2 CPUs, 4 GiB RAM and no swap.
-Unsupported `buildx --resource` enforcement fails before downloads. The guard is
-part of the cached realization recipe itself. Each cache is limited to 200,000
-reachable tree/blob objects, 512 MiB uncompressed object bytes and a 512 MiB pack.
-Preparation imports each pack into a new bare SHA-1 repository with empty templates
-and verifies exact object reachability, types, sizes and manifest hashes. Known
-locked NARs, including the CLI root's explicit pin, are checked from raw tree/blob
-content, preserving executable modes and symlink text without Git attribute
-transformations. Canonical lock entries without NARs are recorded as such;
-preparation does not invent pins or rewrite locks.
+Known locked NARs, including the CLI root's explicit pin, are verified from raw
+Git content without checkout/archive attribute transformations. Executable modes
+and symlink text are preserved. Canonical entries without NARs remain explicit;
+no pins or lock changes are fabricated. Missing trees, corrupt packs, extra
+objects or NAR mismatches fail before tests. Registered Nix content is verified
+independently, including derivations and source closures.
 
-Runtime hydrates both cache formats into fresh private XDG state before tests,
-using strict `index-pack` and the same object/NAR verification. A missing tree,
-corrupt pack, extra object or NAR mismatch fails closed. Both formats retain pack
-files and indexes because Nix 2.35 reads the v2 cache through a pack-only backend.
-`NIX_CACHE_HOME` is excluded by the clean environment, so the hydrated repository
-and SQLite metadata resolve to the same fresh XDG root. Offline prefetch and runtime
-configuration explicitly disable the global flake registry. Runtime proof additionally uses
-pids limit 512; the build resource option does not promise that limit. A deadline is a failure ceiling, never a
-success condition.
+Each execution gets fresh HOME/XDG and random devenv state, a private COW Nix
+store/database, and forced offline npm with verified content. Distinct empty
+mode-0600 user/global npmrc files live under a mode-0700 private parent. The clean
+environment excludes inherited test selectors, make dry-run controls, npmrc and
+`NIX_CACHE_HOME`. Offline paths disable the global flake registry. Nix `--offline`
+alone is not a network boundary: step-level `network_mode: none` is mandatory.
 
-An independent operator must bind the resulting image ID/digest and manifest key,
-verify declared store content with Nix content/NAR verification, inspect final
-filesystem/history for secrets and application source, then run this image with:
+## Runtime admission and publication
 
-- `--network=none`, no host Nix store, cache, socket, privileges or shared writes;
-- a fresh container COW store/database and fresh HOME/XDG state for every run;
-- each forge-resolved workspace path from the contract and default random `.devenv.*`;
-- the current tracked checkout, not the preparation snapshot;
-- `run --root CHECKOUT`, which executes exact pinned devenv with
-  `--verbose --max-jobs 1 --cores 2 --offline test` and npm forced offline.
+Before publishing each generation, bind source, key and actual image identity
+through the independent content/privacy audit, six-case gate observer and two
+fault cases. Require terminal owned-container lifecycles. An image build,
+manifest check, warm shell or successful subset is insufficient. Each runtime
+proof uses network-none, 2 CPUs, 4 GiB memory with no swap, pids limit 512, UID 0
+as in native Nix CI, and no privilege, added capabilities, host namespace, host
+mount, store/cache or Docker socket. The pids limit is a proof constraint, not a
+claim about the build flag or current agent defaults. A deadline is a failure
+ceiling, never a success condition.
 
-Pinned devenv hides successful task output by default. Global `--verbose` exposes
-it with the exact `[devenv:enterTest] ` prefix; remove only that prefix when
-parsing summaries, not timestamped failure-report replay.
+The six cases are the canonical baseline, two fresh current-source executions at
+each forge-resolved workspace path, and an unkeyed failing current-source test
+under hostile inherited selectors. The canonical run is a separate fresh COW
+container. Its independent observer first fully validates the candidate manifest,
+then verifies all five canonical environment input files byte-for-byte against
+the candidate. Only that observer uses the same internal execution body for the
+canonical baseline; there is no public key-bypass flag. Normal CLI execution
+always validates the complete current-source key.
 
-Record full logs and process exits. Existing successful native status alone may
-not expose counts. First run the accepted canonical source in a separate fresh
-offline container, verifying all five environment files byte-for-byte against the
-fully validated candidate manifest. That independent observer baseline uses the
-same internal execution body, not a public key-bypass flag. Normal execution
-always checks the complete current-source environment key.
+Record full logs and process exits. Compare every expected Python family, the
+Node test summaries with the same reporter, and the Bash summary
+`=== tests: N files, pass=X fail=Y skip=Z` against that actual canonical run.
+Account separately for the added checker's source-bound focused-test family.
+Require every expected family, no additional skips and successful positive runs.
+A functional-lane summary is not a full development-gate baseline. Pinned devenv
+`--verbose` forwards live output with `[devenv:enterTest] `; strip only that exact
+prefix, never timestamped failure-report replay, when parsing summaries.
 
-Compare the candidate's full gate with the actual canonical baseline: each Python
-family, Node test summaries and the Bash runner's
-`=== tests: N files, pass=X fail=Y skip=Z`. Account separately for the added helper's
-source-bound focused test family. Require the same Node reporter, every expected
-family, no additional skips and success. The separate functional lane's summary
-is not this full-gate baseline. Source locations are
-`scripts/check-development.sh`, `tests/run.sh:170`, and the npm test script.
+For the current-source negative, copy
+`tests/fixtures/offline-current-source-negative.test.sh.fixture` to
+`tests/unit/offline-current-source-negative.test.sh` only in an owned disposable
+checkout. Keep the environment key unchanged. Supply hostile inherited `K`,
+`AU_TEST_FILTER`, `AU_SMOKE_ONLY`, `MAKEFLAGS`, `MFLAGS` and `GNUMAKEFLAGS`.
+The complete gate must execute the actual harness failure record and exit
+nonzero; a marker substring alone is insufficient. Never commit this failing
+fixture. Missing-CLI and corrupt-npm faults must also fail for their exact
+required reasons. Preserve full private evidence and publish only safe summaries,
+never credentials or raw sensitive diagnostics.
 
-For the negative proof, copy `tests/fixtures/offline-current-source-negative.test.sh.fixture`
-to `tests/unit/offline-current-source-negative.test.sh` in an owned disposable
-checkout. The environment key must remain unchanged. Run the complete gate with
-hostile inherited `K`, `AU_TEST_FILTER`, `AU_SMOKE_ONLY`, `MAKEFLAGS`, `MFLAGS` and
-`GNUMAKEFLAGS`; it must still execute the marker and fail. The runner constructs
-an explicit environment rather than inheriting those selectors. Never add this
-failing file to a published source tree.
+After admission, the trusted operator publishes only
+`ghcr.io/bolens/audio-utils:ci-env-KEY` with the existing approved package
+credential in a private push configuration. Refuse a conflicting existing tag;
+matching content does not require a rewrite. Resolve the immutable public
+manifest, bind its config/content identity to the admitted image, and pull it
+anonymously. Only then select that digest through a protected consumer change.
+The toolchain tag is not a product release and never updates runtime aliases.
 
-## Proposed admission and consumption
+## Consumer and successor changes
 
-Only after all proofs pass, a trusted operator may publish the exact image to the
-existing approved public Audio GHCR package using an immutable `ci-env-KEY` tag.
-Authentication belongs to the push operation, never Dockerfile arguments, context,
-image layers or untrusted PRs. Reject tag collisions unless the existing digest
-is exactly the admitted artifact. No broker extension or new credential scope is
-part of this prototype.
+The existing `development-environment` step in `.woodpecker/woodpecker.yml` pins
+the admitted manifest, sets step-level `network_mode: none` and runs:
 
-A later reviewed change can pin that verified digest in the existing core workflow
-step in `.woodpecker/woodpecker.yml`, set `network_mode: none`, and regenerate the
-byte-identical validation profile. Keep all six existing workflow basenames,
-required checks and publishing dependencies. Both forge paths must pass first. Docker Config.WorkingDir `/woodpecker` is the
-workspace base, not the process directory: Woodpecker resolves
-`src/forge-host/owner/repo` and its generated script changes directory there. The
-Gitea process directory was independently observed; the GitHub path follows the
-same pinned Woodpecker compiler contract.
-The source checkout must remain available to the runner; test code is never baked
-into the toolchain. Publishing steps retain their existing network and credential
-policy and do not move into this environment.
+```sh
+/opt/audio-ci/python /opt/audio-ci/offline_environment.py run --root "$CI_WORKSPACE"
+```
 
-Lock/declaration changes first prepare and prove a successor environment, then
-atomically update the source locks and consuming digest in a reviewed PR. The old
-pin remains usable for rollback. A mismatched key fails before tests, without a
-network fallback. No live consumer or registry setting changes are authorized by
-this document alone.
+Its checker validates the complete key and invokes the pinned devenv CLI with
+`--verbose --max-jobs 1 --cores 2 --offline test`. The actual current checkout
+must match the execution root. Woodpecker's Docker workspace base is distinct
+from its generated script's forge-resolved process directory; both contract
+paths are covered by admission. Successful task output is observed using only
+the exact `[devenv:enterTest] ` prefix and actual Python, Bash and Node summaries.
+
+Regenerate the credential-free mirror with
+`python3 scripts/ci/sync-woodpecker-validation.py --write`, then `--check`.
+Keep all six workflow basenames, required checks, publication dependencies and
+repository trust settings unchanged. Require actual current-head PR and genuine
+merged-main validation, then reconcile Gitea through its protected validation-only
+profile while preserving its four governance overlays.
+
+For a lock/declaration update, first prepare and admit a successor image, publish
+and publicly verify it, then review the new inputs and digest together. Rollback
+uses a normal protected change to an accepted compatible source/key/digest pair.
+A mismatch never triggers an online fallback or a shared writable cache.
+
+## Retained workflow boundaries
+
+This image replaces only the native Linux Nix step; it does not make the other
+five distribution/tool/minimum-runtime lanes network-independent. Retain hosted
+macOS, actual Docker runtime acceptance, exported Docker development-image and
+VS Code devcontainer checks, plus their required aggregate. The hosted Linux Nix
+fallback remains controlled by `WOODPECKER_NIX_CI`; Nix/devenv setup also serves
+the retained Docker export test.
+
+The hosted exact-image publication bridge retains scoped permissions and full
+Docker acceptance. Product signed-tag/release and signing/OIDC responsibilities
+remain outside this dependency image; no signing credential enters the consumer.
+Labeling, assignment and Spec Kit update PR creation remain host administration.
+Keep the established two-flag portable/publication fallback and the separate Nix
+fallback. For publication rollback, drain native/hosted publishers, select the
+validation-only profile, then clear the publishing flag in the documented order.

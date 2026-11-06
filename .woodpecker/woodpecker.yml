@@ -52,18 +52,10 @@ steps:
       - apt-get update && apt-get install -y --no-install-recommends git curl ca-certificates python3 python3-venv shellcheck
       - bash scripts/ci/check-fleet.sh
   - name: development-environment
-    image: nixos/nix:2.35.4@sha256:f159a58f390677f41e8e900a74b6e2f9c7f27b364122ae6acf7a652ce6c551c0
+    image: ghcr.io/bolens/audio-utils@sha256:536ba4b1712a66adbaca85ac889e6d8fd7e72deb125449434d357e5dbdbbe532
+    network_mode: none
     environment:
       CI: 'true'
       JOBS: '2'
-      NIX_CONFIG: |-
-        experimental-features = nix-command flakes
-        sandbox = false
-        build-users-group =
-        max-jobs = 1
-        cores = 2
-        extra-substituters = https://devenv.cachix.org
-        extra-trusted-public-keys = devenv.cachix.org-1:w1cLUi8dv3hnoSPGAuibQv+f9TZLr6cv/Hm9XgU50cw=
     commands:
-      - git config --global --add safe.directory "$CI_WORKSPACE"
-      - nix run github:cachix/devenv/42246161fa3bf7cd18f8334d08c73d6aaa8762d3 -- test
+      - /opt/audio-ci/python /opt/audio-ci/offline_environment.py run --root "$CI_WORKSPACE"

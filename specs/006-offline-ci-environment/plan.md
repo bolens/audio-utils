@@ -14,7 +14,8 @@
    Preserve absent canonical NAR pins without lock mutation or invented values.
    Report only static late-refusal phases/reasons and safe counts.
 3. Run exact pinned devenv against the current checkout with a small environment
-   allowlist, fresh state, forced npm offline and actual network isolation.
+   allowlist, fresh state, distinct empty private user/global npm configuration
+   files, forced npm offline and actual network isolation.
 4. Independently verify image/content and both workspace roots. Observe an actual
    canonical-source full-gate baseline with five environment files byte-identical
    to the candidate, then compare current-source counts plus its separately
@@ -23,5 +24,10 @@
    public Audio package, then change both native profiles without new contexts.
    Existing credentials and publication controls remain separate.
 
-No live build, artifact push, source commit or pipeline cutover occurs in the
-initial candidate review. The owning runbook defines the later admission path.
+For each generation, retain actual case and lifecycle receipts; a successful
+subset does not establish admission. After all six gate cases and both faults
+pass, publish the single CI-environment tag and verify its public manifest and
+anonymous pull. Select that digest through the protected consumer change and
+verify genuine GitHub and Gitea main delivery. Keep private evidence outside the
+public source tree; owning tasks record the accepted source/tree and receipt
+identities.

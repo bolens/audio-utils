@@ -77,3 +77,17 @@ duplicate hosted Linux `devenv test` step. Clearing the flag restores that check
 The flag does not skip macOS, actual Docker development/runtime/editor-image
 validation, or OIDC signing, and does not authorize publishing. Source review and
 workflow parsing do not prove cold-store Nix execution or native parity.
+
+### Offline CI toolchain consumer
+
+The native Linux gate uses a digest-pinned dependency image and runs the current
+checkout with a complete input-key check, fresh private COW/HOME/XDG state and
+networking disabled. Its verified source packs and npm content provide the
+required offline dependencies. A mismatch requires a reviewed successor image;
+the job never falls back to host caches or online dependency fetches.
+
+Ordinary local `devenv` setup above is unchanged. The
+[offline environment guide](offline-ci-environment.md) owns preparation, admission,
+publication and rollback. Preserve all six native identities, validation mirrors,
+macOS, real Docker export and devcontainer checks. Rollback pairs a previously
+accepted image with compatible dependency inputs.

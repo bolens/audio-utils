@@ -1,9 +1,13 @@
 # Offline Audio CI environment
 
-Prospective implementation specification. Existing CI source is based on accepted
-canonical revision 2d32e153080d5551bedc228f1cd042764da9da94. The current cold Nix
-network fetch can exceed a workflow deadline; a longer deadline alone does not
-provide deterministic execution.
+The implementation baseline is 7941996977657a8ad3eb08642aa19ca18e8d0a0f,
+based on accepted canonical CI revision
+2d32e153080d5551bedc228f1cd042764da9da94. The native consumer pins the
+admitted public manifest and verifies its complete input key before running
+current source. Image admission, public pull verification and protected source
+delivery are distinct required boundaries. Cold Nix network fetches can exceed a
+workflow deadline; a longer deadline alone does not provide deterministic
+execution.
 
 Prepare an immutable public toolchain bound to the complete locked environment
 and reviewed dependency declarations. Execute the unchanged full development gate
@@ -33,3 +37,10 @@ missing content must fail rather than trigger an online fallback. Both execution
 2 CPUs/4 GiB/no swap themselves. Failures report static phase/reason codes and safe
 counts; arbitrary exception or cache values are not printed. Preparation success
 still does not establish actual offline readiness.
+
+Runtime setup uses separate empty private user/global npm configuration files in
+each fresh state directory. Both are mode 0600 under a mode-0700 parent, so npm
+cannot load the same config path twice or inherit operator configuration. Forced
+offline npm behavior, verified content cache and the complete gate remain intact.
+Partial successful gate cases do not satisfy the six-case and supplemental-fault
+acceptance requirements.

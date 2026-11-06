@@ -18,9 +18,11 @@ from this Dockerfile, but are not validated by the current CI.
 
 ## Published images
 
-Main pushes build, test and publish `ghcr.io/bolens/audio-utils:latest` and
-`ghcr.io/bolens/audio-utils:sha-<full-commit>`. PRs and the weekly scheduled check
-build and test only. The publication job tests the exact local image it pushes.
+Main delivery publishes `ghcr.io/bolens/audio-utils:latest` and
+`ghcr.io/bolens/audio-utils:sha-<full-commit>` after exact-image runtime acceptance.
+PRs and the weekly scheduled check validate only. The
+[Woodpecker cutover contract](#woodpecker-publication-cutover) defines the native
+candidate, hosted acceptance bridge and publication-disabled fallback owners.
 No host tools, release tags or personal access tokens are installed by the image.
 Use a registry digest for deployment pinning because tags can move.
 
@@ -30,12 +32,31 @@ docker pull ghcr.io/bolens/audio-utils:latest
 
 GHCR package visibility is managed separately from repository visibility. If the
 package is private, authenticate with an account that can read it before pulling.
-The workflow uses its repository-scoped `GITHUB_TOKEN` with `packages: write`.
-See [GitHub's registry guide](https://docs.github.com/en/packages/working-with-a-github-packages-registry/working-with-the-container-registry).
+The active owner uses the scoped registry authorization described in the cutover
+contract; ordinary validation needs no publishing credentials. See [GitHub's registry guide](https://docs.github.com/en/packages/working-with-a-github-packages-registry/working-with-the-container-registry).
+
+### CI toolchain artifact and consumer
+
+The native development gate consumes a separate CI toolchain artifact from this
+package by immutable manifest digest. It uses `network_mode: none` and invokes
+the image's checker against the current checkout. No host Nix store, writable
+shared cache or publishing credential enters the job.
+
+The [offline CI environment guide](offline-ci-environment.md) owns its guarded
+preparation and admission. First, content verification, all six full-gate cases
+and both fault cases must pass. Then publish only immutable `ci-env-KEY`, resolve
+and verify the public digest and anonymous pull, and finally select that digest
+through a normal protected source change. Runtime `latest` and commit aliases,
+product tags and `VERSION` remain separate.
+
+Preserve all six native identities and publishing dependencies, regenerate the
+validation profile, and verify protected GitHub and Gitea PR/main delivery.
+Rollback selects an accepted prior digest with compatible inputs. Retained macOS,
+real Docker runtime/export and devcontainer checks keep their own responsibilities.
 
 ## Files and ownership
 
-The image defaults to UID/GID 10001. On Linux, use your UID/GID so new files belong
+The runtime image defaults to UID/GID 10001. On Linux, use your UID/GID so new files belong
 to you. Create writable output directories before mounting them. Container paths,
 including paths in configuration and manifests, must refer to the mounted paths.
 Supply media through explicit mounts. The build context allows runtime source
