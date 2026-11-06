@@ -9,6 +9,7 @@ import shutil
 from pathlib import Path
 import subprocess
 import tempfile
+from types import SimpleNamespace
 import unittest
 from unittest.mock import patch
 
@@ -418,6 +419,24 @@ class OfflineEnvironmentTests(unittest.TestCase):
         manifest = self.manifest()
         identity = manifest["identity"]
         captured = {}
+        namespace_paths = {
+            "/sys/class/net": SimpleNamespace(
+                iterdir=lambda: iter([SimpleNamespace(name="lo")])
+            ),
+            "/proc/self/mountinfo": SimpleNamespace(
+                read_text=lambda: "11 0 0:1 / / rw - overlay overlay rw\n"
+            ),
+            "/.dockerenv": SimpleNamespace(is_file=lambda: True),
+        }
+        namespace_reads = set()
+
+        def runtime_path(value):
+            name = str(value)
+            if name in namespace_paths:
+                namespace_reads.add(name)
+                return namespace_paths[name]
+            # All source fixtures and temporary state use the real filesystem.
+            return Path(value)
 
         def execute(command, **kwargs):
             captured.update(command=command, **kwargs)
@@ -445,11 +464,16 @@ class OfflineEnvironmentTests(unittest.TestCase):
         with (
             patch.dict(os.environ, inherited),
             patch.object(MODULE, "check_manifest", return_value=identity),
-            patch.object(MODULE, "validate_runtime_isolation"),
+            patch.object(MODULE, "Path", side_effect=runtime_path),
+            patch.object(MODULE.platform, "system", return_value="Linux") as system,
+            patch.object(MODULE.platform, "machine", return_value="x86_64") as machine,
             patch.object(MODULE, "git", return_value=(str(self.root) + "\n").encode()),
             patch.object(MODULE.subprocess, "run", side_effect=execute),
         ):
             self.assertEqual(MODULE.run_gate(self.root, manifest), 1)
+        self.assertEqual(namespace_reads, set(namespace_paths))
+        system.assert_called_once()
+        machine.assert_called_once()
         self.assertEqual(captured["cwd"], self.root)
         self.assertEqual(
             captured["env"]["PATH"], manifest["tool_path"] + ":" + manifest["nix_bin"]
