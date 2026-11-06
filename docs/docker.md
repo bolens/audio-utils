@@ -157,8 +157,7 @@ configured `WOODPECKER_STATUS_CREATOR_ID`. The context prefix defaults to
 and runs the complete existing runtime fixture suite without rebuilding. It then
 copies the same digest to `sha-<full-commit>` and `latest`, rechecking protected
 main immediately before each write and refusing a conflicting immutable tag.
-The hosted Docker runtime remains an explicit migration exception; no registry
-promotion has been performed to validate this migration.
+The hosted Docker runtime remains an explicit migration exception.
 
 Before reverting the publishing flag, stop new publishing triggers and cancel or
 drain every active native candidate and hosted runtime/promotion bridge. Confirm

@@ -19,7 +19,7 @@
 - [x] Prove original 794 missing-CLI and corrupt-npm faults fail as required. [A3]
 - [x] Publish the original admitted `ci-env-KEY` tag and verify its public digest and Bamboo anonymous pull. [A4]
 - [ ] Complete protected review of both digest-pinned consumer profiles and owning docs.
-- [ ] Verify actual corrected full-gate execution on the second runner with the successor digest and compiled empty registry auth before protected main merge. [A5]
+- [x] Verify actual corrected full-gate execution on the second runner with the successor digest and compiled empty registry auth before protected main merge. [A5]
 - [ ] Prove genuine native PR/main execution and Gitea source/profile parity.
 
 ## Namespace-policy successor — admitted and published; consumer delivery pending
@@ -37,7 +37,7 @@ Focused tests and a matching source review do not establish image readiness.
 - [x] Pass all six actual successor gate cases and terminal lifecycle. [S2]
 - [x] Pass both actual successor faults and terminal lifecycle. [S3]
 - [x] Publish only the successor CI-environment tag and verify public identity and anonymous pull. [S4]
-- [ ] Complete the corrected second-runner native full gate and compiled-auth proof. [A5]
+- [x] Complete the corrected second-runner native full gate and compiled-auth proof. [A5]
 - [ ] Complete protected current-head and genuine main validation, then Gitea parity. [S5]
 
 Evidence bindings (remaining symbolic fields require actual accepted receipts):
@@ -71,13 +71,19 @@ Evidence bindings (remaining symbolic fields require actual accepted receipts):
   control `56735e220fd02ec6a7afbf6f2d377c59fcb610ad285997591be7bdc78fcfac54`
   preceded guarded release
   `ad7509dfb4c45145f42dd8e863c595c4f1d8b19adee393de228849d4ac99a7d4`.
-- **A5:** `SUCCESSOR_GROVE_NATIVE_GATE_IDENTITIES_AND_RESULT`,
-  `SUCCESSOR_GROVE_NATIVE_GATE_RECEIPT_SHA256`,
-  `SUCCESSOR_COMPILED_EMPTY_AUTH_CONFIGURATION_SHA256`.
-  Require the ordinary native full gate on Grove with the exact admitted digest,
-  step-level `network_mode: none`, empty compiled registry authentication and no
-  secret mapping. Keep the temporary `hostname: ci02` target for this first
-  corrected runner proof, then remove it through normal source delivery.
+- **A5 — accepted corrected Grove execution:** source
+  `f4e9fb0cdbc97f48cf1bd27f358ed28b60be7c06`, tree
+  `18bb1647d8bfa8e9a09f04c622e8eb65a12956c6`; normal PR74 pipeline 22,
+  pipeline ID 667, core workflow 436, development step 1467, Grove agent 4525.
+  All six native lanes and the unchanged current-source full gate passed;
+  accepted receipt `295c0ccd1fe047db57ae11f76d9685a7786b79ed6c4ce5e4be06b2d0997ec22d`.
+  Compiled configuration evidence:
+  `953884c826bd95b1281dcf7ba6840908ccc46dad0eb008554d7d700b82f42d8f`.
+  The ordinary native full gate used the exact admitted digest, step-level
+  `network_mode: none`, empty compiled registry authentication and no secret
+  mapping. This routing/docs-only follow-up removes the temporary runner
+  target after acceptance while preserving every application, test, helper,
+  dependency and image byte/mode from the proven source.
   This proves operational execution, not a fresh anonymous pull: the runner may
   use its local image cache. S4 separately owns the actual public anonymous pull.
 - **S5:** `SUCCESSOR_PROTECTED_PR_CHECKS`, `SUCCESSOR_MERGED_MAIN_SHA_TREE`,
@@ -157,10 +163,10 @@ release, control SHA-256
   records removal of the temporary private auth and preservation of the existing
   permanent credential.
 
-Protected consumer delivery and corrected second-runner verification remain
-pending. Original publication does not prove those stages. Keep their tasks open
-until their actual receipts exist. Private full logs and credential material
-stay outside source.
+Protected consumer delivery remains pending. A5 above records completed corrected
+second-runner verification; publication alone did not prove that execution.
+Keep protected delivery tasks open until their actual PR/main and Gitea receipts
+exist. Private full logs and credential material stay outside source.
 
 ## Post-merge evidence ownership
 
