@@ -9,4 +9,6 @@ Installation validation alone does not establish feature completion.
 
 - [Development environments](004-development-environments/spec.md): locked tooling, platform boundaries, and container validation.
 
-- [005-woodpecker-publishing](005-woodpecker-publishing/spec.md): portable CI and controlled publication (implementation in progress).
+- [005-woodpecker-publishing](005-woodpecker-publishing/spec.md): portable CI and controlled publication (original cutover accepted; retained evidence gap in tasks).
+
+- [006-offline-ci-environment](006-offline-ci-environment/spec.md): namespace-policy successor image admitted and published; protected consumer delivery pending.

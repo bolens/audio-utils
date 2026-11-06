@@ -83,3 +83,22 @@ publication flag. Roll runtime deployments back by verified digest. Container
 delivery does not bump VERSION or create a source release tag. PR and scheduled
 jobs never publish packages; product releases remain separately authorized signed
 tag and GitHub-release operations above.
+
+## CI toolchain delivery
+
+The native Linux development gate consumes an immutable public GHCR manifest and
+runs the current checkout through the image's input-key checker with networking
+disabled. The [offline CI environment guide](docs/offline-ci-environment.md) owns
+preparation, content verification, full-gate/fault admission and successor updates.
+Keep all six native checks, `Development environment`, `Docker runtime` and the
+byte-identical generated validation profile required through normal protected delivery.
+
+For each successor: admit content, all six gate cases and both faults; publish
+only immutable `ci-env-KEY`; verify the public manifest digest and anonymous pull;
+then review the source/input and consumer-digest change together. Credentials
+belong only to the trusted push, never the image or ordinary PR validation.
+
+CI toolchain delivery leaves `VERSION`, product tags, runtime aliases and the
+signed GitHub-release procedure above unchanged. Roll back through a protected
+change to a previously accepted digest with compatible dependency inputs. A key
+mismatch fails closed without an online fallback.

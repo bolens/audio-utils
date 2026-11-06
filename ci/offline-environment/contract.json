@@ -1,0 +1,60 @@
+{
+  "schema": 1,
+  "platform": "linux/amd64",
+  "nix_base": "docker.io/nixos/nix:2.35.4@sha256:f159a58f390677f41e8e900a74b6e2f9c7f27b364122ae6acf7a652ce6c551c0",
+  "devenv_revision": "42246161fa3bf7cd18f8334d08c73d6aaa8762d3",
+  "environment_inputs": [
+    "devenv.nix",
+    "devenv.yaml",
+    "devenv.lock",
+    "mcp/npm/package.json",
+    "mcp/npm/package-lock.json"
+  ],
+  "dependency_declarations": [
+    "Makefile",
+    "**/Makefile",
+    "*.mk",
+    "**/*.mk",
+    "scripts/*.sh",
+    "scripts/ci/*.sh",
+    ".githooks/*",
+    ".github/actions/*/action.yml",
+    ".devcontainer/*.sh",
+    ".devcontainer/Dockerfile",
+    "tests/run.sh",
+    "tests/harness.sh",
+    "tests/fixtures.sh"
+  ],
+  "recipe_inputs": [
+    "ci/offline-environment/Dockerfile",
+    "ci/offline-environment/bootstrap.sh",
+    "ci/offline-environment/realize.sh",
+    "ci/offline-environment/prepare.sh",
+    "scripts/ci/offline_environment.py"
+  ],
+  "workspace_paths": [
+    "/woodpecker/src/github.com/bolens/audio-utils",
+    "/woodpecker/src/gitea.bolens.dev/bolens/audio-utils"
+  ],
+  "devenv_arguments": [
+    "--verbose",
+    "--max-jobs",
+    "1",
+    "--cores",
+    "2",
+    "--offline",
+    "test"
+  ],
+  "runtime_limits": {
+    "cpus": 2,
+    "memory_bytes": 4294967296,
+    "memory_swap_bytes": 4294967296,
+    "pids_limit": 512
+  },
+  "network_mode": "none",
+  "preparation_inputs": [
+    ".gitignore"
+  ],
+  "nix_version": "2.35.4",
+  "devenv_source_nar_hash": "sha256-8Ivbm9ltg0hUGQYMuRDOI8hbHUzqB9xKZ9ubKAzzwE8="
+}

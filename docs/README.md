@@ -76,3 +76,5 @@ Index of topic docs. **Tool lists** (every converter/util path) live only in the
 - [Editor setup](../.vscode/README.md)
 - [License scope and attribution](../THIRD_PARTY_NOTICES.md)
 - [Development container](../.devcontainer/README.md)
+
+[Offline CI environment](offline-ci-environment.md) owns locked CI toolchain preparation, current-source offline admission and digest-consumer delivery.
