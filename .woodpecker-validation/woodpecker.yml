@@ -58,4 +58,68 @@ steps:
       CI: 'true'
       JOBS: '2'
     commands:
-      - /opt/audio-ci/python /opt/audio-ci/offline_environment.py run --root "$CI_WORKSPACE"
+      - |-
+        /opt/audio-ci/python -I - <<'PY_OFFLINE_CHECKER'
+        import fcntl
+        import hashlib
+        import json
+        import os
+        from pathlib import Path
+        import platform
+        import runpy
+        import socket
+        import struct
+        import sys
+
+        helper = "/opt/audio-ci/offline_environment.py"
+        expected = "d48f4f7248e8b2a1e32f29e49bd292469bfac2dd0344e344b88cf2ef00d60b5f"
+        if hashlib.sha256(Path(helper).read_bytes()).hexdigest() != expected:
+            raise SystemExit("offline checker binding refused")
+        workspace = os.environ["CI_WORKSPACE"]
+        reported = False
+
+        def trace(frame, event, arg):
+            global reported
+            if frame.f_code.co_filename != helper:
+                return None
+            if event == "call":
+                frame.f_trace_lines = False
+                frame.f_trace_opcodes = False
+            if event == "exception" and isinstance(arg[1], ValueError) and not reported:
+                reported = True
+                sys.settrace(None)
+                facts = {"function": frame.f_code.co_name, "line": frame.f_lineno}
+                try:
+                    interfaces = {name for _, name in socket.if_nameindex()}
+                    known = ("sit0", "tunl0", "ip6tnl0", "gre0", "gretap0", "erspan0",
+                             "ip6gre0", "ip6gretap0", "ip6erspan0")
+                    mounts = [line.split()[4] for line in Path("/proc/self/mountinfo").read_text().splitlines()]
+                    facts.update(lo_only=interfaces == {"lo"},
+                                 unknown_nonlo_count=len(interfaces - {"lo", *known}),
+                                 docker_marker=Path("/.dockerenv").is_file(),
+                                 nix_mount_count=sum(path == "/nix" or path.startswith("/nix/") for path in mounts),
+                                 platform_ok=platform.system() == "Linux" and platform.machine() == "x86_64",
+                                 euid_is_root=os.geteuid() == 0,
+                                 cwd_equals_workspace=Path.cwd().resolve() == Path(workspace).resolve())
+                    fallback = {}
+                    with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as sock:
+                        for name in known:
+                            present = name in interfaces
+                            up = False
+                            if present:
+                                result = fcntl.ioctl(sock, 0x8913, struct.pack("256s", name.encode()))
+                                up = bool(struct.unpack_from("H", result, 16)[0] & 1)
+                            fallback[name] = {"present": present, "up": up}
+                    facts["fallback_interfaces"] = fallback
+                except Exception:
+                    facts["runtime_facts_unavailable"] = True
+                print("offline-checker-diagnostic " + json.dumps(facts, sort_keys=True), file=sys.stderr, flush=True)
+            return trace
+
+        sys.argv = [helper, "run", "--root", workspace]
+        sys.settrace(trace)
+        try:
+            runpy.run_path(helper, run_name="__main__")
+        finally:
+            sys.settrace(None)
+        PY_OFFLINE_CHECKER
