@@ -1,10 +1,12 @@
 # Offline Audio CI environment
 
-The implementation baseline is 7941996977657a8ad3eb08642aa19ca18e8d0a0f,
+The namespace-policy successor candidate is
+213c50ab6ba7d402af5d32253f0ca36021d0d2f7,
 based on accepted canonical CI revision
-2d32e153080d5551bedc228f1cd042764da9da94. The native consumer pins the
-admitted public manifest and verifies its complete input key before running
-current source. Image admission, public pull verification and protected source
+2d32e153080d5551bedc228f1cd042764da9da94. The successor must complete new
+image admission, publication and protected consumer delivery. Its consumer pins
+`sha256:e23fff386a6d96652e80925241e190c0e3026a0f985b00165cbd35c77dd1a47e` and verifies the complete input key
+before running current source. Image admission, public pull verification and protected source
 delivery are distinct required boundaries. Cold Nix network fetches can exceed a
 workflow deadline; a longer deadline alone does not provide deterministic
 execution.
@@ -44,3 +46,11 @@ cannot load the same config path twice or inherit operator configuration. Forced
 offline npm behavior, verified content cache and the complete gate remain intact.
 Partial successful gate cases do not satisfy the six-case and supplemental-fault
 acceptance requirements.
+
+Network admission uses complete bounded current-process link, address and route
+censuses plus administration-capability checks. An inert kernel IPIP fallback
+requires structural evidence; a name or down flag alone is insufficient.
+Docker `network_mode: none` remains an independent boundary, and runtime rejects
+shared Nix mounts. Preparation shares the topology policy without requiring
+runtime Docker/mount markers. Fixed refusal classes retain fail-closed behavior
+without printing addresses or arbitrary exception text. See the owning runbook.

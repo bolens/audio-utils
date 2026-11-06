@@ -53,6 +53,15 @@ environment excludes inherited test selectors, make dry-run controls, npmrc and
 `NIX_CACHE_HOME`. Offline paths disable the global flake registry. Nix `--offline`
 alone is not a network boundary: step-level `network_mode: none` is mandatory.
 
+The checker reads complete, bounded link, address and route dumps from its own
+network namespace. It accepts loopback and an inert IPIP fallback only when its
+link type, down state, zero endpoints and lack of addresses or usable routes are
+verified. Network and system administration capabilities are forbidden. An
+interface name alone is insufficient, and an incomplete census fails closed.
+Preparation and runtime share this policy; runtime also requires the disposable
+Docker marker and rejects a mounted Nix store or database. Refusals use fixed
+guard classes without printing arbitrary exception text or network addresses.
+
 ## Runtime admission and publication
 
 Before publishing each generation, bind source, key and actual image identity

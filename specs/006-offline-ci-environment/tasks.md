@@ -11,18 +11,95 @@
 - [x] Isolate npm user/global configuration in distinct private empty files and verify them while the gate executes.
 - [x] Complete independent implementation source review and focused lint/unit/installed pre-commit checks.
 - [ ] Complete normal full pre-push checks and protected source delivery for the final consumer.
-- [x] Complete new-image content and runtime admission with all six actual gate cases and terminal lifecycles. [A1, A2]
+- [x] Complete original 794 image standalone admission with all six actual gate cases and terminal lifecycles. [A1, A2]
 - [x] Verify guarded realization history, the new constrained late phase and safe layer reuse without host store/auth/cache mounts. [A0]
-- [x] Verify image filesystem, dependency content and no old application source. [A1]
-- [x] Pass full network-none gate at both forge-resolved workspace paths with fresh random state. [A2]
-- [x] Prove current-source negative test fails with unchanged environment key. [A2]
-- [x] Prove both missing-CLI and corrupt-npm faults fail for their exact required reasons. [A3]
-- [x] Publish only the admitted `ci-env-KEY` tag, then verify the immutable public manifest digest and anonymous pull. [A4]
+- [x] Verify original 794 image content and absence of old application source. [A1]
+- [x] Pass original 794 standalone gates at both forge-resolved workspace paths. [A2]
+- [x] Prove original 794 current-source negative fails with unchanged key. [A2]
+- [x] Prove original 794 missing-CLI and corrupt-npm faults fail as required. [A3]
+- [x] Publish the original admitted `ci-env-KEY` tag and verify its public digest and Bamboo anonymous pull. [A4]
 - [ ] Complete protected review of both digest-pinned consumer profiles and owning docs.
-- [ ] Verify anonymous exact-digest pull on the second runner before protected main merge.
+- [ ] Verify actual corrected full-gate execution on the second runner with the successor digest and compiled empty registry auth before protected main merge. [A5]
 - [ ] Prove genuine native PR/main execution and Gitea source/profile parity.
 
-## Completed image admission and publication — consumer delivery pending
+## Namespace-policy successor — admitted and published; consumer delivery pending
+
+Candidate source: `213c50ab6ba7d402af5d32253f0ca36021d0d2f7`;
+tree: `2485645319bc69914ddfdba7f4d2eb77e741ec09`;
+environment key:
+`91ff6bc564c83b955bd6b032bd5ec55ef2a654758351040b7d39c2509a54c9b0`.
+The 34 focused tests passed; raw output SHA-256:
+`09592f16581e0a4ba1e562a32341bc9a144cb4b98ac915386bf8dedf655598d9`.
+Focused tests and a matching source review do not establish image readiness.
+
+- [x] Bind the completed constrained successor build and realization reuse. [S0]
+- [x] Complete independent successor content admission and terminal lifecycle. [S1]
+- [x] Pass all six actual successor gate cases and terminal lifecycle. [S2]
+- [x] Pass both actual successor faults and terminal lifecycle. [S3]
+- [x] Publish only the successor CI-environment tag and verify public identity and anonymous pull. [S4]
+- [ ] Complete the corrected second-runner native full gate and compiled-auth proof. [A5]
+- [ ] Complete protected current-head and genuine main validation, then Gitea parity. [S5]
+
+Evidence bindings (remaining symbolic fields require actual accepted receipts):
+
+- **S0:** `2bdd030fd80e538954c1264d4c329f2139ef0704bc72801f3c1d08265c286a84`, `c5c765fa9c874d87adbaa454061df081`;
+  actual local image `sha256:e23fff386a6d96652e80925241e190c0e3026a0f985b00165cbd35c77dd1a47e`.
+  The guarded 874-byte realization prefix and all eight input bytes/modes remain
+  identical to the retained realization proof; no fresh first-phase run is claimed.
+- **S1:** `6e150ff39c8954e7d4a0ce88b6296a61b08c1c45133405a078964a46881aa743`, `7a84d4449531b4ddcf8c33fb6b549aa04b4d9940ad81951437e0e42cfed82f65`.
+- **S2:** `f74e7d71ffebc9d0f653945303219059a8ab8af23f5cd465f42ffb8d1b1917ad`, `6089813529a06567ffb6fad9ece5057a7e9e0267034a0c6560618eea90c1ee91`;
+  The canonical Python families were `[15, 12, 8, 8, 6]`; four current-source
+  positives added the separate 34-test checker family. All positives matched
+  Bash 63 files, 512 pass, 0 fail, 13 skips and Node SPEC 8 tests, 8 pass,
+  0 fail, 0 skipped. The actual unchanged-key negative executed its harness
+  failure: Bash 64 files, 512 pass, 1 fail, 13 skips, exit 1. All six owned
+  containers stopped with finished lifecycle; no additional skips were accepted.
+- **S3:** `2f540f40fff10720b7b9a595afb871d1c84fc1345292d506c1068f2dd33d266b`, `66a5b7f571755ab9f77c0e3666d7e1f8eaa6c5462439d6886edf09ba35b3017c`;
+  Missing CLI was refused before tests; corrupt npm content produced the
+  required offline failure with exit 1. Both owned containers stopped with
+  finished lifecycle and no failures.
+- **S4 — published exact artifact:** public manifest
+  `sha256:e23fff386a6d96652e80925241e190c0e3026a0f985b00165cbd35c77dd1a47e`,
+  config `sha256:2fd3c39163fde72bba3806d66a61eaedea985e0a7427bdbb390ea27e33c52e19`,
+  `d41badc7b977f006a00012ec3aba8649cf0571f80c955294502bb944b536c98b`, `d41badc7b977f006a00012ec3aba8649cf0571f80c955294502bb944b536c98b`,
+  `a8bff61563873a8842ec262315ef6b5513e03c4e78c477633c6f41efbf064ff0`.
+  Only `ghcr.io/bolens/audio-utils:ci-env-91ff6bc564c83b955bd6b032bd5ec55ef2a654758351040b7d39c2509a54c9b0`
+  was published. The same publication receipt binds the public manifest/config
+  and actual Bamboo anonymous pull; the repeated hash denotes one observation,
+  not two independent proofs. Auth cleanup succeeded, the temporary auth directory
+  is absent, and the existing permanent credential was preserved. Publication
+  control `56735e220fd02ec6a7afbf6f2d377c59fcb610ad285997591be7bdc78fcfac54`
+  preceded guarded release
+  `ad7509dfb4c45145f42dd8e863c595c4f1d8b19adee393de228849d4ac99a7d4`.
+- **A5:** `SUCCESSOR_GROVE_NATIVE_GATE_IDENTITIES_AND_RESULT`,
+  `SUCCESSOR_GROVE_NATIVE_GATE_RECEIPT_SHA256`,
+  `SUCCESSOR_COMPILED_EMPTY_AUTH_CONFIGURATION_SHA256`.
+  Require the ordinary native full gate on Grove with the exact admitted digest,
+  step-level `network_mode: none`, empty compiled registry authentication and no
+  secret mapping. Keep the temporary `hostname: ci02` target for this first
+  corrected runner proof, then remove it through normal source delivery.
+  This proves operational execution, not a fresh anonymous pull: the runner may
+  use its local image cache. S4 separately owns the actual public anonymous pull.
+- **S5:** `SUCCESSOR_PROTECTED_PR_CHECKS`, `SUCCESSOR_MERGED_MAIN_SHA_TREE`,
+  `SUCCESSOR_GENUINE_MAIN_RECEIPT_SHA256`, `SUCCESSOR_GITEA_PARITY_RECEIPT_SHA256`.
+  The protected PR and final receipt own post-merge observations; do not tick
+  future main completion in the commit that must still undergo those checks.
+
+## Historical 794 standalone admission and publication
+
+The following A0–A4 receipts remain valid for their original source/image and
+standalone cases. They are not successor evidence or globally accepted native
+consumer delivery. Actual PR74 Grove execution with the original checker failed
+its loopback-name-only guard before tests: the kernel supplied a down, unconfigured
+IPIP fallback. The complete observation log SHA-256 is
+`7e3b70c8a4aeebdf35946464c25cb3934b6d685322a7d93ecb288a6c35c0453e`.
+The successor requires new admission and protected runner/main proof above.
+The intermediate 95e image
+`sha256:9be04b28e3a76c5def30f79544691acd62a9a861c24e7ae7fbb1ed38d4b6f464`
+was withdrawn before full-gate admission after a retained macOS fixture
+portability defect was found. It was not published and is not admission evidence
+for this portable successor.
+
 
 Implementation baseline: `7941996977657a8ad3eb08642aa19ca18e8d0a0f`.
 Environment key:
@@ -80,8 +157,8 @@ release, control SHA-256
   records removal of the temporary private auth and preservation of the existing
   permanent credential.
 
-Protected consumer delivery and second-runner operational verification remain
-pending; publication is not a claim that those checks ran. Keep their tasks open
+Protected consumer delivery and corrected second-runner verification remain
+pending. Original publication does not prove those stages. Keep their tasks open
 until their actual receipts exist. Private full logs and credential material
 stay outside source.
 
