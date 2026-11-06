@@ -1116,6 +1116,11 @@ def _run_checked_gate(root, manifest, identity):
         }
         for name in ("home", "cache", "data", "config", "runtime", "tmp"):
             (state / name).mkdir(mode=0o700)
+        user_config = state / "config/npm-user.npmrc"
+        global_config = state / "config/npm-global.npmrc"
+        for config in (user_config, global_config):
+            config.touch(mode=0o600, exist_ok=False)
+            config.chmod(0o600)
         env.update(
             HOME=str(state / "home"),
             XDG_CACHE_HOME=str(state / "cache"),
@@ -1129,8 +1134,8 @@ def _run_checked_gate(root, manifest, identity):
             NIX_CONFIG="experimental-features = nix-command flakes\nsandbox = false\nbuild-users-group =\nmax-jobs = 1\ncores = 2\nsubstituters =\nflake-registry =\n",
             npm_config_offline="true",
             npm_config_cache=manifest["npm_cache"],
-            NPM_CONFIG_USERCONFIG="/dev/null",
-            NPM_CONFIG_GLOBALCONFIG="/dev/null",
+            NPM_CONFIG_USERCONFIG=str(user_config),
+            NPM_CONFIG_GLOBALCONFIG=str(global_config),
             GIT_CONFIG_COUNT="1",
             GIT_CONFIG_KEY_0="safe.directory",
             GIT_CONFIG_VALUE_0=str(root),

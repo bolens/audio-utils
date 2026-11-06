@@ -836,6 +836,15 @@ class OfflineEnvironmentTests(unittest.TestCase):
 
         def execute(command, **kwargs):
             captured.update(command=command, **kwargs)
+            user_config = Path(kwargs["env"]["NPM_CONFIG_USERCONFIG"])
+            global_config = Path(kwargs["env"]["NPM_CONFIG_GLOBALCONFIG"])
+            self.assertNotEqual(user_config, global_config)
+            for config in (user_config, global_config):
+                self.assertEqual(config.read_bytes(), b"")
+                self.assertFalse(config.is_symlink())
+                self.assertEqual(config.stat().st_mode & 0o777, 0o600)
+                self.assertEqual(config.parent.stat().st_mode & 0o777, 0o700)
+
             self.assertIn(
                 "CURRENT_SOURCE_NEGATIVE",
                 (self.root / "tests/functional/current-source.test.sh").read_text(),
