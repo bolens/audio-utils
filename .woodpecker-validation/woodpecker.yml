@@ -2,6 +2,8 @@
 labels:
   platform: linux/amd64
   backend: docker
+  # Temporary Grove diagnostic target; remove after corrected runner admission.
+  hostname: ci02
 clone:
   git:
     image: woodpeckerci/plugin-git:2.11.0@sha256:9802cb7852dcf31f9c5c1d1ddeadfb9002d4fae85751f7b6a792eedb267bcc59
@@ -78,6 +80,108 @@ steps:
         workspace = os.environ["CI_WORKSPACE"]
         reported = False
 
+        def network_facts():
+            # Read-only current-namespace dumps; never emit address or endpoint bytes.
+            def attributes(raw):
+                result = {}
+                while raw:
+                    if len(raw) < 4:
+                        raise ValueError("malformed diagnostic attributes")
+                    size, kind = struct.unpack_from("HH", raw)
+                    kind &= 0x3fff
+                    if size < 4 or size > len(raw) or kind in result:
+                        raise ValueError("malformed diagnostic attributes")
+                    result[kind] = raw[4:size]
+                    raw = raw[(size + 3) & ~3:]
+                return result
+
+            def dump(request, response, payload):
+                rows = []
+                total = 0
+                with socket.socket(socket.AF_NETLINK, socket.SOCK_RAW, socket.NETLINK_ROUTE) as sock:
+                    sock.settimeout(2)
+                    sock.bind((0, 0))
+                    sock.sendto(struct.pack("IHHII", 16 + len(payload), request, 0x301, 1, 0) + payload, (0, 0))
+                    for _ in range(128):
+                        data, _, flags, sender = sock.recvmsg(65536)
+                        total += len(data)
+                        if flags & socket.MSG_TRUNC or sender[0] != 0 or total > 2 * 1024 * 1024:
+                            raise ValueError("incomplete diagnostic dump")
+                        while data:
+                            if len(data) < 16:
+                                raise ValueError("malformed diagnostic message")
+                            size, kind, flags, sequence, _ = struct.unpack_from("IHHII", data)
+                            if size < 16 or size > len(data) or sequence != 1 or flags & 0x10:
+                                raise ValueError("incomplete diagnostic dump")
+                            body = data[16:size]
+                            data = data[(size + 3) & ~3:]
+                            if kind == 3:
+                                if body and (len(body) != 4 or struct.unpack("i", body)[0] != 0):
+                                    raise ValueError("failed diagnostic dump")
+                                return rows
+                            if kind != response or len(rows) >= 4096:
+                                raise ValueError("unexpected diagnostic message")
+                            rows.append(body)
+                raise ValueError("incomplete diagnostic dump")
+
+            names = {"lo", "sit0", "tunl0", "ip6tnl0", "gre0", "gretap0", "erspan0",
+                     "ip6gre0", "ip6gretap0", "ip6erspan0"}
+            links = []
+            labels = {}
+            for raw in dump(18, 16, struct.pack("BBHiII", 0, 0, 0, 0, 0, 0)):
+                if len(raw) < 16:
+                    raise ValueError("malformed diagnostic link")
+                _, _, hardware, index, flags, _ = struct.unpack_from("BBHiII", raw)
+                attrs = attributes(raw[16:])
+                name = attrs.get(3, b"").rstrip(b"\0").decode("ascii", "strict")
+                label = name if name in names else "unknown"
+                labels[index] = label
+                info = attributes(attrs[18]) if 18 in attrs else {}
+                kind = info.get(1, b"").rstrip(b"\0")
+                details = attributes(info[2]) if 2 in info else {}
+                # Only the reviewed IPIP layout has local/remote/underlay semantics here.
+                ipip = kind == b"ipip"
+                links.append({"interface": label, "index": index, "hardware_type": hardware,
+                              "flags": flags, "kind_ipip": ipip,
+                              "local_attribute_present": ipip and 2 in details,
+                              "remote_attribute_present": ipip and 3 in details,
+                              "local_nonzero": ipip and any(details.get(2, b"")),
+                              "remote_nonzero": ipip and any(details.get(3, b"")),
+                              "underlay_nonzero": ipip and any(details.get(1, b""))})
+            addresses = {}
+            for raw in dump(22, 20, struct.pack("BBBBI", 0, 0, 0, 0, 0)):
+                if len(raw) < 8:
+                    raise ValueError("malformed diagnostic address")
+                family, _, _, _, index = struct.unpack_from("BBBBI", raw)
+                attributes(raw[8:])
+                key = labels.get(index, "unknown") + ":" + str(family)
+                addresses[key] = addresses.get(key, 0) + 1
+            routes = {}
+            defaults = {}
+            for raw in dump(26, 24, struct.pack("BBBBBBBBI", 0, 0, 0, 0, 0, 0, 0, 0, 0)):
+                if len(raw) < 12:
+                    raise ValueError("malformed diagnostic route")
+                family, destination_bits, _, _, _, _, _, _, _ = struct.unpack_from("BBBBBBBBI", raw)
+                attrs = attributes(raw[12:])
+                if 4 in attrs and len(attrs[4]) != 4:
+                    raise ValueError("malformed diagnostic route interface")
+                index = struct.unpack("I", attrs[4])[0] if 4 in attrs else 0
+                label = labels.get(index, "none" if index == 0 else "unknown")
+                key = label + ":" + str(family)
+                routes[key] = routes.get(key, 0) + 1
+                if destination_bits == 0:
+                    defaults[key] = defaults.get(key, 0) + 1
+            capabilities = {}
+            for line in Path("/proc/self/status").read_text().splitlines():
+                field, _, value = line.partition(":")
+                if field in {"CapEff", "CapPrm", "CapInh", "CapAmb", "CapBnd"}:
+                    bits = int(value.strip(), 16)
+                    capabilities[field] = {"net_admin": bool(bits & (1 << 12)),
+                                           "sys_admin": bool(bits & (1 << 21))}
+            return {"links": links, "address_counts": addresses, "route_counts": routes,
+                    "default_route_counts": defaults, "capabilities": capabilities,
+                    "dump_complete": True}
+
         def trace(frame, event, arg):
             global reported
             if frame.f_code.co_filename != helper:
@@ -111,6 +215,7 @@ steps:
                                 up = bool(struct.unpack_from("H", result, 16)[0] & 1)
                             fallback[name] = {"present": present, "up": up}
                     facts["fallback_interfaces"] = fallback
+                    facts["network_structure"] = network_facts()
                 except Exception:
                     facts["runtime_facts_unavailable"] = True
                 print("offline-checker-diagnostic " + json.dumps(facts, sort_keys=True), file=sys.stderr, flush=True)
