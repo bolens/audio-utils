@@ -1288,6 +1288,8 @@ def run_gate(root, manifest):
 
 def _run_checked_gate(root, manifest, identity):
     """Internal execution primitive; normal CLI always validates the full key."""
+    if platform.system() != "Linux" or platform.machine() != "x86_64":
+        raise ValueError("wrong execution platform")
     validate_runtime_isolation(
         network_namespace(),
         [
@@ -1296,8 +1298,6 @@ def _run_checked_gate(root, manifest, identity):
         ],
         Path("/.dockerenv").is_file(),
     )
-    if platform.system() != "Linux" or platform.machine() != "x86_64":
-        raise ValueError("wrong execution platform")
     if git(
         root,
         "rev-parse",

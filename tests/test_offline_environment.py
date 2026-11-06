@@ -881,6 +881,8 @@ class OfflineEnvironmentTests(unittest.TestCase):
             fake.recvmsg.return_value = (data, [], flags, sender)
             with (
                 self.subTest(data=data),
+                patch.object(MODULE.socket, "AF_NETLINK", 16, create=True),
+                patch.object(MODULE.socket, "NETLINK_ROUTE", 0, create=True),
                 patch.object(MODULE.socket, "socket", return_value=fake),
             ):
                 if accepted:
@@ -1022,6 +1024,26 @@ class OfflineEnvironmentTests(unittest.TestCase):
                 MODULE.run_gate(self.root, self.manifest())
         execute.assert_not_called()
 
+    def test_unsupported_runtime_platform_refuses_before_namespace_or_execution(self):
+        manifest = self.manifest()
+        for system, machine in (("Darwin", "arm64"), ("Linux", "aarch64")):
+            with (
+                self.subTest(system=system, machine=machine),
+                patch.object(MODULE.platform, "system", return_value=system),
+                patch.object(MODULE.platform, "machine", return_value=machine),
+                patch.object(MODULE, "network_namespace") as census,
+                patch.object(
+                    MODULE,
+                    "Path",
+                    side_effect=AssertionError("unexpected namespace read"),
+                ),
+                patch.object(MODULE.subprocess, "run") as execute,
+            ):
+                with self.assertRaisesRegex(ValueError, "^wrong execution platform$"):
+                    MODULE._run_checked_gate(self.root, manifest, manifest["identity"])
+                census.assert_not_called()
+                execute.assert_not_called()
+
     def test_runtime_environment_drops_all_make_and_filter_controls(self):
         manifest = self.manifest()
         identity = manifest["identity"]
@@ -1101,8 +1123,8 @@ class OfflineEnvironmentTests(unittest.TestCase):
             source_cache.assert_called_once()
         self.assertEqual(namespace_reads, set(namespace_paths) - {"/sys/class/net"})
         self.assertEqual(interfaces.call_count, 2)
-        system.assert_called_once()
-        machine.assert_called_once()
+        self.assertEqual(system.call_count, 2)
+        self.assertEqual(machine.call_count, 2)
         self.assertEqual(captured["cwd"], self.root)
         self.assertEqual(
             captured["env"]["PATH"], manifest["tool_path"] + ":" + manifest["nix_bin"]
