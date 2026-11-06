@@ -88,9 +88,10 @@ Node test summaries with the same reporter, and the Bash summary
 `=== tests: N files, pass=X fail=Y skip=Z` against that actual canonical run.
 Account separately for the added checker's source-bound focused-test family.
 Require every expected family, no additional skips and successful positive runs.
-A functional-lane summary is not a full development-gate baseline. Pinned devenv
-`--verbose` forwards live output with `[devenv:enterTest] `; strip only that exact
-prefix, never timestamped failure-report replay, when parsing summaries.
+A functional-lane summary is not a full development-gate baseline. The admitted
+devenv 2.4.0 `--verbose` output prefixes live summaries with exactly two ASCII
+spaces. Parse that observed live channel consistently; never trim arbitrary
+whitespace or accept timestamped failure-report replay as live output.
 
 For the current-source negative, copy
 `tests/fixtures/offline-current-source-negative.test.sh.fixture` to
@@ -124,8 +125,19 @@ Its checker validates the complete key and invokes the pinned devenv CLI with
 `--verbose --max-jobs 1 --cores 2 --offline test`. The actual current checkout
 must match the execution root. Woodpecker's Docker workspace base is distinct
 from its generated script's forge-resolved process directory; both contract
-paths are covered by admission. Successful task output is observed using only
-the exact `[devenv:enterTest] ` prefix and actual Python, Bash and Node summaries.
+paths are covered by admission. Successful task output is observed using the
+exact two-space live prefix and actual Python, Bash and Node summaries.
+
+The selected devenv 2.4.0 toolchain was admitted at source
+`70efe22f18478eecc5820917b60d391586aeb30e`, including all six runtime cases,
+both fault cases, the content audit and terminal container lifecycles. Its
+environment key is
+`fc9440ebb343154feb37d84e24801ebbe57ef9e2293b407d5993df99c0c8f7e3`.
+The published manifest
+`ghcr.io/bolens/audio-utils@sha256:b0ef44dbda7f790a6be00232df8bfc716f167b5e8e635d1ddb51874fdac314dd`
+was verified by an anonymous immutable pull. Consumer workflow and documentation
+changes preserve that key; protected PR/main delivery still verifies the final
+source through the selected image.
 
 Regenerate the credential-free mirror with
 `python3 scripts/ci/sync-woodpecker-validation.py --write`, then `--check`.
