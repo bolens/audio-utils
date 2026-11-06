@@ -91,3 +91,15 @@ Ordinary local `devenv` setup above is unchanged. The
 publication and rollback. Preserve all six native identities, validation mirrors,
 macOS, real Docker export and devcontainer checks. Rollback pairs a previously
 accepted image with compatible dependency inputs.
+
+## devenv 2.4 successor admission
+
+The toolchain upgrade uses devenv 2.4.0 and the reviewed nix2container revision
+while preserving unrelated locked input graphs. CI accepts cache configuration
+only for the fixed upstream CLI and retains standard unprivileged Nix builders.
+The container helper uses the 2.x copy-subcommand option order.
+
+The offline native image binds these inputs. A successor must pass the existing
+content audit, full current-source offline admission and negative controls, then
+be published and verified anonymously before its digest can replace the existing
+consumer. Source changes alone do not establish that acceptance.

@@ -18,7 +18,7 @@ mkdir -p /opt/audio-ci/npm-cache
 nix --version > /tmp/audio-ci-base-nix-version
 reference="github:cachix/devenv/$AUDIO_CI_DEVENV_REV"
 nix build --accept-flake-config --out-link /opt/audio-ci/devenv "$reference"
-nix flake metadata --json "$reference" > /tmp/audio-ci-cli-source.json
+nix flake metadata --accept-flake-config --json "$reference" > /tmp/audio-ci-cli-source.json
 /opt/audio-ci/devenv/bin/devenv --max-jobs 1 --cores 2 build shell test
 # Realize dependencies, not product tests. Warmup is not offline readiness.
 /opt/audio-ci/devenv/bin/devenv --max-jobs 1 --cores 2 shell -- bash ci/offline-environment/realize.sh --inside-shell

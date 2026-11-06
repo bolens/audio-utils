@@ -21,7 +21,7 @@ printf 'offline-environment-build-limits phase=%s cpu=%s/%s memory=%s swap=%s\n'
 # Literal newlines are required: Dockerfile ENV quoted \n is not a newline.
 export NIX_CONFIG='experimental-features = nix-command flakes
 sandbox = false
-build-users-group =
+build-users-group = nixbld
 max-jobs = 1
 cores = 2
 extra-substituters = https://devenv.cachix.org
