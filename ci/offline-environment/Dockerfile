@@ -12,7 +12,7 @@ COPY devenv.nix devenv.yaml devenv.lock .gitignore /opt/audio-ci-input/
 COPY mcp/npm/package.json mcp/npm/package-lock.json /opt/audio-ci-input/mcp/npm/
 COPY ci/offline-environment/bootstrap.sh ci/offline-environment/realize.sh /opt/audio-ci-input/ci/offline-environment/
 RUN bash ci/offline-environment/realize.sh
-# Generated public allowlist; offline CLI-root materialization and metadata only.
+# Generated public allowlist; offline CLI-root and closed source-pack preparation.
 COPY . /opt/audio-ci-input/
 RUN --network=none bash ci/offline-environment/prepare.sh
 

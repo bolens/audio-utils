@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Offline pinned CLI-root materialization and metadata; no dependency build/evaluation.
+# Offline CLI root, closed public tree packs and metadata; no dependency build/evaluation.
 set -euo pipefail
 [[ $# == 0 && -f source-identity.json ]]
 # shellcheck source=ci/offline-environment/bootstrap.sh

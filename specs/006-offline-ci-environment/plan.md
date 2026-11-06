@@ -8,6 +8,10 @@
    from its cached source, without dependency builds, output evaluation or recursive
    archiving. Keep private
    builder COW state and selected public fetcher metadata; never use host caches.
+   Export only mapped tree/blob closures as bounded, self-contained packs for
+   v3/v4 cache formats. Reimport into fresh bare repositories and verify exact
+   reachability, census and known source NARs, then repeat hydration before tests.
+   Preserve absent canonical NAR pins without lock mutation or invented values.
    Report only static late-refusal phases/reasons and safe counts.
 3. Run exact pinned devenv against the current checkout with a small environment
    allowlist, fresh state, forced npm offline and actual network isolation.

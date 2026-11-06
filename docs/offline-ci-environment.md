@@ -29,7 +29,7 @@ The context command accepts only clean committed source and copies the explicit
 public environment/recipe allowlist, plus source identity and declaration hashes.
 It does not copy the application checkout, `.git`, credentials or host caches.
 The final image retains the private builder's Nix store/database, declared public
-input sources, selected fetcher metadata and verified npm content. It must not
+input sources, selected fetcher metadata, closed public tree/blob packs and verified npm content. It must not
 retain executable copies of an old application checkout.
 
 ## Preparation and proof
@@ -45,12 +45,33 @@ networking disabled. It materializes only the exact CLI root source from Nix's
 cached source tree, binding the reviewed revision and explicit NAR hash, then
 serializes the manifest/checker using the already realized Python/profile. It
 does not build dependencies, evaluate their outputs or recursively archive inputs.
+It also exports only the reachable tree/blob objects named by reviewed
+`gitRevToTreeHash` rows: v3 uses `tarball-cache`, v4 uses `tarball-cache-v2`.
+The initial e54 network-none gate showed why SQLite mappings alone are insufficient:
+devenv's bundled Nix requires the mapped Git tree objects before accepting them.
+The new candidate includes self-contained, nonthin packs, not a whole cache or
+its refs, history, hooks, configuration, alternates or unrelated objects.
 Late checker/provenance changes reuse the successful first layer; environment or
 bootstrap changes invalidate it. A missing cached source fails closed offline.
 
 Both RUNs check actual cgroup limits before work: 2 CPUs, 4 GiB RAM and no swap.
 Unsupported `buildx --resource` enforcement fails before downloads. The guard is
-part of the cached realization recipe itself. Runtime proof additionally uses
+part of the cached realization recipe itself. Each cache is limited to 200,000
+reachable tree/blob objects, 512 MiB uncompressed object bytes and a 512 MiB pack.
+Preparation imports each pack into a new bare SHA-1 repository with empty templates
+and verifies exact object reachability, types, sizes and manifest hashes. Known
+locked NARs, including the CLI root's explicit pin, are checked from raw tree/blob
+content, preserving executable modes and symlink text without Git attribute
+transformations. Canonical lock entries without NARs are recorded as such;
+preparation does not invent pins or rewrite locks.
+
+Runtime hydrates both cache formats into fresh private XDG state before tests,
+using strict `index-pack` and the same object/NAR verification. A missing tree,
+corrupt pack, extra object or NAR mismatch fails closed. Both formats retain pack
+files and indexes because Nix 2.35 reads the v2 cache through a pack-only backend.
+`NIX_CACHE_HOME` is excluded by the clean environment, so the hydrated repository
+and SQLite metadata resolve to the same fresh XDG root. Offline prefetch and runtime
+configuration explicitly disable the global flake registry. Runtime proof additionally uses
 pids limit 512; the build resource option does not promise that limit. A deadline is a failure ceiling, never a
 success condition.
 

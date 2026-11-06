@@ -21,7 +21,14 @@ Dependency realization and metadata serialization use separate sequential guarde
 RUNs. Stable public dependency input changes invalidate the first layer; late
 checker/provenance changes reuse it. The second phase has OS networking disabled
 and materializes only the exact revision/NAR-pinned CLI root from cached source,
-then serializes metadata. Virtual flake metadata is not registered-source proof;
+then exports closed public Git tree/blob packs and serializes metadata. Only
+SQLite-mapped declared tree closures may be retained, without refs, commits,
+configuration, hooks, alternates or unreachable objects. Both cache formats are
+strictly hydrated into fresh private runtime state and verified before tests.
+Known locked NARs are verified from exact raw Git content; missing canonical NAR
+pins remain explicit and are not fabricated. Pack/object bounds and exact census
+hashes fail closed on missing, corrupt or additional objects. Virtual flake
+metadata is not registered-source proof;
 missing content must fail rather than trigger an online fallback. Both executions enforce
 2 CPUs/4 GiB/no swap themselves. Failures report static phase/reason codes and safe
 counts; arbitrary exception or cache values are not printed. Preparation success

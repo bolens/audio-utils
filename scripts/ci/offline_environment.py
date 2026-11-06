@@ -14,6 +14,7 @@ import os
 from pathlib import Path, PurePosixPath
 import platform
 import re
+import resource
 import shutil
 import socket
 import sqlite3
@@ -48,6 +49,7 @@ PREPARATION_PHASES = frozenset(
         "cli-binding",
         "cli-source-binding",
         "public-fetcher-metadata",
+        "public-source-packs",
         "serialize",
     }
 )
@@ -69,6 +71,13 @@ SAFE_PREPARATION_REASONS = frozenset(
         "CLI source prefetch mismatch",
         "CLI source NAR mismatch",
         "CLI source materialization requires network isolation",
+        "invalid source tree closure",
+        "source tree closure exceeds bound",
+        "invalid source pack",
+        "source pack contains unreviewed objects",
+        "source pack inventory mismatch",
+        "invalid source tree NAR",
+        "source tree NAR mismatch",
     }
 )
 
@@ -396,6 +405,411 @@ def project_fetcher_rows(rows, revisions, store_paths):
     return selected
 
 
+# GitHub archive fetchers require tree objects as well as SQLite mappings.
+SOURCE_CACHES = {
+    "fetcher-cache-v3.sqlite": "tarball-cache",
+    "fetcher-cache-v4.sqlite": "tarball-cache-v2",
+}
+OBJECT_LIMIT = 200000
+SOURCE_BYTES_LIMIT = 512 * 1024 * 1024
+
+
+def cache_git(repository, *arguments, binary, input=None, stdin=None, stdout=None):
+    # Never consult preparation/developer Git config, hooks, templates or alternates.
+    env = {
+        "PATH": "/usr/bin:/bin",
+        "HOME": "/nonexistent",
+        "GIT_CONFIG_NOSYSTEM": "1",
+        "GIT_CONFIG_GLOBAL": os.devnull,
+        "GIT_TERMINAL_PROMPT": "0",
+        "GIT_NO_REPLACE_OBJECTS": "1",
+        "GIT_OPTIONAL_LOCKS": "0",
+    }
+
+    def limit_output_files():
+        resource.setrlimit(
+            resource.RLIMIT_FSIZE, (SOURCE_BYTES_LIMIT, SOURCE_BYTES_LIMIT)
+        )
+
+    result = subprocess.run(
+        [
+            binary,
+            "-c",
+            "core.hooksPath=/dev/null",
+            "-c",
+            "core.fsmonitor=false",
+            "-c",
+            "protocol.allow=never",
+            "-C",
+            str(repository),
+            *arguments,
+        ],
+        input=input,
+        stdin=stdin,
+        stdout=stdout if stdout is not None else subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        env=env,
+        timeout=600,
+        check=True,
+        preexec_fn=limit_output_files,
+    )
+    return result.stdout
+
+
+def tree_objects(repository, roots, binary, *, all_objects=False):
+    if not roots or len(roots) > 32 or any(not REV.fullmatch(t) for t in roots):
+        raise ValueError("invalid source tree closure")
+    for tree in roots:
+        if (
+            cache_git(repository, "cat-file", "-t", tree, binary=binary).strip()
+            != b"tree"
+        ):
+            raise ValueError("invalid source tree closure")
+        # Gitlinks have no archive-backed source payload and are never admitted.
+        entries = cache_git(repository, "ls-tree", "-rz", tree, binary=binary)
+        for row in entries.split(b"\0"):
+            if row and row.split(b"\t", 1)[0].split()[0] not in (
+                b"100644",
+                b"100755",
+                b"120000",
+            ):
+                raise ValueError("invalid source tree closure")
+    if all_objects:
+        raw = cache_git(
+            repository,
+            "cat-file",
+            "--batch-all-objects",
+            "--batch-check=%(objectname) %(objecttype) %(objectsize)",
+            binary=binary,
+        )
+    else:
+        objects = cache_git(
+            repository,
+            "rev-list",
+            "--objects",
+            "--no-object-names",
+            *roots,
+            binary=binary,
+        )
+        if len(objects.splitlines()) > OBJECT_LIMIT:
+            raise ValueError("source tree closure exceeds bound")
+        raw = cache_git(
+            repository,
+            "cat-file",
+            "--batch-check=%(objectname) %(objecttype) %(objectsize)",
+            binary=binary,
+            input=objects,
+        )
+    rows = []
+    for line in raw.decode("ascii").splitlines():
+        oid, kind, size = line.split()
+        if (
+            not REV.fullmatch(oid)
+            or kind not in ("tree", "blob")
+            or not size.isdecimal()
+        ):
+            raise ValueError("invalid source tree closure")
+        rows.append((oid, kind, int(size)))
+    if (
+        not rows
+        or len(rows) > OBJECT_LIMIT
+        or len({r[0] for r in rows}) != len(rows)
+        or sum(r[2] for r in rows) > SOURCE_BYTES_LIMIT
+    ):
+        raise ValueError("source tree closure exceeds bound")
+    return sorted(rows)
+
+
+def pack_digest(path):
+    if (
+        path.is_symlink()
+        or not path.is_file()
+        or not 0 < path.stat().st_size <= SOURCE_BYTES_LIMIT
+    ):
+        raise ValueError("invalid source pack")
+    value = hashlib.sha256()
+    with path.open("rb") as stream:
+        while chunk := stream.read(1024 * 1024):
+            value.update(chunk)
+    return value.hexdigest()
+
+
+def tree_nar(repository, tree, binary, nix):
+    with tempfile.TemporaryDirectory(prefix="audio-public-tree-") as temporary:
+        destination = Path(temporary) / "source"
+        destination.mkdir()
+        # Read raw blobs in one bounded batch, never checkout/archive attributes.
+        raw = cache_git(repository, "ls-tree", "-rtz", tree, binary=binary)
+        entries = [row.split(b"\t", 1) for row in raw.split(b"\0") if row]
+        if len(entries) > OBJECT_LIMIT:
+            raise ValueError("source tree closure exceeds bound")
+        blob_ids = [
+            header.decode("ascii").split()[2]
+            for header, _ in entries
+            if header.decode("ascii").split()[1] == "blob"
+        ]
+        batch = Path(temporary) / "objects.batch"
+        with batch.open("xb") as stream:
+            cache_git(
+                repository,
+                "cat-file",
+                "--batch",
+                binary=binary,
+                input=("\n".join(blob_ids) + "\n").encode() if blob_ids else b"",
+                stdout=stream,
+            )
+        seen, copied = set(), 0
+        with batch.open("rb") as stream:
+            for header, raw_name in entries:
+                mode, kind, oid = header.decode("ascii").split()
+                name = PurePosixPath(os.fsdecode(raw_name))
+                if (
+                    name.is_absolute()
+                    or not name.parts
+                    or any(part in ("..", ".", ".git") for part in name.parts)
+                    or name in seen
+                ):
+                    raise ValueError("invalid source tree closure")
+                seen.add(name)
+                target = destination
+                for component in name.parts[:-1]:
+                    target = target / component
+                    if not target.is_dir() or target.is_symlink():
+                        raise ValueError("invalid source tree closure")
+                target = target / name.name
+                if mode == "040000" and kind == "tree":
+                    target.mkdir()
+                    continue
+                if mode not in ("100644", "100755", "120000") or kind != "blob":
+                    raise ValueError("invalid source tree closure")
+                actual = stream.readline(128).decode("ascii").split()
+                if (
+                    len(actual) != 3
+                    or actual[:2] != [oid, "blob"]
+                    or not actual[2].isdecimal()
+                ):
+                    raise ValueError("invalid source tree closure")
+                size = int(actual[2])
+                copied += size
+                if copied > SOURCE_BYTES_LIMIT:
+                    raise ValueError("source tree closure exceeds bound")
+                if mode == "120000":
+                    content = stream.read(size)
+                    if len(content) != size:
+                        raise ValueError("invalid source tree closure")
+                    target.symlink_to(os.fsdecode(content))
+                else:
+                    with target.open("xb") as output:
+                        remaining = size
+                        while remaining:
+                            chunk = stream.read(min(remaining, 1024 * 1024))
+                            if not chunk:
+                                raise ValueError("invalid source tree closure")
+                            output.write(chunk)
+                            remaining -= len(chunk)
+                    target.chmod(0o755 if mode == "100755" else 0o644)
+                if stream.read(1) != b"\n":
+                    raise ValueError("invalid source tree closure")
+            if stream.read(1):
+                raise ValueError("invalid source tree closure")
+        value = (
+            subprocess.check_output(
+                [
+                    nix,
+                    "--offline",
+                    "--extra-experimental-features",
+                    "nix-command",
+                    "--option",
+                    "flake-registry",
+                    "",
+                    "hash",
+                    "path",
+                    "--mode",
+                    "nar",
+                    "--type",
+                    "sha256",
+                    "--sri",
+                    str(destination),
+                ],
+                env={"PATH": "/usr/bin:/bin", "HOME": temporary, "NIX_REMOTE": "local"},
+                stderr=subprocess.PIPE,
+                timeout=600,
+            )
+            .decode()
+            .strip()
+        )
+        if not re.fullmatch(r"sha256-[A-Za-z0-9+/]{43}=", value):
+            raise ValueError("invalid source tree NAR")
+        return value
+
+
+def hydrate_source_pack(pack, record, destination, *, binary, nix):
+    if set(record) != {
+        "pack_sha256",
+        "pack_bytes",
+        "roots",
+        "objects",
+        "object_types",
+        "object_bytes",
+        "object_census_sha256",
+    }:
+        raise ValueError("invalid source pack")
+    if (
+        pack_digest(pack) != record["pack_sha256"]
+        or pack.stat().st_size != record["pack_bytes"]
+    ):
+        raise ValueError("invalid source pack")
+    if not record["roots"] or len(record["roots"]) > 32:
+        raise ValueError("invalid source tree closure")
+    roots = sorted({row["tree"] for row in record["roots"]})
+    destination.mkdir(mode=0o700)  # Fresh per-job COW cache only; never reuse a repo.
+    cache_git(
+        destination,
+        "init",
+        "--bare",
+        "--object-format=sha1",
+        "--template=",
+        ".",
+        binary=binary,
+    )
+    with pack.open("rb") as stream:
+        cache_git(
+            destination,
+            "index-pack",
+            "--stdin",
+            "--strict",
+            "--max-input-size=" + str(SOURCE_BYTES_LIMIT),
+            binary=binary,
+            stdin=stream,
+        )
+    objects = tree_objects(destination, roots, binary)
+    if objects != tree_objects(destination, roots, binary, all_objects=True):
+        raise ValueError("source pack contains unreviewed objects")
+    actual = {
+        "objects": len(objects),
+        "object_types": {
+            kind: sum(r[1] == kind for r in objects) for kind in ("tree", "blob")
+        },
+        "object_bytes": sum(r[2] for r in objects),
+        "object_census_sha256": sha(canonical(objects)),
+    }
+    if any(record[k] != v for k, v in actual.items()):
+        raise ValueError("source pack inventory mismatch")
+    for row in record["roots"]:
+        if set(row) != {
+            "revision",
+            "tree",
+            "locked_nar_hash",
+            "nar_binding",
+        } or not REV.fullmatch(row["revision"]):
+            raise ValueError("invalid source tree closure")
+        known = row["locked_nar_hash"]
+        if known is None:
+            if row["nar_binding"] != "lock-has-no-narHash":
+                raise ValueError("invalid source tree NAR")
+        elif (
+            row["nar_binding"] != "locked-narHash"
+            or tree_nar(destination, row["tree"], binary, nix) != known
+        ):
+            raise ValueError("source tree NAR mismatch")
+    return actual
+
+
+def export_source_packs(caches, declarations, cache_dir, destination, *, binary, nix):
+    destination.mkdir(mode=0o700)
+    records = {}
+    for schema, rows in caches.items():
+        trees, modified = {}, set()
+        for domain, key, value, _ in rows:
+            key, value = json.loads(key), json.loads(value)
+            if domain == "gitRevToTreeHash":
+                if key["rev"] in trees:
+                    raise ValueError("invalid source tree closure")
+                trees[key["rev"]] = value["treeHash"]
+            elif domain == "gitRevToLastModified":
+                modified.add(key["rev"])
+        if not trees or set(trees) != modified or not set(trees) <= set(declarations):
+            raise ValueError("invalid source tree closure")
+        repository = cache_dir / SOURCE_CACHES[schema]
+        if (
+            repository.is_symlink()
+            or not repository.is_dir()
+            or (repository / "objects/info/alternates").exists()
+        ):
+            raise ValueError("invalid source tree closure")
+        objects = tree_objects(repository, sorted(set(trees.values())), binary)
+        pack = destination / (SOURCE_CACHES[schema] + ".pack")
+        with pack.open("xb") as stream:
+            cache_git(
+                repository,
+                "pack-objects",
+                "--stdout",
+                "--no-reuse-delta",
+                "--no-reuse-object",
+                "--window=0",
+                "--depth=0",
+                binary=binary,
+                input=("\n".join(r[0] for r in objects) + "\n").encode(),
+                stdout=stream,
+            )
+        record = {
+            "pack_sha256": pack_digest(pack),
+            "pack_bytes": pack.stat().st_size,
+            "roots": [
+                {
+                    "revision": revision,
+                    "tree": tree,
+                    "locked_nar_hash": declarations[revision],
+                    "nar_binding": "lock-has-no-narHash"
+                    if declarations[revision] is None
+                    else "locked-narHash",
+                }
+                for revision, tree in sorted(trees.items())
+            ],
+            "objects": len(objects),
+            "object_types": {
+                kind: sum(r[1] == kind for r in objects) for kind in ("tree", "blob")
+            },
+            "object_bytes": sum(r[2] for r in objects),
+            "object_census_sha256": sha(canonical(objects)),
+        }
+        with tempfile.TemporaryDirectory(prefix="audio-pack-verify-") as temporary:
+            hydrate_source_pack(
+                pack, record, Path(temporary) / "cache", binary=binary, nix=nix
+            )
+        records[schema] = record
+    return records
+
+
+def declared_source_nars(root, cli_source, contract):
+    result = {}
+    for lock in (
+        json.loads(source_bytes(root, "devenv.lock")),
+        read_json(cli_source / "flake.lock"),
+    ):
+        for node in lock["nodes"].values():
+            locked = node.get("locked", {})
+            revision = locked.get("rev")
+            if revision:
+                if not REV.fullmatch(revision) or locked.get("type") != "github":
+                    raise ValueError("invalid source tree closure")
+                known = locked.get("narHash")
+                if (
+                    known is not None
+                    and revision in result
+                    and result[revision] not in (None, known)
+                ):
+                    raise ValueError("source tree NAR mismatch")
+                result[revision] = known or result.get(revision)
+    if result.get(contract["devenv_revision"]) not in (
+        None,
+        contract["devenv_source_nar_hash"],
+    ):
+        raise ValueError("source tree NAR mismatch")
+    result[contract["devenv_revision"]] = contract["devenv_source_nar_hash"]
+    return result
+
+
 def materialize_cli_source(contract, cli_source, metadata):
     """Copy only the pinned root tree from Nix's cached virtual source to store."""
     expected = {
@@ -548,6 +962,15 @@ def prepare_manifest(root, output, cli, cli_source):
                     revisions,
                     store_rows,
                 )
+    preparation_phase("public-source-packs")
+    source_packs = export_source_packs(
+        caches,
+        declared_source_nars(root, cli_source, contract),
+        Path.home() / ".cache/nix",
+        Path("/opt/audio-ci/source-cache"),
+        binary=shutil.which("git"),
+        nix=shutil.which("nix"),
+    )
     preparation_phase("serialize", len(store_rows))
     manifest = {
         "schema": 1,
@@ -561,6 +984,8 @@ def prepare_manifest(root, output, cli, cli_source):
         "nix_bin": str(Path(shutil.which("nix")).resolve().parent),
         "store_paths": store_rows,
         "public_fetcher_rows": caches,
+        "source_packs": source_packs,
+        "source_cache_cli_root": str(cli_source),
         "allowed_source_revisions": sorted(revisions),
         "npm_cache": "/opt/audio-ci/npm-cache",
     }
@@ -611,6 +1036,43 @@ def check_manifest(root, manifest):
     ):
         raise ValueError("missing npm cache")
     return identity
+
+
+def prepare_runtime_source_cache(root, manifest, cache_dir):
+    cli_root = manifest["source_cache_cli_root"]
+    contract = manifest["identity"]["contract"]
+    if (
+        manifest["store_paths"].get(cli_root, {}).get("narHash")
+        != contract["devenv_source_nar_hash"]
+    ):
+        raise ValueError("CLI source NAR mismatch")
+    declarations = declared_source_nars(root, Path(cli_root), contract)
+    packs = manifest["source_packs"]
+    if not packs or set(packs) != set(manifest["public_fetcher_rows"]):
+        raise ValueError("invalid source pack")
+    for schema, record in packs.items():
+        if schema not in SOURCE_CACHES:
+            raise ValueError("invalid source pack")
+        pairs = sorted(
+            (json.loads(key)["rev"], json.loads(value)["treeHash"])
+            for domain, key, value, _ in manifest["public_fetcher_rows"][schema]
+            if domain == "gitRevToTreeHash"
+        )
+        if sorted((row["revision"], row["tree"]) for row in record["roots"]) != pairs:
+            raise ValueError("invalid source tree closure")
+        for row in record["roots"]:
+            if (
+                row["revision"] not in declarations
+                or row["locked_nar_hash"] != declarations[row["revision"]]
+            ):
+                raise ValueError("source tree NAR mismatch")
+        hydrate_source_pack(
+            Path("/opt/audio-ci/source-cache") / (SOURCE_CACHES[schema] + ".pack"),
+            record,
+            cache_dir / SOURCE_CACHES[schema],
+            binary=str(Path(manifest["tool_path"]) / "git"),
+            nix=str(Path(manifest["nix_bin"]) / "nix"),
+        )
 
 
 def validate_runtime_isolation(interfaces, mountpoints, docker_marker):
@@ -688,6 +1150,7 @@ def _run_checked_gate(root, manifest, identity):
                     "CREATE TABLE Cache(domain TEXT NOT NULL,key TEXT NOT NULL,value TEXT NOT NULL,timestamp INTEGER NOT NULL,PRIMARY KEY(domain,key))"
                 )
                 db.executemany("INSERT INTO Cache VALUES(?,?,?,?)", rows)
+        prepare_runtime_source_cache(root, manifest, cache_dir)
         command = [manifest["cli"], *identity["contract"]["devenv_arguments"]]
         print(
             "offline-environment-gate "

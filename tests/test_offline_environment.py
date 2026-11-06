@@ -298,6 +298,257 @@ class OfflineEnvironmentTests(unittest.TestCase):
             "allowed_source_revisions": ["4" * 40],
         }
 
+    def source_pack_fixture(self, *, known=None, schema="fetcher-cache-v3.sqlite"):
+        cache_dir = Path(self.temporary.name) / ("source-caches-" + schema)
+        cache_dir.mkdir()
+        cache = cache_dir / MODULE.SOURCE_CACHES[schema]
+        subprocess.run(
+            ["git", "clone", "--bare", "--quiet", str(self.root), str(cache)],
+            env=self.env,
+            check=True,
+            capture_output=True,
+        )
+        tree = self.command("rev-parse", "HEAD^{tree}").decode().strip()
+        rows = [
+            [
+                "gitRevToTreeHash",
+                json.dumps({"rev": REVISION}),
+                json.dumps({"treeHash": tree}),
+                1,
+            ],
+            [
+                "gitRevToLastModified",
+                json.dumps({"rev": REVISION}),
+                '{"lastModified":1}',
+                1,
+            ],
+        ]
+        binary = shutil.which("git")
+        MODULE.cache_git(
+            cache,
+            "hash-object",
+            "-w",
+            "--stdin",
+            binary=binary,
+            input=b"PRIVATE_UNREACHABLE_SENTINEL",
+        )
+        packs = cache_dir / "packs"
+        with patch.object(MODULE, "tree_nar", return_value=NAR):
+            records = MODULE.export_source_packs(
+                {schema: rows},
+                {REVISION: known},
+                cache_dir,
+                packs,
+                binary=binary,
+                nix="/unused/nix",
+            )
+        return (
+            cache_dir,
+            cache,
+            packs / (MODULE.SOURCE_CACHES[schema] + ".pack"),
+            records[schema],
+            tree,
+        )
+
+    def test_closed_source_pack_hydrates_both_cache_formats_without_private_objects(
+        self,
+    ):
+        for schema in MODULE.SOURCE_CACHES:
+            with self.subTest(schema=schema):
+                cache_dir, cache, pack, record, tree = self.source_pack_fixture(
+                    schema=schema
+                )
+                # An unrelated object is added to the original cache, never exported.
+                unrelated = (
+                    MODULE.cache_git(
+                        cache,
+                        "hash-object",
+                        "-w",
+                        "--stdin",
+                        binary=shutil.which("git"),
+                        input=b"PRIVATE_UNREACHABLE_SENTINEL",
+                    )
+                    .decode()
+                    .strip()
+                )
+                replacement = (
+                    MODULE.cache_git(
+                        cache, "mktree", binary=shutil.which("git"), input=b""
+                    )
+                    .decode()
+                    .strip()
+                )
+                subprocess.run(
+                    ["git", "--git-dir=" + str(cache), "replace", tree, replacement],
+                    env=self.env,
+                    check=True,
+                    capture_output=True,
+                )
+                census = MODULE.tree_objects(cache, [tree], shutil.which("git"))
+                self.assertEqual(
+                    MODULE.sha(MODULE.canonical(census)), record["object_census_sha256"]
+                )
+                dest = cache_dir / "runtime"
+                MODULE.hydrate_source_pack(
+                    pack, record, dest, binary=shutil.which("git"), nix="/unused/nix"
+                )
+                self.assertTrue(list((dest / "objects/pack").glob("*.pack")))
+                self.assertTrue(list((dest / "objects/pack").glob("*.idx")))
+                self.assertEqual(
+                    MODULE.cache_git(
+                        dest, "cat-file", "-t", tree, binary=shutil.which("git")
+                    ).strip(),
+                    b"tree",
+                )
+                with self.assertRaises(subprocess.CalledProcessError):
+                    MODULE.cache_git(
+                        dest, "cat-file", "-e", unrelated, binary=shutil.which("git")
+                    )
+                self.assertEqual(
+                    record["roots"][0]["nar_binding"], "lock-has-no-narHash"
+                )
+                self.assertFalse((dest / "objects/info/alternates").exists())
+                self.assertFalse(
+                    any(path.is_file() for path in (dest / "refs").rglob("*"))
+                )
+
+    def test_missing_tree_and_gitlink_are_rejected(self):
+        cache_dir, cache, _, _, _ = self.source_pack_fixture()
+        with self.assertRaises(subprocess.CalledProcessError):
+            MODULE.tree_objects(cache, ["0" * 40], shutil.which("git"))
+        with patch.object(MODULE, "OBJECT_LIMIT", 1):
+            with self.assertRaisesRegex(ValueError, "exceeds bound"):
+                MODULE.tree_objects(
+                    cache,
+                    [self.command("rev-parse", "HEAD^{tree}").decode().strip()],
+                    shutil.which("git"),
+                )
+        self.command(
+            "update-index", "--add", "--cacheinfo", "160000," + REVISION + ",submodule"
+        )
+        tree = self.command("write-tree").decode().strip()
+        with self.assertRaisesRegex(ValueError, "invalid source tree closure"):
+            MODULE.tree_objects(self.root, [tree], shutil.which("git"))
+
+    def test_corrupt_pack_and_extra_unreachable_object_fail_before_gate(self):
+        cache_dir, cache, pack, record, _ = self.source_pack_fixture()
+        data = bytearray(pack.read_bytes())
+        data[-1] ^= 1
+        pack.write_bytes(data)
+        with self.assertRaisesRegex(ValueError, "invalid source pack"):
+            MODULE.hydrate_source_pack(
+                pack,
+                record,
+                cache_dir / "corrupt",
+                binary=shutil.which("git"),
+                nix="/unused/nix",
+            )
+        # Even a self-consistent pack checksum may not admit extra, unreachable data.
+        extra = (
+            MODULE.cache_git(
+                cache,
+                "hash-object",
+                "-w",
+                "--stdin",
+                binary=shutil.which("git"),
+                input=b"UNREACHABLE",
+            )
+            .decode()
+            .strip()
+        )
+        all_ids = [
+            row[0]
+            for row in MODULE.tree_objects(
+                cache, [record["roots"][0]["tree"]], shutil.which("git")
+            )
+        ] + [extra]
+        with pack.open("wb") as stream:
+            MODULE.cache_git(
+                cache,
+                "pack-objects",
+                "--stdout",
+                "--no-reuse-delta",
+                "--no-reuse-object",
+                binary=shutil.which("git"),
+                input=("\n".join(all_ids) + "\n").encode(),
+                stdout=stream,
+            )
+        record["pack_sha256"] = MODULE.pack_digest(pack)
+        record["pack_bytes"] = pack.stat().st_size
+        with self.assertRaisesRegex(ValueError, "unreviewed objects"):
+            MODULE.hydrate_source_pack(
+                pack,
+                record,
+                cache_dir / "extra",
+                binary=shutil.which("git"),
+                nix="/unused/nix",
+            )
+
+    def test_known_source_nar_is_required_and_not_fabricated_for_missing_lock_hash(
+        self,
+    ):
+        cache_dir, _, pack, record, _ = self.source_pack_fixture(known=NAR)
+        with patch.object(
+            MODULE,
+            "tree_nar",
+            return_value="sha256-" + base64.b64encode(b"y" * 32).decode(),
+        ):
+            with self.assertRaisesRegex(ValueError, "source tree NAR mismatch"):
+                MODULE.hydrate_source_pack(
+                    pack,
+                    record,
+                    cache_dir / "wrong-nar",
+                    binary=shutil.which("git"),
+                    nix="/unused/nix",
+                )
+        self.assertEqual(record["roots"][0]["locked_nar_hash"], NAR)
+        contract = json.loads((self.root / MODULE.CONTRACT).read_text())
+        self.put(
+            "devenv.lock",
+            json.dumps(
+                {
+                    "nodes": {
+                        "contradictory": {
+                            "locked": {
+                                "type": "github",
+                                "rev": contract["devenv_revision"],
+                                "narHash": NAR,
+                            }
+                        }
+                    }
+                }
+            ),
+        )
+        cli_source = Path(self.temporary.name) / "cli-source"
+        cli_source.mkdir()
+        (cli_source / "flake.lock").write_text('{"nodes":{}}')
+        with self.assertRaisesRegex(ValueError, "source tree NAR mismatch"):
+            MODULE.declared_source_nars(self.root, cli_source, contract)
+
+    def test_tree_nar_uses_raw_objects_not_checkout_attributes(self):
+        self.put(".gitattributes", "*.txt export-ignore\n*.txt text eol=crlf\n")
+        self.put("nested/raw\nname.txt", "unchanged\n")
+        self.put("executable", "#!/bin/sh\n")
+        (self.root / "executable").chmod(0o755)
+        (self.root / "link").symlink_to("nested/raw\nname.txt")
+        self.command("add", "--", ".gitattributes", "nested", "executable", "link")
+        tree = self.command("write-tree").decode().strip()
+
+        def hash_current(command, **kwargs):
+            directory = Path(command[-1])
+            self.assertEqual(
+                (directory / "nested/raw\nname.txt").read_bytes(), b"unchanged\n"
+            )
+            self.assertEqual(os.readlink(directory / "link"), "nested/raw\nname.txt")
+            self.assertTrue((directory / "executable").stat().st_mode & 0o111)
+            return (NAR + "\n").encode()
+
+        with patch.object(MODULE.subprocess, "check_output", side_effect=hash_current):
+            self.assertEqual(
+                MODULE.tree_nar(self.root, tree, shutil.which("git"), "/unused/nix"),
+                NAR,
+            )
+
     def test_key_deterministic_and_not_checkout_path_or_timestamp(self):
         first = self.identity()
         os.utime(self.root / "devenv.nix", (1, 1))
@@ -609,6 +860,7 @@ class OfflineEnvironmentTests(unittest.TestCase):
         with (
             patch.dict(os.environ, inherited),
             patch.object(MODULE, "check_manifest", return_value=identity),
+            patch.object(MODULE, "prepare_runtime_source_cache") as source_cache,
             patch.object(MODULE, "Path", side_effect=runtime_path),
             patch.object(
                 MODULE.socket, "if_nameindex", return_value=[(1, "lo")]
@@ -623,6 +875,7 @@ class OfflineEnvironmentTests(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, "network-none"):
                 MODULE.run_gate(self.root, manifest)
             gate.assert_called_once()
+            source_cache.assert_called_once()
         self.assertEqual(namespace_reads, set(namespace_paths) - {"/sys/class/net"})
         self.assertEqual(interfaces.call_count, 2)
         system.assert_called_once()
