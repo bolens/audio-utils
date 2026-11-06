@@ -15,6 +15,7 @@ from pathlib import Path, PurePosixPath
 import platform
 import re
 import shutil
+import socket
 import sqlite3
 import subprocess
 import sys
@@ -412,7 +413,9 @@ def materialize_cli_source(contract, cli_source, metadata):
         or any(metadata["locked"].get(key) != value for key, value in expected.items())
     ):
         raise ValueError("CLI source metadata mismatch")
-    if {path.name for path in Path("/sys/class/net").iterdir()} != {"lo"}:
+    # BuildKit can retain a sysfs mount tagged to a different network namespace.
+    # Enumerate interfaces through a socket in this process's current namespace.
+    if {name for _, name in socket.if_nameindex()} != {"lo"}:
         raise ValueError("CLI source materialization requires network isolation")
     reference = (
         "github:cachix/devenv/"
@@ -622,7 +625,7 @@ def run_gate(root, manifest):
 def _run_checked_gate(root, manifest, identity):
     """Internal execution primitive; normal CLI always validates the full key."""
     validate_runtime_isolation(
-        [p.name for p in Path("/sys/class/net").iterdir()],
+        [name for _, name in socket.if_nameindex()],
         [
             line.split()[4]
             for line in Path("/proc/self/mountinfo").read_text().splitlines()

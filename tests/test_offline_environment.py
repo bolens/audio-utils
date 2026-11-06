@@ -111,12 +111,15 @@ class OfflineEnvironmentTests(unittest.TestCase):
         def path(value):
             if str(value) == "/sys/class/net":
                 return SimpleNamespace(
-                    iterdir=lambda: iter([SimpleNamespace(name="lo")])
+                    iterdir=lambda: iter(
+                        [SimpleNamespace(name="lo"), SimpleNamespace(name="eth0")]
+                    )
                 )
             return Path(value)
 
         with (
             patch.object(MODULE, "Path", side_effect=path),
+            patch.object(MODULE.socket, "if_nameindex", return_value=[(1, "lo")]),
             patch.object(
                 MODULE.subprocess,
                 "check_output",
@@ -156,13 +159,6 @@ class OfflineEnvironmentTests(unittest.TestCase):
             "locked": locked,
         }
 
-        def path(value):
-            if str(value) == "/sys/class/net":
-                return SimpleNamespace(
-                    iterdir=lambda: iter([SimpleNamespace(name="lo")])
-                )
-            return Path(value)
-
         wrong_results = [
             [],
             {**response, "storePath": "/nix/store/" + "d" * 32 + "-source"},
@@ -174,7 +170,7 @@ class OfflineEnvironmentTests(unittest.TestCase):
         for wrong in wrong_results:
             with (
                 self.subTest(response=wrong),
-                patch.object(MODULE, "Path", side_effect=path),
+                patch.object(MODULE.socket, "if_nameindex", return_value=[(1, "lo")]),
                 patch.object(
                     MODULE.subprocess,
                     "check_output",
@@ -191,13 +187,9 @@ class OfflineEnvironmentTests(unittest.TestCase):
             self.assertEqual(command.call_count, 0)
         with (
             patch.object(
-                MODULE,
-                "Path",
-                return_value=SimpleNamespace(
-                    iterdir=lambda: iter(
-                        [SimpleNamespace(name="lo"), SimpleNamespace(name="eth0")]
-                    )
-                ),
+                MODULE.socket,
+                "if_nameindex",
+                return_value=[(1, "lo"), (2, "eth0")],
             ),
             patch.object(MODULE.subprocess, "check_output") as command,
         ):
@@ -571,7 +563,9 @@ class OfflineEnvironmentTests(unittest.TestCase):
         captured = {}
         namespace_paths = {
             "/sys/class/net": SimpleNamespace(
-                iterdir=lambda: iter([SimpleNamespace(name="lo")])
+                iterdir=lambda: iter(
+                    [SimpleNamespace(name="lo"), SimpleNamespace(name="eth0")]
+                )
             ),
             "/proc/self/mountinfo": SimpleNamespace(
                 read_text=lambda: "11 0 0:1 / / rw - overlay overlay rw\n"
@@ -615,13 +609,21 @@ class OfflineEnvironmentTests(unittest.TestCase):
             patch.dict(os.environ, inherited),
             patch.object(MODULE, "check_manifest", return_value=identity),
             patch.object(MODULE, "Path", side_effect=runtime_path),
+            patch.object(
+                MODULE.socket, "if_nameindex", return_value=[(1, "lo")]
+            ) as interfaces,
             patch.object(MODULE.platform, "system", return_value="Linux") as system,
             patch.object(MODULE.platform, "machine", return_value="x86_64") as machine,
             patch.object(MODULE, "git", return_value=(str(self.root) + "\n").encode()),
-            patch.object(MODULE.subprocess, "run", side_effect=execute),
+            patch.object(MODULE.subprocess, "run", side_effect=execute) as gate,
         ):
             self.assertEqual(MODULE.run_gate(self.root, manifest), 1)
-        self.assertEqual(namespace_reads, set(namespace_paths))
+            interfaces.return_value = [(1, "lo"), (2, "eth0")]
+            with self.assertRaisesRegex(ValueError, "network-none"):
+                MODULE.run_gate(self.root, manifest)
+            gate.assert_called_once()
+        self.assertEqual(namespace_reads, set(namespace_paths) - {"/sys/class/net"})
+        self.assertEqual(interfaces.call_count, 2)
         system.assert_called_once()
         machine.assert_called_once()
         self.assertEqual(captured["cwd"], self.root)
