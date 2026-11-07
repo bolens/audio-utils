@@ -16,6 +16,21 @@ up package security updates, and review base digest updates separately.
 The published image targets Linux amd64. Other Linux architectures may build
 from this Dockerfile, but are not validated by the current CI.
 
+## CI organization
+
+Use the [shared CI vocabulary](https://github.com/bolens/.github/blob/main/docs/woodpecker-transition.md#ci-organization): `validate`, `test`, `site` and `publish` describe purpose; existing workflow names and required status identities stay unchanged. Run commands from the repository root with the documented toolchain.
+
+| Phase / group | Canonical local entrypoint | Native mapping / retained owner |
+| --- | --- | --- |
+| `validate` / shell and contracts | `make check`; `bash scripts/ci/check-fleet.sh` | `woodpecker` / `verify`, `fleet-contracts`; `tools` / `tool-shellcheck`; `fedora` / `fedora-shellcheck` retains its distribution toolchain. |
+| `test` / unit, smoke and MCP | `make test`; `make coverage`; `cd mcp/npm && npm ci --ignore-scripts && npm test && npm audit --omit=dev` | Core `verify`; `mcp-minimum` / `mcp-minimum-node` repeats MCP checks on the Node 20 floor. |
+| `test` / codec compatibility | `bash scripts/ci/check-functional.sh` with the documented codec dependencies | `functional-apt` and `functional-latest` use distribution and verified rolling FFmpeg respectively; tests use disposable media and isolated state. |
+| `test` / development environment | `devenv test` with the locked environment | Native `development-environment` runs the admitted offline toolchain against the current source; macOS and actual Docker/editor validation remain hosted. |
+| `publish` / runtime container | `make docker-build`; `make test-docker` for local build/fixture acceptance only | Native `publishing` waits for all six validation workflows, builds an immutable candidate, and dispatches the retained hosted exact-digest runtime/promotion bridge. PR/manual/cron events never publish. |
+| `publish` / source release | The separately authorized signed-tag procedure in [RELEASING.md](../RELEASING.md) | Maintainer-owned; runtime container delivery does not create a product release or change `VERSION`. |
+
+Duplicate hosted CI, Source lint and Workflow lint workflows are retired. The active development-environment, actual Docker and managed security/metadata workflows retain their distinct responsibilities. The profile, flag, credential and drain rules below remain authoritative; validation commands do not authorize publication or access to a real media library.
+
 ## Published images
 
 Main delivery publishes `ghcr.io/bolens/audio-utils:latest` and
