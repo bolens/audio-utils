@@ -129,12 +129,12 @@ paths are covered by admission. Successful task output is observed using the
 exact two-space live prefix and actual Python, Bash and Node summaries.
 
 The selected devenv 2.4.0 toolchain was admitted at source
-`70efe22f18478eecc5820917b60d391586aeb30e`, including all six runtime cases,
+`26db8d162999b37327a99f52302ee6edc1323d91`, including all six runtime cases,
 both fault cases, the content audit and terminal container lifecycles. Its
 environment key is
-`fc9440ebb343154feb37d84e24801ebbe57ef9e2293b407d5993df99c0c8f7e3`.
+`52d9292531c0c05f426bcd3efc8ae75b07839a0b719961e5e7f3c2624c8d94c7`.
 The published manifest
-`ghcr.io/bolens/audio-utils@sha256:b0ef44dbda7f790a6be00232df8bfc716f167b5e8e635d1ddb51874fdac314dd`
+`ghcr.io/bolens/audio-utils@sha256:d47c605bdec64e8cf8c5d147bdc61d04230f9293f5fa87d71ab676d27198c52a`
 was verified by an anonymous immutable pull. Consumer workflow and documentation
 changes preserve that key; protected PR/main delivery still verifies the final
 source through the selected image.

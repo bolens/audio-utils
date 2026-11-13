@@ -940,7 +940,9 @@ def prepare_manifest(root, output, cli, cli_source):
     )
     preparation_phase("store-inventory")
     rows = json.loads(
-        subprocess.check_output(["nix", "path-info", "--json", "--all"], timeout=60)
+        subprocess.check_output(
+            ["nix", "path-info", "--json", "--json-format", "1", "--all"], timeout=60
+        )
     )
     preparation_phase("store-inventory", len(rows))
     if isinstance(rows, list):
