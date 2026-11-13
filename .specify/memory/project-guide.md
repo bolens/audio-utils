@@ -42,6 +42,10 @@ Start with the relevant target documented in tests/README.md; use make test-all 
 broader release coverage. Report missing codec, tagging, hardware, or proprietary-tool
 cases. Never test writes, renames, or cleanup against a real library.
 
+The retained `.agents/skills/speckit-taskstoissues/SKILL.md` is a project-owned
+compatibility artifact. Spec Kit no longer manages it. Preserve its local contents
+when regenerating managed skills and review any retirement as a separate change.
+
 ## Working through Spec Kit
 
 Use Spec Kit for new capabilities, architectural or security-sensitive changes,

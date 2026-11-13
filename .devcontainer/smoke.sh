@@ -9,4 +9,6 @@ for tool in git bash python3 node shellcheck ruff actionlint hadolint zizmor ffm
 done
 shellcheck --version | rg -q 'version: 0.11.0'
 node -e 'if (Number(process.versions.node.split(".")[0]) !== 26) process.exit(1)'
+node --version
+ruff --version
 printf "%s\n" "Development tools ready. See .devcontainer/README.md for repository checks."
