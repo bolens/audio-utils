@@ -779,6 +779,80 @@ class OfflineEnvironmentTests(unittest.TestCase):
         self.assertTrue(MODULE.store_object_exists(link))
         path.unlink()
         self.assertFalse(MODULE.store_object_exists(path))
+        link.unlink()
+
+        # The base Nix2.35.4 inventory must request V1 explicitly. Exercise the
+        # real preparation seam through its narHash projection without Nix or
+        # privileged/store access, stopping before unrelated closure work.
+        context = Path(self.temporary.name) / "prepared-context"
+        MODULE.prepare_context(self.root, context)
+        contract = json.loads((context / MODULE.CONTRACT).read_text())
+        fixtures = Path(self.temporary.name)
+        mountinfo = fixtures / "mountinfo"
+        mountinfo.write_text("1 0 0:1 / / rw - overlay overlay rw\n")
+        version = fixtures / "base-version"
+        version.write_text("nix (Nix) " + contract["nix_version"] + "\n")
+        metadata = fixtures / "cli-source.json"
+        metadata.write_text("{}")
+        real_path = MODULE.Path
+
+        class PreparationRoot:
+            def resolve(self):
+                return real_path("/opt/audio-ci-input")
+
+            def __truediv__(self, relative):
+                return context / relative
+
+        def path(value):
+            return {
+                "/proc/self/mountinfo": mountinfo,
+                "/tmp/audio-ci-base-nix-version": version,
+                "/tmp/audio-ci-cli-source.json": metadata,
+            }.get(str(value), real_path(value))
+
+        store_rows = {CLI_STORE: {"narHash": NAR}}
+        output = {CLI_STORE: {"narHash": NAR, "references": []}}
+        validate = MODULE.valid_store_rows
+        observed = []
+
+        def checked_inventory(rows):
+            validate(rows)
+            observed.append(rows)
+            raise RuntimeError("inventory schema checked")
+
+        with (
+            patch.object(MODULE.os, "geteuid", return_value=0),
+            patch.dict(
+                os.environ,
+                {
+                    "AUDIO_CI_ENV_PREPARE": "1",
+                    "NIX_REMOTE": "local",
+                    "AUDIO_CI_NIX_BASE": contract["nix_base"],
+                    "AUDIO_CI_DEVENV_REV": contract["devenv_revision"],
+                },
+            ),
+            patch.object(MODULE, "Path", side_effect=path),
+            patch.object(MODULE, "materialize_cli_source"),
+            patch.object(MODULE, "PREPARATION_PHASE", None),
+            patch.object(MODULE, "valid_store_rows", side_effect=checked_inventory),
+            patch.object(
+                MODULE.subprocess,
+                "check_output",
+                return_value=json.dumps(output).encode(),
+            ) as command,
+        ):
+            with self.assertRaisesRegex(RuntimeError, "^inventory schema checked$"):
+                MODULE.prepare_manifest(
+                    PreparationRoot(),
+                    fixtures / "unused.json",
+                    Path(CLI),
+                    Path(CLI_STORE),
+                )
+            command.assert_called_once_with(
+                ["nix", "path-info", "--json", "--json-format", "1", "--all"],
+                timeout=60,
+            )
+        self.assertEqual(observed, [store_rows])
 
     def test_closed_namespace_and_private_store_required(self):
         MODULE.validate_runtime_isolation(
